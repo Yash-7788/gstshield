@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository currently contains research and implementation planning; application code and deployment verification are pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Backend functionality and deployment verification are pending.
 
 ## Start here
 
@@ -28,3 +28,21 @@ The original report is historical context, not the final implementation authorit
 ## Collaboration
 
 Use branches and pull requests for implementation changes. Update shared contracts, schema, adapters and verification together. Keep credentials, private taxpayer documents and real financial data out of commits. Collaborator invitations are managed separately through GitHub access settings.
+
+## Active first-demo scope
+
+The initial live demo uses temporary in-memory state, without a database. See [backend structure and scope](backend/README.md). Database-dependent planning describes the later persistence path, not a requirement for the first demo.
+
+```text
+gstshield/
+  md/                         # eight specifications and three foundations
+  backend/
+    app/                      # API, contracts, domain, services, adapters,
+                              # storage, jobs and security packages
+    tests/                    # unit, integration and synthetic fixtures
+    pyproject.toml            # metadata; runtime dependencies not added yet
+    .env.example
+  frontend/                   # reserved for the supplied website
+```
+
+Next: implement the minimal backend. There is no runnable server yet.

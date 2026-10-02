@@ -1,5 +1,7 @@
 # GST-Shield — product and hackathon demonstration
 
+> **Active first-demo scope (2026-10-03):** The user selected a database-free live demo. Use one process and bounded temporary in-memory state; restart/redeploy may erase state. Database, managed storage, durable jobs and database-backed guarantees below describe a later phase. See [current backend scope](../backend/README.md). Removing persistence does not remove access checks or callback signature requirements.
+
 Planning baseline: 2026-10-03. Status: implementation specification, not implemented functionality. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
 ## Read this pack

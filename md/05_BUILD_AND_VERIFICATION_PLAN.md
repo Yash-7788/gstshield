@@ -1,5 +1,7 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
+> **Active first-demo scope (2026-10-03):** The user selected a database-free live demo. Use one process and bounded temporary in-memory state; restart/redeploy may erase state. Database, managed storage, durable jobs and database-backed guarantees below describe a later phase. See [current backend scope](../backend/README.md). Removing persistence does not remove access checks or callback signature requirements.
+
 Baseline 2026-10-03. No milestones have been executed yet. This document defines what to build and the evidence needed to call it working. The team can proceed sequentially; no assumed team size or hackathon deadline is invented.
 
 ## Order of work
