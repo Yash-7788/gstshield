@@ -68,6 +68,8 @@ Meta account availability, recipient restrictions, token lifetime, message categ
 
 ## Configuration contract
 
+For the active database-free demo, use [backend/.env.example](../backend/.env.example) and [its configuration rules](../backend/README.md#environment-configuration). The table below describes the later integrated/persistent setup; its database and Supabase fields are not required by the current scaffold. The loader and runtime validation are pending backend implementation.
+
 | Variable | Owner / exposure | Meaning |
 |---|---|---|
 | `APP_ENV` | Backend | `local`, `demo`, `test` |

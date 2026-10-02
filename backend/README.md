@@ -41,3 +41,25 @@ PostgreSQL, ORM, migrations, Redis and managed Storage are deferred. Authenticat
 5. Connect the supplied website and then real WhatsApp messages.
 
 Do not claim the scaffold can be launched as a web server. Run instructions and CI execution checks will be added with the actual server implementation.
+
+
+## Environment configuration
+
+[`backend/.env.example`](.env.example) is the configuration contract for the next implementation step. Copy it to `backend/.env` locally; on deployment, set the same names in the hosting provider's secret/environment settings. There is no configuration loader or running server yet, so these values are currently documented intent rather than enforced controls.
+
+The template covers origins, single-process operation, bounded in-memory state, parser limits, exact-money matching policy, optional WhatsApp credentials/timeouts, linking and report expiry, and request limits. It deliberately has no database credentials or default authentication secret.
+
+Configuration implementation must:
+
+- Parse booleans strictly, integer bounds as positive integers, CORS as a JSON array, and monetary/scoring values as Decimal.
+- Reject unknown storage modes and more than one worker in memory mode.
+- Check cross-field bounds, including score range/gap, queue limits and parser/state budgets.
+- Require HTTPS public URLs for deployed demo mode and explicit permitted website origins.
+- Keep authentication mandatory for private features independently of DEMO_MODE.
+- Require all Meta fields when WhatsApp is enabled and enforce the send budget before transmission.
+- Keep disabled optional credentials blank without attempting provider calls.
+- Redact secrets from validation errors/logs and report missing configuration by variable name only.
+
+The request-limit identity/scope and authentication implementation must be settled before those limits are enforced. In-memory state/quotas reset on restart; configuration must not claim persistent replay protection or provider billing enforcement.
+
+When adding a setting in code, update this template and its validation together. Do not leave variables here that the implemented loader silently ignores; deferred settings should stay clearly documented until activated.
