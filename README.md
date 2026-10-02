@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Backend functionality and deployment verification are pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 adds the local backend foundation; the remaining phases are pending.
 
 ## Start here
 
@@ -23,7 +23,7 @@ Read [Product and Demo](md/01_PRODUCT_AND_DEMO.md) for the scope and document ma
 - [GST report review](md/GST_ITC_SHIELD_REVIEW.md): corrections, reproduced prototype defects, and evidence boundaries.
 - [Engineering headstart](md/ENGINEERING_HEADSTART.md): transferable lessons from Jainune, with verification limits.
 
-The original report is historical context, not the final implementation authority. The planning pack defines the bounded hackathon build. Candidate dependency compatibility, actual deployment, and account-specific zero-cost WhatsApp operation must be verified during the first build milestones.
+The original report is historical context, not the final implementation authority. The planning pack defines the bounded hackathon build. The local Phase 1 dependencies are resolved in backend/uv.lock. Later feature dependencies and any actual WhatsApp account setup are verified in their own phases.
 
 ## Collaboration
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Active first-demo scope
 
-The initial live demo uses temporary in-memory state, without a database. See [backend structure and scope](backend/README.md). Database-dependent planning describes the later persistence path, not a requirement for the first demo.
+Run GSTShield on the local PC; no cloud server or external database. Phase 1 provides local HTTP/configuration. Phase 2 will store data in a local SQLite file. See [backend setup](backend/README.md) and the [phased implementation plan](md/05_BUILD_AND_VERIFICATION_PLAN.md). The older cloud and memory-only proposals are historical reference.
 
 ```text
 gstshield/
@@ -40,9 +40,9 @@ gstshield/
     app/                      # API, contracts, domain, services, adapters,
                               # storage, jobs and security packages
     tests/                    # unit, integration and synthetic fixtures
-    pyproject.toml            # metadata; runtime dependencies not added yet
+    pyproject.toml            # runtime and development dependencies
     .env.example
   frontend/                   # reserved for the supplied website
 ```
 
-Next: implement the minimal backend. There is no runnable server yet.
+Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite persistence, GST imports/reconciliation and WhatsApp are not implemented yet.

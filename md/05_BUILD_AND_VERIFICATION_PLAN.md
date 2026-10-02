@@ -1,8 +1,82 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active first-demo scope (2026-10-03):** The user selected a database-free live demo. Use one process and bounded temporary in-memory state; restart/redeploy may erase state. Database, managed storage, durable jobs and database-backed guarantees below describe a later phase. See [current backend scope](../backend/README.md). Removing persistence does not remove access checks or callback signature requirements.
+> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
 
-Baseline 2026-10-03. No milestones have been executed yet. This document defines what to build and the evidence needed to call it working. The team can proceed sequentially; no assumed team size or hackathon deadline is invented.
+## Active implementation phase plan
+
+Read before coding: product scope (01), installed stack/configuration (02), backend/data behavior (03), website/WhatsApp connection (04), this plan (05), security/privacy (06), GST evidence boundaries (07), and API alignment (08). The original report/review and Engineering Headstart remain supporting context.
+
+Latest user decisions: local PC execution and local PC storage; proceed one phase at a time; review each phase before starting the next. Do not create hosting infrastructure or external databases. Do not replace the supplied website before receiving it. The phase order is a dependency order, not a ranking of importance.
+
+### Phase 1 — local runtime and HTTP foundation (complete)
+
+Deliverables:
+
+- Reproducible Python 3.13 environment, minimal required dependencies and a committed lockfile.
+- A single local launch command using the actual validated HOST/PORT/logging configuration.
+- Complete, checked-in environment example aligned with every setting the loader recognizes.
+- Fail-fast validation: strict booleans, positive bounds, finite exact decimals, cross-field constraints, single worker and local origins/paths.
+- Public liveness and readiness endpoints with the agreed data/meta envelope.
+- Consistent expected HTTP, validation and unexpected-error envelopes without private inputs or traces.
+- Local Host/Origin restrictions, request IDs, security/no-store headers and CORS covering server errors.
+- No uploads, customer data, authentication bypass, SQLite schema, provider requests or placeholder feature routes.
+
+Review gate:
+
+1. Install from the frozen lock and import/run the application on the local PC.
+2. Test invalid config, template/loader drift, secret redaction and environment precedence.
+3. Test real ASGI request handling: healthy startup/shutdown, unknown routes, method failures, validation failures and unexpected exceptions.
+4. Verify local origin/Host controls, preflight behavior and CORS/security headers on errors.
+5. Run lint, formatting, syntax compilation, regression tests and a real loopback HTTP smoke check.
+6. Record what is implemented and what remains a future setting or feature. Readiness must not claim a database check before persistence exists.
+
+Completed locally on 2026-10-03: 78 tests passed, including real local process/socket startup; Ruff lint/format, syntax compilation and frozen dependency installation passed. Configuration coercion, malformed dotenv handling, API port alignment and exception-log redaction defects found during review were fixed and covered by regressions. See the [verification record](../backend/README.md#phase-1-verification-record). GitHub workflow results are separate from this local proof. Phase 2 remains unstarted and is deferred until the next user-directed work session.
+
+### Phase 2 — local persistence and private access (not started)
+
+Use Python's standard-library SQLite driver, one database file under backend/data and bounded private files on the same PC. No database service/account, ORM or external migration service. Design the initial schema from the resource contracts before adding routes. A future schema change is possible; do not promise that schemas never evolve.
+
+Settle a simple local-demo access model before accepting documents. CORS and loopback binding alone are not authentication. Do not store an authority-bearing secret in a public frontend build. Implement atomic transactions, parameterized queries, enforced foreign keys, disk/file limits, expiry and access scoping. Define backup/restore behavior and startup failure on corrupt/unavailable storage. Browser localStorage may hold harmless UI preferences; it is not the authoritative document or result store.
+
+Review gate: persistence across an actual process restart, denied cross-session access, duplicate/retry behavior, transaction rollback, disk/path boundaries, and expired access. No private data endpoints before this gate.
+
+### Phase 3 — imports and canonical inputs (not started)
+
+CSV/XLSX purchase inputs and explicitly labeled canonical-demo portal JSON. Implement bounded bytes/rows/cells/decompression, content validation, preview, rejected-row details, mapping and explicit confirmation. Preserve unknown tax components and exact decimal strings. Never turn an unsupported format into a successful empty import.
+
+Review gate: independently prepared valid/invalid fixtures, oversized and malformed files, formula/archive risks, deterministic retry/deduplication, scope consistency and persistence of accepted/rejected rows. Add parser dependencies only here.
+
+### Phase 4 — reconciliation and human review (not started)
+
+Implement exact matching gates, duplicates, fuzzy suggestions, competing candidates, unique assignments, stable run versions and expected-version review mutations. Derive financial totals from committed classifications and preserve audit history. Suggestions do not establish ITC eligibility or authorize payments.
+
+Review gate: independent golden results, paise boundaries, missing fields, duplicates on either side, ties/competition, no double counting, repeated requests and stale review conflicts.
+
+### Phase 5 — reports and supplied website integration (not started)
+
+Add evidence summaries/downloads and connect the user's actual website through one API client and shared types. Keep monetary strings exact and explain errors/recovery in the UI. Preserve the supplied design after inspecting its manifest and build requirements.
+
+Review gate: complete upload-to-review-to-report journey, matching API/UI counts, safe export text, scoped downloads, refresh/restart behavior and browser build compatibility.
+
+### Phase 6 — optional real WhatsApp and rehearsal (not started)
+
+The local website/backend can work without internet. Real WhatsApp uses Meta's external API and needs an internet-reachable HTTPS callback; a purely loopback callback cannot receive phone events. No tunnel or hosted service is set up in this phase plan automatically. Agree on a permitted callback method later if real phone integration remains required.
+
+After that decision, implement raw-byte signature validation, bounded callbacks, event deduplication, link expiry/revocation and explicit send-budget handling through the same domain services. Rehearse the local website even when the phone integration is unavailable.
+
+Review gate: physical-phone proof when enabled, invalid-signature rejection, repeated callbacks, unlink/download revocation, timeout uncertainty, and a truthful presentation fallback. An emulator is not real WhatsApp completion.
+
+## Per-phase review discipline
+
+Give configuration, correctness, security, edge cases and integration checks equal attention within each relevant phase. Read the changed code after tests, follow every real error path and fix failures at their cause. Tests cover behavior and risks, rather than simply mirroring helper functions.
+
+Apply the user-requested [Ponytail rules](https://github.com/DietrichGebert/ponytail/blob/main/skills/ponytail/SKILL.md): understand the flow first, use simple native tools where appropriate, avoid speculative abstractions/dependencies, and preserve validation/security/error handling. This user's explicit phased review requirement remains authoritative.
+
+Record actual commands/results after review. A green foundation is evidence for Phase 1 only; it does not certify future parsers, GST logic, authentication or phone integration as secure or correct.
+
+## Original cloud-oriented sequence — reference only
+
+The material below is retained research/history. Its PostgreSQL/Supabase/Render milestones do not instruct the current local-only build.
 
 ## Order of work
 

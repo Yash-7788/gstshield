@@ -1,6 +1,6 @@
 # GST-Shield — technology, dependencies and zero-cost deployment
 
-> **Active first-demo scope (2026-10-03):** The user selected a database-free live demo. Use one process and bounded temporary in-memory state; restart/redeploy may erase state. Database, managed storage, durable jobs and database-backed guarantees below describe a later phase. See [current backend scope](../backend/README.md). Removing persistence does not remove access checks or callback signature requirements.
+> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
 
 Researched 2026-10-03. This is a proposed setup; no accounts, deployments or dependency installations were performed during document creation. Related: [product](01_PRODUCT_AND_DEMO.md), [backend](03_BACKEND_AND_DATA_SPEC.md), [security](06_SECURITY_AND_PRIVACY.md), [build gates](05_BUILD_AND_VERIFICATION_PLAN.md).
 

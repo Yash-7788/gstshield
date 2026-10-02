@@ -1,14 +1,34 @@
 [project]
 name = "gstshield-backend"
 version = "0.0.1"
-description = "GSTShield website and WhatsApp demo backend"
+description = "GSTShield local hackathon website backend"
 requires-python = ">=3.13,<3.14"
-# Runtime dependencies will be resolved and locked when implementing the backend.
-dependencies = []
+dependencies = [
+    "fastapi>=0.142.2,<0.143",
+    "pydantic>=2.13.5,<3",
+    "pydantic-settings>=2.15,<3",
+    "python-dotenv>=1.2.4,<2",
+    "uvicorn>=0.54,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1,<3",
+    "pytest>=9.1.1,<10",
+    "ruff>=0.16.10,<1",
+]
+
+[tool.uv]
+package = false
 
 [tool.ruff]
 target-version = "py313"
 line-length = 100
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["error"]

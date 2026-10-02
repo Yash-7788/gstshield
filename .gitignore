@@ -9,3 +9,9 @@ __pycache__/
 dist/
 build/
 .DS_Store
+# Local tooling and private GST data must never be committed.
+.tooling/
+backend/data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
