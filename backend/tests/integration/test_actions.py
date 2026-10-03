@@ -575,6 +575,16 @@ def test_schema_four_upgrade_preserves_original_backup_and_adds_only_action_tabl
                 connection.execute(statement)
             connection.execute("INSERT INTO metadata VALUES ('schema',?)", (VERSION4_DIGEST,))
             connection.commit()
+        access = AccessService(store)
+        user, workspace = access.provision("preserved", PASSWORD, "Old phase five workspace")
+        registration = access.add_registration(
+            workspace, "27ABCDE1234F1Z5", "Preserved registration"
+        )
+        with store.transaction(write=False) as connection:
+            before = {
+                table: [tuple(r) for r in connection.execute(f'SELECT * FROM "{table}"')]
+                for table in ("users", "workspaces", "memberships", "registrations")
+            }
         with pytest.raises(StorageError):
             store.initialize()
         identifier = store.upgrade()
@@ -582,6 +592,10 @@ def test_schema_four_upgrade_preserves_original_backup_and_adds_only_action_tabl
         with store.transaction(write=False) as connection:
             assert connection.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
             assert connection.execute("SELECT count(*) FROM business_actions").fetchone()[0] == 0
+            for table, rows in before.items():
+                assert [tuple(r) for r in connection.execute(f'SELECT * FROM "{table}"')] == rows
+            assert connection.execute("SELECT id FROM users").fetchone()[0] == user
+            assert connection.execute("SELECT id FROM registrations").fetchone()[0] == registration
         store.validate(store.root / "backups" / f"{identifier}.sqlite3", version=4)
         assert store.upgrade() is None
     finally:
@@ -958,3 +972,39 @@ def test_two_accounts_cannot_read_worksheets_or_use_another_actions_draft(accoun
         assert login.status_code == 200
         assert get(client, workspace, "actions").status_code == 404
         assert get(client, workspace, f"actions/{first['id']}/worksheet").status_code == 404
+
+
+def test_incomplete_tax_case_keeps_unknown_review_action_without_automation_failure(account):
+    settings, _, workspace, registration = account
+    with TestClient(create_app(settings)) as client:
+        headers = signed_in(client)
+        payload = prepare(
+            client, workspace, registration, headers, purchases=[ROW | {"cess": ""}], portals=[ROW]
+        )
+        run = finished(
+            client, workspace, create(client, workspace, headers, payload).json()["data"]["id"]
+        )
+        assert run["state"] == "COMPLETED"
+        result = get(client, workspace, f"runs/{run['id']}/results").json()["data"]["results"][0]
+        case = new_case(
+            client,
+            workspace,
+            registration,
+            headers,
+            result,
+            "RULE37A_REVIEW",
+            {
+                "original_claim_period": "2024-04",
+                "original_claim_amount": "180.00",
+                "reversal_period": "2024-05",
+                "reversal_amount": "180.00",
+                "supplier_return_period": "2024-04",
+                "supplier_return_status": "FILED",
+                "filing_observed_on": "2024-06-01",
+            },
+        )
+        tracked = action(client, workspace, "RULE37A_REVIEW", case["id"])
+        assert tracked["source"]["recorded_tax"] is None
+        assert not tracked["source"]["review"]["reclaim_candidate"]
+        assert "recorded_tax_incomplete" in tracked["source"]["review"]["missing_facts"]
+        assert queue(client, workspace)["automation"]["error_code"] is None

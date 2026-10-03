@@ -172,7 +172,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phases 6–14 remain pending, including focused security review, frontend integration and WhatsApp.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phase 6 is in final verification; Phases 7–14 remain pending, including focused security review, frontend integration and WhatsApp.
 
 ## Create local accounts and context
 
@@ -313,9 +313,9 @@ artifact BLOBs while retaining history; it does not remove imports or free the h
 Old backups retain earlier content. Unsupported font characters (including unsupported Indic
 scripts/emoji) fail visibly; CSV stays UTF-8. Font source/hash/license are in app/assets/.
 
-An existing schema 1/2/3 store requires the explicit offline `python -m app.manage storage-upgrade`;
+An existing schema 1/2/3/4 store requires the explicit offline `python -m app.manage storage-upgrade`;
 it validates and preserves the old schema before adding only missing tables. Fresh storage
-creates schema 4. Stop the backend before maintenance; never remove an old DB to bypass this
+now creates schema 5. Stop the backend before maintenance; never remove an old DB to bypass this
 check. Phase 7 will review the backend as a whole.
 
 
@@ -330,4 +330,17 @@ The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, coverag
 
 ## Business workflow roadmap correction
 
-Phase 6 is now the next implementation phase: complete the six original problem workflows with business actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, payment-risk reminders and notice/IRN evidence tasks. Existing manual cases/reports are their foundation, not complete operational coverage. The former phases 6–13 are now 7–14; completed Phases 1–5 are unchanged. Frontend screens/connection are Phases 8–9, real WhatsApp is Phase 13 and six-scenario whole-application acceptance is Phase 14. This is a planning correction only; no Phase 6 endpoints or code are implemented by this update.
+Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its final regression gate is pending; the current verification record is in 05. Frontend screens/connection remain Phases 8–9, real WhatsApp remains Phase 13 and combined acceptance remains Phase 14. Phases 7–14 are not started.
+
+
+## Phase 6 local work queue and monitor
+
+GET `/api/v1/workspaces/{workspace_id}/actions` returns up to twenty scoped actions, a UUID cursor and automation status. Filter by state or `due_only=true`; fetch detail or `/worksheet` using the same current session. Mutations `/update`, `/followups` and `/outcomes` reuse Origin/CSRF, OWNER/REVIEWER, expected versions and UUID idempotency. Exact fields/states/errors and frontend handoff live in [08](../md/08_CONTRACTS_AND_ALIGNMENT.md) and [04](../md/04_WEBSITE_AND_WHATSAPP_INTEGRATION.md).
+
+The standard-library monitor runs only while the backend is active. Defaults: five seconds per workspace tick, eight changed sources and fifty due actions per scan, three thousand retained actions and one hundred events per action. Workspaces rotate; backlog/pending errors are visible rather than a false clean queue. Catch-up also runs on authenticated action reads and startup. Reminders occur once per recorded UTC date. No message is sent, and no universal statutory due date is guessed.
+
+A later committed snapshot updates the same investigation only for the retained purchase document and compatible registration/period. Meaningful evidence reopens review and clears the current outcome while retaining earlier history. Equivalent observations refresh provenance without duplicate alerts. A different purchase import never inherits an unrelated review. Partial payment remains exact; absent facts stay unknown. Supported reversal/reclaim facts create a review candidate, never legal entitlement or a filed return.
+
+Drafts remain NOT_SENT and preserve action state. An operator attempt needs the same draft/contact/request and date; it is explicitly unverified. Actual filing/submission observations need accepted review and same-case DOCUMENT evidence; the backend executes nothing and verifies no government receipt. Closing needs an explicit recorded outcome. Private PDFs include compact action history/coverage and become stale when linked action/source versions change. Normal offline backup/restore includes the whole action layer and still revokes restored access.
+
+No new dependency, hosted server, external database, government integration or WhatsApp provider was added. Use `storage-upgrade` offline for a validated schema 1–4 store; version 5 restore accepts current backups. Final verification and accepted operating boundaries are recorded in 05.

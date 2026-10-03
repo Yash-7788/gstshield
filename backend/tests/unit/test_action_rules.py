@@ -124,3 +124,10 @@ def test_markup_is_readable_text_and_duplicate_evidence_is_rejected():
             observed_on="2024-06-01",
             evidence_event_ids=[identifier, identifier],
         )
+
+
+def test_unknown_tax_components_remain_reviewable_without_a_reclaim_candidate():
+    review = case_review(reclaim(), ROW | {"cess": None})
+    assert not review["reclaim_candidate"]
+    assert review["proposed_reclaim_amount"] is None
+    assert "recorded_tax_incomplete" in review["missing_facts"]

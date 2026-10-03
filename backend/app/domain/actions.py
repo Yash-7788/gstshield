@@ -29,8 +29,13 @@ def case_review(case, invoice):
             notes.append("payment_balance_unknown")
     if kind == "RULE37A_REVIEW":
         claim, reversal = facts.get("original_claim_amount"), facts.get("reversal_amount")
+        tax_fields = ("cgst", "sgst", "igst", "cess")
+        tax_complete = all(invoice.get(field) is not None for field in tax_fields)
+        if not tax_complete:
+            notes.append("recorded_tax_incomplete")
         if (
-            invoice.get("document_type") != "CREDIT_NOTE"
+            tax_complete
+            and invoice.get("document_type") != "CREDIT_NOTE"
             and not missing
             and claim is not None
             and reversal is not None
@@ -38,10 +43,7 @@ def case_review(case, invoice):
             and 0 < money_paise(reversal, "gross_total") <= money_paise(claim, "gross_total")
             and money_paise(reversal, "gross_total") <= money_paise(case["amount"], "gross_total")
             and money_paise(claim, "gross_total")
-            <= sum(
-                money_paise(invoice.get(field, "0.00"), "gross_total")
-                for field in ("cgst", "sgst", "igst", "cess")
-            )
+            <= sum(money_paise(invoice.get(field, "0.00"), "gross_total") for field in tax_fields)
             and facts.get("original_claim_period", "9999-99") <= facts.get("reversal_period", "")
             and facts.get("supplier_return_period", "9999-99")
             <= (facts.get("filing_observed_on") or "")[:7]

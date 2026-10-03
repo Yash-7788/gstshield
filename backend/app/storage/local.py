@@ -1,6 +1,7 @@
 """Single-PC SQLite storage. SQL values are bound; maintenance is offline."""
 
 import hashlib
+import logging
 import os
 import shutil
 import sqlite3
@@ -208,12 +209,17 @@ class LocalStore:
             ):
                 for name in directories + files:
                     item = Path(folder) / name
-                    check_path(item, config.BACKEND_DIR / "data")
+                    try:
+                        check_path(item, config.BACKEND_DIR / "data")
+                        if item.is_file():
+                            total += item.stat().st_size
+                    except FileNotFoundError:
+                        # SQLite journals and worker descriptors can vanish during a quota scan.
+                        # The live database is separately opened with mode=rw; never recreate it.
+                        continue
                     count += 1
                     if count > 1000:
                         raise StorageError("Private storage file count limit reached.")
-                    if item.is_file():
-                        total += item.stat().st_size
             journal = self.path.stat().st_size if self.path.exists() else 131072
             reserve = journal + growth
             if total + reserve > self.settings.max_local_data_bytes:
@@ -302,7 +308,12 @@ class LocalStore:
                 with suppress(sqlite3.Error):
                     connection.rollback()
             raise
-        except (sqlite3.Error, OSError):
+        except (sqlite3.Error, OSError) as exc:
+            logging.getLogger("gstshield").warning(
+                "Storage transaction failure exception_type=%s code=%s",
+                type(exc).__name__,
+                getattr(exc, "sqlite_errorcode", getattr(exc, "errno", None)),
+            )
             if connection is not None:
                 with suppress(sqlite3.Error):
                     connection.rollback()

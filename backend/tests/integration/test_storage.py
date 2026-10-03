@@ -247,3 +247,54 @@ def test_password_admin_refuses_getpass_echo_fallback(monkeypatch):
     monkeypatch.setattr(getpass, "getpass", cannot_hide)
     with pytest.raises(getpass.GetPassWarning):
         new_password()
+
+
+@pytest.mark.parametrize("point", ["path_check", "size_read"])
+def test_vanishing_transient_file_does_not_fail_live_storage_transaction(store, monkeypatch, point):
+    from pathlib import Path
+
+    transient = store.root / (store.path.name + "-journal")
+    transient.write_bytes(b"synthetic transient; not an actual active SQLite journal")
+    original_check = __import__("app.storage.local", fromlist=["check_path"]).check_path
+    original_stat = Path.stat
+    checked = False
+    vanished = False
+
+    def check(path, root):
+        nonlocal checked, vanished
+        original_check(path, root)
+        if path == transient:
+            checked = True
+            if point == "path_check":
+                transient.unlink()
+                vanished = True
+                raise FileNotFoundError("synthetic concurrent journal removal")
+
+    def stat(path, *args, **kwargs):
+        nonlocal vanished
+        if path == transient and checked and not vanished and point == "size_read":
+            # is_file succeeds, followed by a disappeared file at the size-read boundary.
+            info = original_stat(path, *args, **kwargs)
+            transient.unlink()
+            vanished = True
+            return info
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr("app.storage.local.check_path", check)
+    monkeypatch.setattr(Path, "stat", stat)
+    with store.transaction() as connection:
+        connection.execute("INSERT INTO metadata VALUES ('race-proof','saved')")
+    assert vanished
+    with store.transaction(write=False) as connection:
+        assert (
+            connection.execute("SELECT value FROM metadata WHERE key='race-proof'").fetchone()[0]
+            == "saved"
+        )
+    assert store.ready()
+
+
+def test_missing_live_database_still_fails_closed_without_recreation(store):
+    store.path.unlink()
+    with pytest.raises(StorageError), store.transaction() as connection:
+        connection.execute("SELECT 1")
+    assert not store.path.exists()
