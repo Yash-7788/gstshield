@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -46,8 +46,8 @@ HTTPX2 matches the installed Starlette test client; do not reintroduce the depre
 - Phase 3 now uses standard-library CSV/JSON, openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32 and psutil 7.2.2. The exact graph is committed in uv.lock; no pandas, ORM or external queue was added.
 - Phase 4 installs RapidFuzz 3.14.6 (locked range >=3.14.6,<3.15) for suggestions. Integer paise and standard-library Decimal handle money; floating point is confined to similarity scores. Similarity never becomes automatic legal approval.
 - Phase 5 installs ReportLab 5.0.1 (locked >=5.0.1,<5.1), resolving Pillow 12.3.0 and charset-normalizer 3.5.2. Bundled Noto Sans has a checked SHA-256 and SIL font license. pypdf 6.19.0 and PyMuPDF 1.28.2 are development-only extraction/rendering tools. No browser renderer or hosted reporting service is used.
-- Phase 7: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
-- Phase 12: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
+- Phase 8: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
+- Phase 13: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
 
 Pandas, an AI service, a messaging aggregator and an external queue are not required for the deterministic core. Optional packages need a concrete implemented use and compatibility proof.
 
@@ -184,7 +184,7 @@ The table below is generated from the template for this planning update. Blank M
 - Private requests: sixty reads and ten mutations per session per minute, stored in SQLite across restart.
 - SQL lock waiting: bounded to two seconds; failure is a truthful storage error, never successful empty data.
 
-These bounds are hackathon choices. Phase 10 measures implemented workload behavior before increasing them. Uploads have their own authenticated streaming boundary: 5 MiB file plus 64 KiB multipart envelope, one upload reception at a time and a 20-second receive deadline. Other mutation bodies remain 64 KiB. The dispatcher admits five queued/running jobs per workspace and runs one parser globally; twenty imports per workspace and 1,000 remembered operations per workspace bound history.
+These bounds are hackathon choices. Phase 11 measures implemented workload behavior before increasing them. Uploads have their own authenticated streaming boundary: 5 MiB file plus 64 KiB multipart envelope, one upload reception at a time and a 20-second receive deadline. Other mutation bodies remain 64 KiB. The dispatcher admits five queued/running jobs per workspace and runs one parser globally; twenty imports per workspace and 1,000 remembered operations per workspace bound history.
 
 ## Checks and evidence
 
@@ -198,7 +198,7 @@ These bounds are hackathon choices. Phase 10 measures implemented workload behav
 
 The GitHub workflow uses Windows/Linux test runners; Ubuntu in CI is a verification environment, not a deployed server. Local test success and remote workflow results are separate evidence. Record failures and fixes rather than declaring unrun checks green.
 
-The current project is a website, not a native phone app. Real WhatsApp is Phase 12 and needs Meta assets, internet connectivity, an HTTPS callback and account-specific entitlement checks. Do not promise zero messaging cost merely because local backend/storage has no hosting bill.
+The current project is a website, not a native phone app. Real WhatsApp is Phase 13 and needs Meta assets, internet connectivity, an HTTPS callback and account-specific entitlement checks. Do not promise zero messaging cost merely because local backend/storage has no hosting bill.
 
 ## Technical references
 
@@ -230,3 +230,11 @@ Artifact generation runs offline in the existing killable child, sharing the imp
 Schema 4 preserves v1/v2/v3 fingerprints. For an existing older store, stop the backend and run `uv run --frozen python -m app.manage storage-upgrade`; it validates and backs up the old store before adding only the missing tables. Fresh installations create schema 4 directly. No external database migration or provider account is involved.
 
 The font's glyph coverage is checked before rendering. Unsupported text produces FAILED / REPORT_UNSUPPORTED_TEXT, never a PDF with silently missing characters. Latin/Greek/Cyrillic and the rupee sign are covered; arbitrary Indic scripts or emoji are not promised. CSV remains UTF-8. Dependency source: [ReportLab on PyPI](https://pypi.org/project/reportlab/); font source/license/hash live in backend/app/assets/README.md.
+
+
+## Phase 6 business workflow infrastructure boundary
+
+The newly scheduled business actions, recorded-date reminders and snapshot-change review use the existing local Python/SQLite architecture. Phase 6 requires bounded automatic due-review checks while the backend runs, startup catch-up and authenticated due queries; no hosted scheduler, government API, external database or messaging SDK is implicitly selected. Reminders are unavailable while the PC/backend is off, and restart must show overdue work without replaying external sends. Add dependencies or validated environment settings only if actual implementation needs them; align the lock and example in that phase. Current dependencies do not imply these business workflows already exist.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.

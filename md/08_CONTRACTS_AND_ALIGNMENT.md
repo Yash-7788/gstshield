@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -263,7 +263,7 @@ Downloads require a current session/member and READY, unexpired, hash/size-valid
 
 OWNER-only POST /artifacts/cleanup accepts {expired_only:true} (default true), requires CSRF/Origin/UUID idempotency and returns {expired_artifacts,scope:EXPIRED_ARTIFACT_CONTENT_ONLY}. It clears only expired report BLOBs, retains metadata/history and cancels any pending lease. It does not delete raw imports, cases or arbitrary files; old backups retain previous bytes. History caps remain explicit after cleanup.
 
-Future Phase 12 capability route: GET /downloads/{opaque_token} is planned outside /api/v1, with revocation, expiry, membership and bounded redemption. It is not implemented by Phase 5; current browser downloads require cookie authentication.
+Future Phase 13 capability route: GET /downloads/{opaque_token} is planned outside /api/v1, with revocation, expiry, membership and bounded redemption. It is not implemented by Phase 5; current browser downloads require cookie authentication.
 
 ## WhatsApp adapter alignment
 
@@ -332,3 +332,13 @@ ResultData contains id, workspace_id, run_id, purchase_document_id, source_row_n
 The implemented shared job response is id/workspace_id/kind/state/error_code/created_at/updated_at with import_id nullable and run_id nullable. IMPORT has import_id; RUN has run_id. No attempt/percentage/output_ref/lease fields are exposed. The earlier richer job shape is reserved for a future contract change, not an existing response. Both kinds resume QUEUED jobs and fail interrupted RUNNING jobs on restart.
 
 Useful actual errors: SOURCE_CONTEXT_INVALID, SOURCE_SUPERSEDED, STALE_VERSION, ASSIGNMENT_CONFLICT, CANDIDATE_INELIGIBLE, IDEMPOTENCY_CONFLICT, RUN_LIMIT and QUEUE_FULL. Worker failures include MATCH_PAIR_LIMIT, MATCH_CANDIDATE_LIMIT, PROCESSING_INTERRUPTED, PROCESSING_TIMEOUT and PARSED_RESULT_LIMIT. Explain a failed run using the scoped job code; source corrections/new run are explicit actions. Match scores are similarity, never legal approval.
+
+
+## Planned Phase 6 contract extension — not existing endpoints
+
+Before coding the business workflow layer, settle the action identity/scope, linked result/case and source versions, reason/evidence references, assigned reviewer, recorded next-review time, status/outcome and audit fields. Define pagination, exact money, UTC dates/times, expected-version mutations, idempotent retries and errors using the existing envelope/access conventions. Supplier drafts, recorded contact attempts and future provider delivery events need distinct representations. Define explicit snapshot comparison context; do not accept unrelated periods or a matching row as an automatic reclaim.
+
+Document selected routes, schemas and additive storage changes here in the Phase 6 implementation increment and verify them against actual OpenAPI. They are not available today: the Phase 5 APIs still provide case/evidence, proposals and reports only. The frontend adapter in Phases 8–9 and WhatsApp adapter in Phase 13 must consume the implemented contracts rather than invent parallel action states. Each original problem needs an independently tested end-to-end operation before the new phase is marked complete.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.

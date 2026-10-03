@@ -1,12 +1,12 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
-Planning baseline: 2026-10-03. Status: implementation specification, not implemented functionality. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
+Planning baseline: 2026-10-03. Status: Phases 1–5 implemented and locally verified; later capabilities remain specifications until their gates pass. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
 ## Active whole-application phase scope
 
-The implementation sequence now has 13 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phase 1 remains complete and the remaining phases are not started. The original product capabilities and evidence boundaries below still apply.
+The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–5 are complete; Phases 6–14 are not started. The original product capabilities and evidence boundaries below still apply.
 
 ## Read this pack
 
@@ -40,7 +40,9 @@ Use the positioning: **“Reconcile, explain, follow up, and prepare evidence be
 
 Primary user: one business owner/accountant working on one GST registration and period at a time. A workspace can contain multiple registrations, but the demonstration uses one selected registration. Secondary user: another invited reviewer. Supplier follow-up is a narrowly scoped message/link, not membership in the buyer's workspace.
 
-The initial dataset target is 100 purchase rows. Hard application limit: 2,000 rows per source, 5 MB per uploaded file, one active processing job per workspace. These are chosen project limits, not provider guarantees. Measure performance and lower limits if the selected free instance cannot meet them.
+The initial dataset target is 100 purchase rows. Hard application limit: 2,000 rows per source, 5 MB per uploaded file, one active processing child globally, with up to five queued/running jobs per workspace. These are chosen project limits, not provider guarantees. Measure performance and lower limits if the local demo PC cannot meet them.
+
+This table describes target behavior, including pending functionality. The [status ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger) separates existing backend features from the remaining workflow/channel work.
 
 | Feature | Hackathon behavior | Completion evidence |
 |---|---|---|
@@ -97,7 +99,7 @@ Do not force the original 84/8/8 distribution into the engine. The fixture desig
 
 ## Quality bar and priorities
 
-Must ship: working import, persistent reconciliation, transparent review, aligned website/WhatsApp access, private artifacts, local restart/backup persistence, and a rehearsed demo. Should ship: case timeline, useful PDF, proposal CSV, supplier reminder draft. Stretch: consented live supplier reminder, signed e-invoice verification, richer natural-language explanations, validated additional portal tables.
+Must ship: working import, persistent reconciliation, transparent review, six-problem action tracking and local reminders, aligned website/WhatsApp access, private artifacts, local restart/backup persistence, and a rehearsed demo. The Phase 5 case timeline, useful PDF and proposal CSV are delivered foundations; the supplier reminder draft is now required in Phase 6. Conditional: real supplier sending and scheduled WhatsApp alerts after account/recipient/window/template/budget prerequisites pass in Phase 13. Stretch: signed e-invoice verification, richer natural-language explanations, validated additional portal tables.
 
 The architecture stays small: one backend, one database, one file store, one durable job mechanism. Security must protect accounts, documents and callbacks, but the hackathon does not need enterprise SSO, Kubernetes, distributed caches or extensive compliance machinery.
 
@@ -216,7 +218,7 @@ These strengths are demonstrable capabilities, not claims that every competitor 
 
 ## Scope changes and implementation choices
 
-When time is tight, keep the working upload/reconcile/phone/report loop and remove optional automation. If the supplied website lacks a needed screen, add the smallest compatible flow rather than a wholesale redesign. If official samples are unavailable, demonstrate the canonical adapter honestly and retain the official adapter as a pending integration.
+When time is tight, preserve the six-problem Phase 6 tracking/reminder workflow and working upload/reconcile/phone/report loop. Defer only optional integrations such as trusted IRN authentication, direct ERP sync and AI/OCR; do not drop core action tracking under the label optional automation. If the supplied website lacks a needed screen, add the smallest compatible flow rather than a wholesale redesign. If official samples are unavailable, demonstrate the canonical adapter honestly and retain the official adapter as a pending integration.
 
 If the hackathon requires an AI component, add explanation of already computed results with a deterministic fallback. The model receives minimal structured facts and cannot calculate authoritative amounts, select a tenant, authenticate an IRN or authorize a payment. Paid models or OCR must not become mandatory for the core demo.
 
@@ -243,4 +245,20 @@ This is a backend capability. The supplied website is still pending its inspecti
 
 The backend now supports a real persisted case, evidence timeline, approved allocation draft, reconciliation/evidence PDF, proposal CSV and rejected-row CSV. Use an accepted invoice from a completed current run; record a payment observation in a Rule 37 or MSME case; advance it through evidence review; create and approve a draft; request its report job and download the READY artifact. Export never changes the recorded amount paid. A changed source or case marks the draft STALE and blocks its CSV.
 
-Reports label source provenance and uncertainty. A reconciliation report includes at most 200 chosen/default result rows and says how many of the full run it shows; full run summary totals are preserved. Evidence packs show missing facts instead of inventing compliance. The website UI and physical WhatsApp demonstration remain Phases 7–12, not delivered by this backend phase.
+Reports label source provenance and uncertainty. A reconciliation report includes at most 200 chosen/default result rows and says how many of the full run it shows; full run summary totals are preserved. Evidence packs show missing facts instead of inventing compliance. The website UI and physical WhatsApp demonstration remain Phases 8–13, not delivered by this backend phase.
+
+
+## Six-problem completion ownership (roadmap correction)
+
+The original six problems remain the product target: missing/wrong supplier invoices, MSME/payment risk, forgotten reversal/reclaim review, e-invoice evidence, notice readiness and manual reconciliation/follow-up. Phases 1–5 deliver the local import, matching, review, case and report foundation. Manual case capture alone does not complete these operational workflows.
+
+The next Phase 6 adds persisted business actions, supplier follow-up drafts/history, cross-snapshot changes, reversal/reclaim review triggers, recorded-date reminders and notice/e-invoice evidence tasks. The detailed six-scenario acceptance matrix is in [05](05_BUILD_AND_VERIFICATION_PLAN.md#phase-6--business-workflow-completion-for-the-six-original-problems-not-started). Phases 8–9 expose and connect them through the supplied website; Phase 13 connects real WhatsApp, and Phase 14 demonstrates all six scenarios together. These capabilities are planned until their implementation gates pass. Evidence-backed review outcomes are distinct from actual legal eligibility, filed returns, executed payments and successful tax recovery.
+
+
+## Why use this application rather than a one-off AI analysis?
+
+A general chatbot can compare provided data, explain discrepancies and draft a PDF or reminder. An AI system with storage, tools and integrations can also automate workflows; the product must not claim those operations are impossible for AI. GSTShield's intended value is providing a running, repeatable accounting workflow: retained source versions and exact amounts, role-scoped review, remembered unresolved actions, evidence-change tracking, due reminders, follow-up history and connected website/WhatsApp operations. The user need not repaste earlier invoices and reconstruct what was reviewed or chased.
+
+Today the backend stores imports, results, cases and reports and performs bounded reconciliation on request. It does not yet run the business-reminder/change-trigger layer or send WhatsApp messages. Phase 6 supplies the missing automatic local tasks and reminders; Phases 8–9 make them usable through the website; Phase 13 enables actual channel alerts/follow-up only after integration prerequisites pass. New uploaded evidence or recorded observations are required: the local application cannot know that a supplier filed by itself. The PC/backend must be running to process automatic checks.
+
+Useful automation is: a confirmed run or new evidence changes a tracked issue, the system persists a deduplicated review action, reminds the reviewer when due, and retains what happens next. The reviewer controls consequential decisions. Proposed recovery is separate from recorded actual reclaim. Automatic government filing and guaranteed recovery were excluded by the corrected plan; review worksheets and actual filing-outcome tracking belong to Phase 6. See the canonical [capability status ledger](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger) for every implemented, partial, pending, conditional and excluded capability.

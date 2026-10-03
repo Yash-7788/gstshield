@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **13 phases**. Phases 1–5 are complete and locally verified; Phases 6–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–5 are complete and locally verified; Phases 6–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -19,16 +19,50 @@ The active plan now contains **13 phases**. Phases 1–5 are complete and locall
 | 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
 | 4 | GST reconciliation and human review | Backend | Complete and locally verified |
 | 5 | Backend reports, cases and evidence workflow | Backend | Complete |
-| 6 | Backend security and failure review | Backend | Not started |
-| 7 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
-| 8 | Frontend and backend connection | Both | Not started |
-| 9 | Frontend security and privacy review | Frontend | Not started |
-| 10 | Backend performance and resource efficiency | Backend | Not started |
-| 11 | Frontend smoothness, speed and usability | Frontend | Not started |
-| 12 | WhatsApp connection and channel review | Both | Not started |
-| 13 | Whole-application regression and hackathon rehearsal | Both | Not started |
+| 6 | Business workflows for all six original problems | Backend | Not started |
+| 7 | Backend security and failure review | Backend | Not started |
+| 8 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
+| 9 | Frontend and backend connection | Both | Not started |
+| 10 | Frontend security and privacy review | Frontend | Not started |
+| 11 | Backend performance and resource efficiency | Backend | Not started |
+| 12 | Frontend smoothness, speed and usability | Frontend | Not started |
+| 13 | WhatsApp connection and channel review | Both | Not started |
+| 14 | Whole-application regression and hackathon rehearsal | Both | Not started |
 
-The sequence is a dependency order, not a ranking of importance. Security and responsiveness are part of feature implementation from the start; Phases 6, 9, 10 and 11 are focused reviews of working code. Do not postpone essential safeguards or fixable blocking behavior to those later reviews.
+The sequence is a dependency order, not a ranking of importance. Security and responsiveness are part of feature implementation from the start; Phases 7, 10, 11 and 12 are focused reviews of working code. Do not postpone essential safeguards or fixable blocking behavior to those later reviews.
+
+## Capability status and remaining-work ledger
+
+This ledger reconciles the original six business problems with the active eight MDs and the recorded Phase 1–5 implementation. IMPLEMENTED means locally verified backend functionality, not a finished website screen. PARTIAL identifies the delivered foundation and the missing operational behavior. PLANNED has no implementation proof yet. CONDITIONAL requires external setup/evidence. EXCLUDED is an intentional scope boundary, not a forgotten future phase. Update this ledger and the affected resource contract when an implementation gate passes.
+
+| Existing planned capability | Current status and what is missing | Completion phase / acceptance owner |
+|---|---|---|
+| Local runtime, private PC storage, identities and workspace roles | IMPLEMENTED: local HTTP, private SQLite, sessions, ownership, offline backup/restore | 1–2 complete; whole-backend review 7 |
+| Purchase CSV/XLSX and supported portal-table imports | IMPLEMENTED: bounded parsing, mapping, errors, explicit confirmation and retained sources | 3 complete; browser use 8–9 |
+| Official GSTR-2B JSON/layout support beyond current adapters | CONDITIONAL: canonical JSON is synthetic; official layout/unsupported sections cannot be called supported without an authorized fixture | 6 must inventory actual coverage and validate a needed adapter only with a permitted sample; otherwise record the concrete pending sample, preserve supported demo path |
+| Exact comparison, duplicate detection, fuzzy suggestions and human decisions | IMPLEMENTED: persisted explanations/totals, bounded matching and versioned review; fuzzy suggestions are not auto-accepted | 4 complete; browser use 8–9 |
+| New snapshot/source supersession | PARTIAL: immutable sources/run freshness exist; tracked change detection and issue follow-through missing | 6; website 9 |
+| Supplier missing/wrong-invoice investigation | PARTIAL: discrepancy/tax amount exists; automatically generated linked action and correction/follow-up history missing | 6; website 9 |
+| Work queue/action history for unresolved issues | PLANNED: no business-action queue or due-review endpoint currently | 6; screens 8, connected 9 |
+| Supplier reminder draft and contact-attempt history | PLANNED: generic evidence note is not a supplier reminder workflow | 6; website 9 |
+| MSME/payment facts and reviewed payment proposal | IMPLEMENTED foundation: recorded facts and non-executing reviewed CSV; due tasks/reminders and operational payment-review tracking missing | 5 complete for foundation; 6 for remaining workflow |
+| Reversal/reclaim evidence case | IMPLEMENTED foundation: original claim/reversal and supplier observations; automatic change-triggered review tasks and separately recorded actual reclaim outcome missing | 5 complete for foundation; 6 for remaining workflow |
+| Reclaim review worksheet/preparation and filing-outcome tracking | PLANNED: document 07 requires a review worksheet, not a government-filed return; current generic case/report does not complete this handoff | 6: distinguish candidate, reviewed proposal, separately evidenced recorded filing and unresolved/rejected outcome |
+| IRN format/evidence review | IMPLEMENTED foundation: format-only case facts; linked correction/evidence tasks missing | 5 complete for foundation; 6 for action workflow |
+| Trusted signed IRN authenticity/current status | CONDITIONAL/STRETCH: no trusted verification adapter/keys/contract proof | 6 records unsupported status; actual verification deferred until the prerequisite is validated, never a false green badge |
+| Notice case and private evidence pack | IMPLEMENTED foundation: persisted facts/evidence/PDF; readiness checklist, recorded response-date reminders and response/submission follow-through missing | 5 complete for foundation; 6 for remaining workflow |
+| Automatic local due-review reminders and evidence-change alerts | PLANNED: no running local business-reminder engine currently | 6: durable deduplicated tasks while backend runs, overdue catch-up after restart; visible in website 9 |
+| Private reports and generic proposal/error exports | IMPLEMENTED: bounded PDF/CSV snapshots and private downloads; business-action/worksheet coverage pending | 5 complete; extend for 6, browser 9 |
+| Supplied website screens and real operations | WAITING_INPUT/PLANNED: actual website not yet received; backend operations are not a shipped portal | 8 inspect/finish, 9 connect; 10 security, 12 measured usability |
+| Whole-backend security/failure and measured performance review | PLANNED: safeguards exist in completed features; dedicated whole-backend gates have not run | 7 security/failure, 11 performance |
+| WhatsApp linking, commands, imports, status, private report access and unlink | CONDITIONAL/PLANNED: no physical-phone/backend integration yet | 13: account/assets, permitted reachable callback and budget proof, real-phone gate |
+| Owner/reviewer reminders and supplier follow-up through WhatsApp | CONDITIONAL/PLANNED: local alerts/drafts do not mean messages sent | 13: explicit enablement, linked/consented verified recipient, window/template/account entitlement and bounded outbox; pending if setup is unavailable |
+| Government filing/IMS write actions, bank execution/escrow | EXCLUDED from corrected hackathon scope; an observation/proposal/export is not execution | No implementation phase; explicit unsupported state throughout 6/9/13/14 |
+| Guaranteed recovery, guaranteed eligibility/compliance or notice dismissal | EXCLUDED claims; an outcome controlled by external facts/review cannot be guaranteed by adding a task | No implementation phase; actual recorded outcomes may be tracked in 6 |
+| AI explanation/OCR, direct ERP sync, subscriptions and extra official tables | OPTIONAL/DEFERRED in existing pack; no dependency for the six-problem local workflow | Keep disabled/deferred unless scope and evidence are explicitly changed; do not call them completed |
+| Combined six-problem demonstration and failure/restart proof | PLANNED: backend milestones are not overall product completion | 14; must expose conditional/unsupported integration status honestly |
+
+No core Phase 6 automation may be dropped under the older general instruction to remove optional automation when time is tight. That instruction applies to the optional/deferred integrations above. This ledger, the Phase 6 acceptance matrix and implemented contract status govern the current build; the three foundation documents remain historical references.
 
 ### Phase 1 — local runtime and HTTP foundation (complete)
 
@@ -98,7 +132,7 @@ Review gate:
 2. Check byte limits including streamed uploads, oversized expansion, excessive rows/cells, unusual encodings and spreadsheet formulas.
 3. Prove that a retry does not create duplicate confirmed data and an interrupted operation does not announce success.
 4. Compare preview/confirmation counts with persisted rows, including errors and unknown tax components.
-5. Measure parsing time and memory for the demo and maximum supported input sizes; record the initial baseline for Phase 10.
+5. Measure parsing time and memory for the demo and maximum supported input sizes; record the initial baseline for Phase 11.
 
 ### Phase 4 — GST reconciliation and human review (complete and locally verified)
 
@@ -125,7 +159,7 @@ Review gate:
 
 ### Phase 5 — Backend reports, cases and evidence workflow (complete and locally verified)
 
-Owner: backend. Outcome: Finish the website-facing backend feature set for evidence, follow-up and downloadable reports.
+Owner: backend. Outcome: Provide the case/evidence, proposal and downloadable-report foundation. Operational follow-up and cross-snapshot business workflows belong to Phase 6.
 
 Deliverables:
 
@@ -144,9 +178,61 @@ Review gate:
 2. Test denied cross-scope downloads, stale/expired downloads, unavailable artifacts and safe user-controlled text.
 3. Exercise repeated generation, interrupted writes, cleanup and restart behavior.
 4. Open generated artifacts and check layout/readability as well as content; empty or corrupted output must not pass.
-5. Confirm the required backend feature checklist is complete before focused backend security review begins.
+5. Confirm the case/report/proposal foundation is complete; do not count manual case capture as completion of the original business workflows. Complete Phase 6 before the focused backend security review.
 
-### Phase 6 — Backend security and failure review (not started)
+### Phase 6 — Business workflow completion for the six original problems (not started)
+
+Owner: backend, with contract and future screen alignment. Outcome: Turn the existing import/reconciliation/case/report foundation into actionable tracking for every original business problem. This phase is next; it is planned work, not functionality already delivered by Phase 5.
+
+The roadmap was corrected on 2026-10-03 because its previous later phases covered security, screens, integration and performance without explicitly assigning the missing operational workflows. Phases 1–5 retain their completed status and verification evidence. The former Phases 6–13 become 7–14. Adding this phase does not authorize starting another phase before its predecessor's review gate passes.
+
+#### Required problem-to-workflow coverage
+
+| Original problem | Existing foundation | Required Phase 6 behavior | Evidence of completion |
+|---|---|---|---|
+| 1. Missing or wrongly reported supplier invoice | Missing/mismatch results, manual review, source provenance | Automatically create a deduplicated investigation action from a committed qualifying result; record correction requests, responsible reviewer and next review date; compare later confirmed snapshots and propose follow-up when evidence changes | A synthetic invoice with INR 20,000 recorded tax is missing, receives a supplier follow-up draft, then appears in a later snapshot; the system proposes review without declaring the credit claimed or legally eligible |
+| 2. MSME/payment timing risk | MSME review case, payment facts, non-executing proposal | Track classification, acceptance/terms evidence, paid/unpaid amounts and explicitly recorded review dates; surface due/overdue review tasks and missing facts | Partial payment updates remaining recorded balance and the pending task; unknown acceptance/classification stays unknown; no universal 45-day deadline, fixed penalty or guaranteed compliant tax hold is invented |
+| 3. Forgotten reversal/reclaim review | Separate Rule 37 and Rule 37A cases and observations | Record original claim, reversal amount/reason/period and later observations; automatically create a deduplicated review task when supported facts change; record reviewer outcome and separately evidenced actual filing | A previously reversed amount with later supplier-filing evidence becomes a reclaim-review candidate; first-time missing credit is not mislabeled a reclaim, repeated observations do not produce repeated alerts |
+| 4. E-invoice/IRN problems | IRN review case, format-only evidence | Route missing, malformed or unverified IRN evidence to a correction/review task with provenance and applicability uncertainty; request supporting evidence | A fabricated 64-character hexadecimal IRN remains unverified; a missing IRN creates a review action rather than a blanket declaration that the invoice is fake |
+| 5. Notice/evidence readiness | Notice case and evidence PDF | Track notice reference, recorded response date, evidence checklist and reviewer action; create due-review reminders and an evidence-backed response preparation pack | Missing supporting facts remain visible; approaching recorded response date raises a task; a downloaded PDF does not mark the notice submitted, accepted or resolved |
+| 6. Manual reconciliation and untracked supplier chasing | Bounded matching and human review | Provide a consolidated work queue, supplier reminder drafts, follow-up history, next-action dates and deduplication shared with the other five workflows | Reviewer can see outstanding actions and previous attempts without redoing matching; later evidence updates the same tracked issue without losing its history |
+
+The original report's legal claims remain subject to document 07 and the foundation review. The INR 20,000 fixture is a recorded GST amount awaiting review, not an automatically recoverable amount or an income-tax calculation. No government polling, filing, bank execution or escrow integration is a prerequisite for this bounded local phase.
+
+#### Deliverables and implementation order inside this phase
+
+1. Read 01, 03, 07 and 08, inspect the real Phase 1–5 services, and map each required workflow to existing resources before changing code. Define independent scenario expectations before implementation.
+2. Define an explicit business-action contract: affected invoice/result/case, reason, source versions, evidence provenance, owner/reviewer, next review time and reviewed outcome. Keep lifecycle separate from legal eligibility and actual filing/payment facts. Align exact fields/enums/errors in 08 before using them in routes or future screens.
+3. Implement a bounded, paginated work queue and auditable action transitions. Automatically derive eligible tasks after a successful run, a reviewed case/evidence change and a due-time check; failed or stale processing must not publish a false alert. Reuse live membership/role checks, expected versions, atomic transactions and existing retry/idempotency rules. A stale run or changed case must require renewed review. Record a resolution reason; allow explicit reopen when new evidence contradicts it.
+4. Implement cross-snapshot comparison with explicitly selected compatible registration/period/document context. Preserve earlier snapshots and decisions. Newly appearing, disappearing or changed rows are evidence changes, not automatic proof of supplier compliance. Reject ambiguous identity, duplicate rows and unsupported comparisons rather than automatically closing an issue.
+5. Implement supplier follow-up drafts using recorded invoice facts and deliberately provided contacts. Keep drafts, operator-recorded attempts and eventual verified delivery statuses distinct. Never infer a contact from unrelated data or fabricate a successful send. Outbound WhatsApp sending belongs to Phase 13 with its recipient/consent checks.
+6. Implement separate reversal/reclaim review tracking and MSME/payment review actions. Represent absent claim/reversal/payment/filing evidence as unknown. Use uploaded or explicitly recorded observations with source labels. A new 2B match alone cannot prove Rule 37A reclaim readiness. Rule 37 buyer payment facts and Rule 37A supplier filing facts must not overwrite one another.
+7. Implement IRN evidence tasks and notice readiness/actions. Keep format checking distinct from trusted authenticity verification. Use an explicitly recorded, reviewed notice response date; do not impose a universal response period from the pitch. Keep drafted response, recorded submission and recorded resolution separate.
+8. Implement automatic due-review checks while the local backend is running, plus bounded overdue catch-up on startup and fresh authenticated due queries. Use persisted dates, bounded batches and stable deduplication, and document the check interval and testable behavior. No reminder can run while the PC/backend is off. Startup must surface overdue actions without replaying outbound sends. Do not add a cloud scheduler, Redis or an external database.
+9. Update reports and summaries to show outstanding actions, dated observations and uncertainty. Include the existing planned reversal/reclaim review worksheet and notice response preparation handoff. Separate a review candidate, a reviewed proposed amount, an operator-recorded actual filing/submission with dated evidence, and its observed outcome; never mark a worksheet download as a filed return. Completed tasks must retain history; stale historical reports must not appear to represent the latest action state.
+10. Extend SQLite only with a validated additive upgrade, backup/restore proof and documented finite retention/quota behavior. Add environment settings only when implemented and update the example with validation/defaults. Use normal responsibility-named files and direct edits, following the established phase style.
+
+Any computed statutory deadline or legal recommendation needs a verified, dated policy, sufficient case facts and explicit evidence labeling. Without that policy, expose a user-recorded review date and missing-information action; do not silently ship a guessed statutory engine. Trusted IRN authentication remains unavailable until its verification contract and evidence are established.
+
+#### Tax filing and recovery scope clarification
+
+The user asked to include automatic tax filing or guaranteed recovery in this phase if they are part of the existing plan. Checked against the corrected pack: 07 says the hackathon produces a review worksheet rather than a filed return and labels IMS/government writes simulated/read-only; the foundation review explicitly removes autonomous filing and guaranteed legal/recovery outcomes from the initial demo. Therefore neither is an omitted implementation task. The original pitch's autonomy/guarantee language does not override those corrected boundaries.
+
+Include the supported filing workflow instead: retain original claim and reversal facts, automatically surface evidence-backed review candidates, prepare the review worksheet/evidence handoff, record an explicit reviewer decision, and separately capture actual filing/reclaim observations supplied by an authorized user. Track observed amounts/outcomes without calling proposed amounts recovered. Government submission stays unsupported; no portal credential collection or login automation is added. This implements the existing preparation/tracking plan without inventing a filing provider integration.
+
+#### Review gate
+
+1. Run all six independently prepared scenarios above through real backend APIs, not direct test database edits. Each must identify the affected record, persist the next action, accept new evidence and show an explained review outcome/report.
+2. Include missing and contradictory facts, different periods, reused invoice numbers, duplicate/new snapshots, partial payment, original credit never claimed, reversal without amount, repeated filing observations, unverified IRN and missing notice documents. Unknown inputs must not become eligibility, compliance or successful filing.
+3. Prove exact recorded amounts agree across result, case, work queue and report without double counting exposure or implying money saved. A proposal or reminder draft never modifies actual payment/return status.
+4. Exercise two scopes, VIEWER denial, revoked membership, forged resource IDs, CSRF, concurrent/stale transitions and repeated commands. User text in drafts/reports remains safely rendered/exported.
+5. Prove actual process restart and backup/restore preserve tasks, review dates, observations and audit history. Repeated startup/time checks must not duplicate tasks or claim external delivery.
+6. Run affected Phase 1–5 regressions and full phase-completion checks once changes are final. Record actual dependency/lint/syntax/test results and bounds. Compare the completed operations against all six problems before marking Phase 6 complete.
+7. Produce a screen-to-operation handoff for Phases 8–9 and a channel handoff for Phase 13. All planned routes become implemented authority only after code and tests exist; current OpenAPI remains the source of existing endpoints.
+
+A generic case form or PDF alone does not pass this phase. Passing it demonstrates local evidence and action tracking for the six problems; it does not establish legal entitlement, guarantee recovered tax or complete the website/phone interfaces.
+
+### Phase 7 — Backend security and failure review (not started)
 
 Owner: backend. Outcome: Review the working backend as a whole for access loopholes, malformed inputs and recovery failures.
 
@@ -169,7 +255,7 @@ Review gate:
 4. Rerun affected correctness/import/report regressions after security fixes.
 5. Record findings, fixes and remaining restrictions; passing this phase is evidence for the implemented backend scope.
 
-### Phase 7 — Frontend inspection, cleanup and complete screens (not started)
+### Phase 8 — Frontend inspection, cleanup and complete screens (not started)
 
 Owner: frontend. Outcome: Turn the user's supplied website into a coherent interface ready for real backend connection.
 
@@ -177,7 +263,7 @@ Deliverables:
 
 - Requires the supplied website. Inspect its actual framework, package manager, lockfile, build scripts, routes, assets and current mock data before choosing any frontend dependency.
 - Preserve the supplied visual design and record missing screens, dead buttons, broken routes and inconsistent field names.
-- Complete the required screens: private access/context selection, imports, mapping/confirmation, job progress, results, review, cases and reports.
+- Complete the required screens: private access/context selection, imports, mapping/confirmation, job progress, results, review, cases, business work queue, supplier draft/history, due-review actions and reports. Expose every Phase 6 problem workflow with honest evidence/unknown labels.
 - Make empty, loading, error, expired-session and unavailable-feature states explicit. Label any temporary sample/mock state clearly during this phase.
 - Use consistent navigation, spacing, typography, tables, forms, feedback and mobile/desktop layouts.
 - Add basic keyboard support, visible focus, usable labels and readable financial text; confirmations must distinguish a run, a review, a report and a reset.
@@ -192,7 +278,7 @@ Review gate:
 4. Check that money/context/status labels align with backend meanings and unavailable actions cannot appear successful.
 5. Record the inspected stack and frontend environment example without publishing backend secrets.
 
-### Phase 8 — Frontend and backend connection (not started)
+### Phase 9 — Frontend and backend connection (not started)
 
 Owner: both. Outcome: Make each website action use the real local backend and display the same persisted truth.
 
@@ -200,7 +286,7 @@ Deliverables:
 
 - Implement one API client using the actual frontend framework and the access contract settled in Phase 2.
 - Align fields, routes, enums, exact monetary strings, date/period formats, pagination and error shapes with document 08 and the implemented backend.
-- Replace mock operations incrementally with real private access, upload, preview/confirmation, run, progress, review, cases, reports and downloads.
+- Replace mock operations incrementally with real private access, upload, preview/confirmation, run, progress, review, cases, business actions, supplier drafts/history, due-review tasks, reports and downloads.
 - Keep state scoped to the active identity/workspace/registration/period; clear private state when logging out or switching scope.
 - Handle expired access, version conflicts, invalid input, unavailable backend and interrupted requests with actionable recovery.
 - Prevent duplicate mutations from double clicks/retries using the backend's operation rules. Do not treat an uncertain request as proof it failed.
@@ -209,13 +295,13 @@ Deliverables:
 
 Review gate:
 
-1. Complete a real sign-in-to-import-to-review-to-report journey without replacing replies with samples.
+1. Complete a real sign-in-to-import-to-review-to-report journey and each of the six Phase 6 business scenarios through the website without replacing replies with samples.
 2. Compare displayed counts, money and report figures with the same backend run after a review change.
 3. Exercise browser refresh, backend restart, logout, context switching and a delayed reply from an old context.
 4. Check double submissions, failed requests, expired sessions, stale reviews and recovery without duplicate work.
 5. Verify the website build and generated/shared types agree with the backend contract.
 
-### Phase 9 — Frontend security and privacy review (not started)
+### Phase 10 — Frontend security and privacy review (not started)
 
 Owner: frontend. Outcome: Review the actual browser application and its connection for data exposure and unsafe user-controlled content.
 
@@ -238,7 +324,7 @@ Review gate:
 4. Exercise cross-site request attempts appropriate to the selected session mechanism and verify backend rejection.
 5. Confirm security changes preserve real uploads, reviews, navigation and authorized downloads.
 
-### Phase 10 — Backend performance and resource efficiency (not started)
+### Phase 11 — Backend performance and resource efficiency (not started)
 
 Owner: backend. Outcome: Measure and improve the real local workload while preserving exact results and bounded resource use.
 
@@ -261,7 +347,7 @@ Review gate:
 4. Exercise the largest supported dataset without uncontrolled memory, disk usage or silently dropped work.
 5. State remaining bottlenecks and agreed operating limits; no unmeasured promise of zero lag or an arbitrary completion time.
 
-### Phase 11 — Frontend smoothness, speed and usability (not started)
+### Phase 12 — Frontend smoothness, speed and usability (not started)
 
 Owner: frontend. Outcome: Make the connected website responsive and predictable during the real demo flow.
 
@@ -284,7 +370,7 @@ Review gate:
 4. Verify scrolling and interactions remain usable on the chosen hardware; set explicit budgets after the baseline instead of promising universal zero lag.
 5. Rerun affected frontend security, state-isolation and contract checks after performance changes.
 
-### Phase 12 — WhatsApp connection and channel review (not started)
+### Phase 13 — WhatsApp connection and channel review (not started)
 
 Owner: both. Outcome: Make the planned phone interface operate on the same authorized local backend data.
 
@@ -295,7 +381,8 @@ Deliverables:
 - Implement GET callback verification and bounded raw-byte signature checking before processing POST events.
 - Validate configured account/phone identifiers, deduplicate repeated events and distinguish inbound commands from delivery statuses.
 - Implement expiring linking codes, context selection, unlink/revocation and the same live ownership checks used by the website.
-- Reuse the website's import/run/status/report services rather than building a second calculation or storage path.
+- Reuse the website's import/run/status/report and business-action services rather than building a second calculation or storage path. Add consented supplier follow-up sending with recorded drafts, recipient checks, delivery/uncertain status and shared audit history; do not treat a provider acknowledgement as invoice correction.
+- Connect the existing planned owner/reviewer due-review alerts and supplier follow-up drafts to a bounded outbox only when explicitly enabled for a linked/consented verified recipient and permitted message window/template. Persist queued/attempted/acknowledged/delivered/failed/uncertain states; channel outage keeps local tasks available. Scheduled outreach remains conditional on actual entitlement and budget proof.
 - Bound media retrieval and outbound calls, enforce the reviewed send budget and handle uncertain transmission without blind resend.
 - Keep the local website working if the channel is unavailable; display the limitation truthfully. An emulator is development evidence, not completed physical-phone integration.
 
@@ -304,17 +391,17 @@ Review gate:
 1. Use a real phone to link, query status, upload supported sources, run, request a report and unlink.
 2. Compare phone and website run IDs, context and results after actions on either side.
 3. Prove wrong signatures/account IDs, repeated callbacks, expired link codes and revoked report access have no unauthorized effects.
-4. Test invalid media, timeouts, provider failures and restart/dedup behavior without duplicate mutations or automatic spending.
+4. Test invalid media, timeouts, provider failures, due-alert/supplier-draft recipient isolation and restart/dedup behavior without duplicate mutations or automatic spending. Prove physical-phone alert delivery for any enabled automation; an outbox row is not delivery proof.
 5. If callback/account setup remains unavailable, keep this phase pending with the concrete blocker; do not mark it complete based on a mock phone flow.
 
-### Phase 13 — Whole-application regression and hackathon rehearsal (not started)
+### Phase 14 — Whole-application regression and hackathon rehearsal (not started)
 
 Owner: both. Outcome: Verify the finished website, backend and planned phone channel together with honest completion evidence.
 
 Deliverables:
 
 - Reinstall/build from the committed frontend/backend locks on the demo PC and document the local launch/stop procedure.
-- Rehearse from fresh private access and an empty synthetic workspace through upload, confirmation, run, review, cases and report.
+- Rehearse from fresh private access and an empty synthetic workspace through upload, confirmation, run, review, business actions, cases and report. Demonstrate all six original problem scenarios from Phase 6 through the connected website; a matching table alone is insufficient.
 - Repeat with retained data after an actual backend restart, checking that files, totals and scope remain correct.
 - Check combined browser/backend behavior under maximum supported inputs, duplicate actions and delayed/failed replies.
 - Rerun focused security regressions on the final build, including private access, unsafe source text, denied downloads and callback checks.
@@ -325,16 +412,16 @@ Deliverables:
 Review gate:
 
 1. An unaided presenter can launch and complete the demonstrated flow without editing stored data or swapping mock replies into live screens.
-2. Website/backend counts, monetary values, report contents and enabled phone replies agree.
+2. Website/backend counts, monetary values, action/reminder history, report contents and enabled phone replies agree. Show the six problem outcomes, including unresolved evidence and review limitations, rather than claiming automatic tax recovery.
 3. Relevant restart, expiry, error-recovery, security and performance scenarios pass on the final build.
 4. Any missing physical-phone capability remains explicitly pending; fallback materials do not replace acceptance evidence.
 5. Only mark the requested overall scope complete when required phases and their gates are actually complete.
 
 ## Frontend handoff and measurable performance
 
-Phases 7–9 and 11 require the actual supplied website. Inspect its real manifest/build before proposing frontend dependencies or replacing components. Frontend completion means both a coherent interface and the verified real backend journey; screen appearance alone is insufficient.
+Phases 8–10 and 12 require the actual supplied website. Inspect its real manifest/build before proposing frontend dependencies or replacing components. Frontend completion means both a coherent interface and the verified real backend journey; screen appearance alone is insufficient.
 
-Phase 10 measures the backend's contribution to delays; Phase 11 measures browser rendering/interactions and repeated requests. Use the same dataset/context and demo hardware when comparing changes. Define a concrete budget after the baseline and record actual results; a promise of zero lag on every PC is not an acceptance criterion.
+Phase 11 measures the backend's contribution to delays; Phase 12 measures browser rendering/interactions and repeated requests. Use the same dataset/context and demo hardware when comparing changes. Define a concrete budget after the baseline and record actual results; a promise of zero lag on every PC is not an acceptance criterion.
 
 Useful primary references for the applicable implementation reviews: [OWASP safe browser rendering](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html), [OWASP request-forgery prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html), and [Chrome runtime performance tooling](https://developer.chrome.com/docs/devtools/performance). Apply guidance to the actual framework/session mechanism rather than guessing one now.
 
@@ -344,14 +431,15 @@ Useful primary references for the applicable implementation reviews: [OWASP safe
 |---|---|
 | 1 | Already recorded: 78 local tests, frozen installation, lint/format and syntax |
 | 2–5 | Working backend features with persisted truth and independent correctness fixtures |
-| 6 | Backend security/failure findings fixed and relevant regressions passing |
-| 7 | Supplied website built, missing screens/actions mapped and interface reviewed |
-| 8 | Real local website/backend journey and aligned data/status/errors |
-| 9 | Browser data-exposure and request-security checks on the actual connected website |
-| 10 | Measured backend improvements with correctness/security regression proof |
-| 11 | Measured browser smoothness with preserved state/data correctness |
-| 12 | Actual physical-phone proof, or explicitly pending callback/account dependency |
-| 13 | Final combined rehearsal, installation/restart/recovery and honest scope record |
+| 6 | All six problem scenarios reach a recorded next action and evidence-backed review outcome |
+| 7 | Backend security/failure findings fixed and relevant regressions passing |
+| 8 | Supplied website built, missing screens/actions mapped and interface reviewed |
+| 9 | Real local website/backend journey and aligned data/status/errors |
+| 10 | Browser data-exposure and request-security checks on the actual connected website |
+| 11 | Measured backend improvements with correctness/security regression proof |
+| 12 | Measured browser smoothness with preserved state/data correctness |
+| 13 | Actual physical-phone proof, or explicitly pending callback/account dependency |
+| 14 | Final combined rehearsal, installation/restart/recovery and honest scope record |
 
 An unstarted phase has no new passed checks merely because its plan exists. Update status and evidence in the canonical plan as each implementation increment is completed; retain the Phase 1 history.
 
@@ -416,7 +504,7 @@ Measured local Windows baseline (Python 3.13.16, complete upload-to-persisted-pr
 | CSV | 2,000 | 221,935 | 0.877 | 48,648,192 |
 | XLSX | 2,000 | 101,303 | 2.697 | 51,294,208 |
 
-Inputs contain distinct synthetic vouchers/invoices and exact component amounts. Health requests are made during the parse and remain available. RSS samples cover the Windows launcher and actual parser; a sampled peak can miss between-sample spikes. Phase 10 will measure broader contention and whole-backend behavior. The full Phase 1–3 regression, frozen dependency, lint/format, syntax and Git checks are recorded after their final run.
+Inputs contain distinct synthetic vouchers/invoices and exact component amounts. Health requests are made during the parse and remain available. RSS samples cover the Windows launcher and actual parser; a sampled peak can miss between-sample spikes. Phase 11 will measure broader contention and whole-backend behavior. The full Phase 1–3 regression, frozen dependency, lint/format, syntax and Git checks are recorded after their final run.
 
 Final boundary review also rejects all duplicate purchase copies when one copy has an unrelated validation error. Parser task descriptors use generated private bounded files rather than a blocking stdin pipe, so interpreter startup remains inside the monitored timeout. Both descriptor and result files are cleaned up. Queued-job restart, simultaneous identical command reservations and shipped example parsing are covered by the final tests.
 
@@ -508,5 +596,5 @@ artifact history; cleanup is logical deletion and old backups retain bytes; PDF 
 is limited to the bundled font and unsupported scripts/emoji fail visibly; PDFs may show a
 bounded selection with full totals and fail rather than truncate when a snapshot/page cap is
 exceeded. One reviewer can approve a non-executing draft; production maker/checker, bank/provider
-integrations and legal decision engines are outside this phase. Phase 6 is next and remains
-not started. Passing tests does not establish zero defects or production security certification.
+integrations and legal decision engines are outside this phase. The added Phase 6 is next and remains
+not started; Phase 7 is the subsequent focused backend review. Passing tests does not establish zero defects or production security certification.

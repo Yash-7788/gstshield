@@ -1,12 +1,12 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
 ## Active channel implementation phases
 
-Follow the expanded [13-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 7 inspects/finishes the supplied website, Phase 8 connects real backend operations, Phase 9 reviews browser security, Phase 11 measures smoothness, Phase 12 proves WhatsApp and Phase 13 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 6/10. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. Phase 2 selects local accounts, HTTP-only browser cookies and CSRF-protected mutations. No hosted auth SDK is needed.
+Follow the expanded [14-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 8 inspects/finishes the supplied website, Phase 9 connects real backend operations, Phase 10 reviews browser security, Phase 12 measures smoothness, Phase 13 proves WhatsApp and Phase 14 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 7/11. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. Phase 2 selects local accounts, HTTP-only browser cookies and CSRF-protected mutations. No hosted auth SDK is needed.
 
 ## Preserve and connect the supplied website
 
@@ -39,7 +39,7 @@ Implemented backend operations are login, session recovery, logout, workspace li
 
 On initial load, recover the session once. If authenticated, load workspaces and only then registrations for the selected permitted workspace. A 404 on a scope picker should remove the stale selection and refetch allowed context. A 429/503 follows Retry-After without an unbounded retry loop. Failed sign-in does not expose which usernames exist.
 
-Local administrator commands run with the backend stopped. They create accounts/workspaces, add registrations, set/revoke membership and reset passwords. Do not invent public signup or membership editing screens in Phase 7 from this operator mechanism.
+Local administrator commands run with the backend stopped. They create accounts/workspaces, add registrations, set/revoke membership and reset passwords. Do not invent public signup or membership editing screens in Phase 8 from this operator mechanism.
 
 ## Website state model
 
@@ -251,4 +251,14 @@ For a proposal, send expected_run_version, expected_result_versions, matching ba
 
 POST /artifacts returns 202 and job_id. Poll the existing scoped jobs endpoint or artifact detail until READY/FAILED/EXPIRED. Download only through the authenticated artifact URL; no public blob/static path exists. For historical PDFs/error CSV, require a visible explicit choice using historical=true; stale proposal CSV is always denied. Content-Disposition and X-GSTShield-Historical are exposed through exact-origin CORS. Downloads are no-store attachments.
 
-Phase 5 workflow timestamp fields are UTC Unix seconds (created_at, updated_at, expires_at), whereas earlier typed run/import timestamp responses use ISO strings. Normalize deliberately in the eventual website adapter. Monetary inputs/outputs are decimal strings, never JS floating-point authority. All endpoint schemas are in the local OpenAPI document. WhatsApp capabilities, callbacks, messages and linking remain deferred to Phase 12.
+Phase 5 workflow timestamp fields are UTC Unix seconds (created_at, updated_at, expires_at), whereas earlier typed run/import timestamp responses use ISO strings. Normalize deliberately in the eventual website adapter. Monetary inputs/outputs are decimal strings, never JS floating-point authority. All endpoint schemas are in the local OpenAPI document. WhatsApp capabilities, callbacks, messages and linking remain deferred to Phase 13.
+
+
+## Business action screen and channel handoff
+
+Phase 6 first implements the local six-problem workflows. Phase 8 must provide a work queue and invoice/case details showing reason, missing evidence, next review date, supplier draft/history and reviewed outcome; Phase 9 connects them to actual APIs. Distinguish newly observed invoice presence, suggested reclaim review, actual recorded filing and closed business action. Never show a draft or PDF download as successful tax recovery or notice submission.
+
+Phase 13 connects WhatsApp to these existing actions. A supplier draft requires deliberately provided recipient details and consent/verified-recipient checks before a real send. Keep prepared, attempted, provider-acknowledged, delivered, failed and uncertain states truthful; retries must not blindly duplicate an uncertain send. No working supplier-send UI is implied before that integration passes its real-phone gate. Phase 14 rehearses the six problem scenarios through the real website and enabled channel.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.

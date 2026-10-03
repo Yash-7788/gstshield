@@ -4,7 +4,7 @@
 
 Decision: 2026-10-03. Run the hackathon website backend on the local PC. No Render, cloud server, external database, cloud storage, Redis or hosted identity setup. A local backend process is still required for the website to call Python functionality.
 
-Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Phase 4 reconciliation, saved results and human review are complete and locally verified. Phase 5 cases, proposals and private reports are complete and locally verified. Phone routes remain Phase 12.
+Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Phase 4 reconciliation, saved results and human review are complete and locally verified. Phase 5 cases, proposals and private reports are complete and locally verified. Phone routes remain Phase 13.
 
 The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) defines the local architecture; the eight MDs now use this decision throughout. Work proceeds one phase at a time, with a review gate before the next phase.
 
@@ -97,21 +97,22 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 
 | Phase | Work | Status |
 |---|---|---|
-| 1 | Local runtime, configuration and HTTP foundation | Complete |
-| 2 | Local SQLite/private files and private access | Complete |
-| 3 | Bounded imports, checking and confirmation | Complete |
-| 4 | Reconciliation and versioned human review | Not started |
-| 5 | Backend reports, cases and evidence workflow | Not started |
-| 6 | Backend security and failure review | Not started |
-| 7 | Supplied frontend inspection, cleanup and screens | Not started |
-| 8 | Real frontend/backend connection | Not started |
-| 9 | Frontend security and privacy review | Not started |
-| 10 | Backend performance and resource efficiency | Not started |
-| 11 | Frontend smoothness, speed and usability | Not started |
-| 12 | WhatsApp connection and channel review | Not started |
-| 13 | Whole-application regression and rehearsal | Not started |
+| 1 | Local runtime and HTTP foundation | Complete |
+| 2 | Local storage and private access | Complete |
+| 3 | File imports, checking and confirmation | Complete and locally verified |
+| 4 | GST reconciliation and human review | Complete and locally verified |
+| 5 | Backend reports, cases and evidence workflow | Complete |
+| 6 | Business workflows for all six original problems | Not started |
+| 7 | Backend security and failure review | Not started |
+| 8 | Frontend inspection, cleanup and complete screens | Not started |
+| 9 | Frontend and backend connection | Not started |
+| 10 | Frontend security and privacy review | Not started |
+| 11 | Backend performance and resource efficiency | Not started |
+| 12 | Frontend smoothness, speed and usability | Not started |
+| 13 | WhatsApp connection and channel review | Not started |
+| 14 | Whole-application regression and hackathon rehearsal | Not started |
 
-The expanded plan has 13 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 6 and 10 provide focused backend security/failure and measured performance reviews. Frontend phases give the supplied website equal attention. The dependency order does not reduce attention to later work.
+The expanded plan has 14 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 7 and 11 provide focused backend security/failure and measured performance reviews. Frontend phases give the supplied website equal attention. The dependency order does not reduce attention to later work.
 
 Real WhatsApp needs Meta's API and an internet-reachable HTTPS callback. A purely offline/loopback backend cannot receive real phone callbacks. No tunnel or hosted service is provisioned. This decision belongs to the later integration phase.
 
@@ -171,7 +172,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phases 6–13 remain pending, including focused security review, frontend integration and WhatsApp.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phases 6–14 remain pending, including focused security review, frontend integration and WhatsApp.
 
 ## Create local accounts and context
 
@@ -315,7 +316,7 @@ scripts/emoji) fail visibly; CSV stays UTF-8. Font source/hash/license are in ap
 An existing schema 1/2/3 store requires the explicit offline `python -m app.manage storage-upgrade`;
 it validates and preserves the old schema before adding only missing tables. Fresh storage
 creates schema 4. Stop the backend before maintenance; never remove an old DB to bypass this
-check. Phase 6 will review the backend as a whole.
+check. Phase 7 will review the backend as a whole.
 
 
 Phase 5 verification: full local Windows Phases 1–5 suite **234 passed, 1 skipped** in
@@ -325,3 +326,8 @@ and visually inspected. The 200-row PDF is 41 pages and 68,286 bytes, labeling s
 Frozen sync, Ruff, compilation and diff checks passed; remote CI remains separate. Actual HTTP
 restart and backup/restore preserve report bytes, cases and proposals with restored access revoked.
 The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, coverage and limitations.
+
+
+## Business workflow roadmap correction
+
+Phase 6 is now the next implementation phase: complete the six original problem workflows with business actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, payment-risk reminders and notice/IRN evidence tasks. Existing manual cases/reports are their foundation, not complete operational coverage. The former phases 6–13 are now 7–14; completed Phases 1–5 are unchanged. Frontend screens/connection are Phases 8–9, real WhatsApp is Phase 13 and six-scenario whole-application acceptance is Phase 14. This is a planning correction only; no Phase 6 endpoints or code are implemented by this update.

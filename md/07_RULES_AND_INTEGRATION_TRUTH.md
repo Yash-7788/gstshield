@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -228,3 +228,13 @@ REVIEW_READY means the selected facts and referenced observations are sufficient
 Rule 37 facts track original claim plus payment observations; Rule 37A facts separately track claim, reversal and supplier return observations. Dates/periods/amounts are validated but no statutory cutoff, interest, tax-year disallowance or return-filing calculation runs automatically. IRN observation is only NOT_PROVIDED, FORMAT_INVALID or FORMAT_ONLY; VERIFIED remains unavailable.
 
 A proposal records invoice gross, observed amount paid, remaining balance and proposed allocations at frozen versions. It may reserve an illustrative amount for internal review, but establishes no escrow, lawful withholding or bank-ready instruction. An exported CSV does not change payment facts. Source hash and report hash establish traceability relative to stored bytes, never government authenticity or legal success.
+
+
+## Business workflow completion does not imply legal automation
+
+Phase 6 implements tracked actions for the original six problems under these evidence boundaries. It proposes review from recorded claim/reversal/payment facts and uploaded or explicitly recorded observations. An invoice newly present in 2B does not alone establish all credit conditions or a Rule 37A reclaim. Buyer non-payment and supplier non-filing remain separate evidence lifecycles. An IRN format check remains unverified; a notice PDF is a preparation artifact.
+
+Due-review reminders use explicitly recorded, reviewed dates until a verified dated statutory policy with adequate facts is implemented. Do not invent a universal 45-day rule, fixed tax penalty, mandatory seven-day notice response, legally safe split-payment escrow or guaranteed recovery. Keep a suggested action, reviewer decision, recorded submission and observed resolution distinct. Live government access/authenticity verification remains unavailable unless separately validated. The six-scenario gate in 05 tests useful local tracking, not legal certification.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.

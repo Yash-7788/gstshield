@@ -1,12 +1,12 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
 ## Active security phase ownership
 
-The [expanded plan](05_BUILD_AND_VERIFICATION_PLAN.md) gives backend security/failure review its own Phase 6 and frontend security/privacy its own Phase 9. Initial access, upload limits, SQL/file boundaries, safe rendering, private state and download authorization must be implemented in their feature phases first. Performance changes in Phases 10/11 repeat affected security checks; Phase 12 adds real callback/link protections and Phase 13 verifies combined regressions. Phase 2 enforces local identity and private storage now. Later feature-specific safeguards remain planned until their routes exist.
+The [expanded plan](05_BUILD_AND_VERIFICATION_PLAN.md) gives backend security/failure review its own Phase 7 and frontend security/privacy its own Phase 10. Initial access, upload limits, SQL/file boundaries, safe rendering, private state and download authorization must be implemented in their feature phases first. Performance changes in Phases 11/12 repeat affected security checks; Phase 13 adds real callback/link protections and Phase 14 verifies combined regressions. Phase 2 enforces local identity and private storage now. Later feature-specific safeguards remain planned until their routes exist.
 
 ## Threat model and scope
 
@@ -244,7 +244,7 @@ Schema v3 binds results/candidates/events to the same scoped run and source pair
 
 Imports and runs use one global disposable child and shared workspace queue admission. Pair/candidate/row/result-size/deadline and sampled process-tree RSS bounds fail explicitly. Private child descriptors/results are server generated and removed by the existing dispatcher. Interrupted jobs fail on restart; no automatic replay pretends they succeeded. Backup/restore retains run/review state while revoking restored access as in Phase 2.
 
-These are implemented-scope checks, not a claim of zero defects or a completed Phase 6/9 audit. The backend remains loopback-only and local files follow OS-account protection. No external storage, cloud worker, public upload URL, callback or frontend credential path was added.
+These are implemented-scope checks, not a claim of zero defects or a completed Phase 7/10 audit. The backend remains loopback-only and local files follow OS-account protection. No external storage, cloud worker, public upload URL, callback or frontend credential path was added.
 
 ## Phase 5 enforced report/evidence controls
 
@@ -252,4 +252,14 @@ Case/proposal/report mutations require live OWNER/REVIEWER membership, session, 
 
 Untrusted PDF text is HTML-escaped; no active hyperlink or remote resource is introduced by source markup. Bundled font hash/glyph checks prevent silent character loss. Each text flowable is bounded; normal invoice groups stay together. CSV neutralizes formula prefixes after whitespace/BOM and leading control characters in both headers and source values. Server-generated UUID filenames are the only Content-Disposition filenames.
 
-Downloads recheck state, expiry, source freshness, byte count and SHA-256. An explicit historical option allows old PDF/error snapshots with a response marker; it never permits stale payment-proposal CSV. Restart fails interrupted running report jobs, invalid leases cannot publish, and expired cleanup invalidates pending jobs. Artifacts, jobs and proposals contain no bank execution route or provider verification override. These are bounded local controls; Phase 6 remains the focused backend-wide security/failure review.
+Downloads recheck state, expiry, source freshness, byte count and SHA-256. An explicit historical option allows old PDF/error snapshots with a response marker; it never permits stale payment-proposal CSV. Restart fails interrupted running report jobs, invalid leases cannot publish, and expired cleanup invalidates pending jobs. Artifacts, jobs and proposals contain no bank execution route or provider verification override. These are bounded local controls; Phase 7 remains the focused backend-wide security/failure review.
+
+
+## Phase 6 business action safeguards
+
+Introduce authorization and failure protections with the business features, before the focused Phase 7 backend review. Action/task/draft/observation reads and writes need live workspace membership, appropriate role, source/case version checks, bounded inputs, atomic audit and safe retry behavior. Use deliberately supplied supplier contacts; limit invoice detail disclosure to an explicitly approved recipient. A follow-up draft is private and never initiates a provider request by itself.
+
+Bound due-review batches and retained history, deduplicate generated tasks, reject incompatible snapshots and preserve unknown evidence. Restart must not duplicate work or send messages. Reversal/reclaim tasks must not turn an observation into a filed return; action closure needs a recorded reason. Test cross-scope IDs, revoked access, stale writes, malicious text and interrupted processing in Phase 6; repeat applicable paths in Phase 7 and the later browser/channel reviews.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.

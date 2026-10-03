@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -300,3 +300,13 @@ Proposal creation requires a current completed run, expected run/result versions
 Reports freeze committed source facts in a capped JSON snapshot and hash it. Heavy generation happens outside DB transactions. Parent publication checks lease, expiry, source freshness, size, base64/hash and PDF envelope, then atomically commits BLOB/READY/job success and any proposal EXPORT event. A failure cannot expose a ready download. Identical active kind/snapshot requests reuse the artifact under the same serialized transaction; a failed artifact can be regenerated with a new request UUID. Idempotent retries replay the original receipt and current state is fetched separately.
 
 Default limits: cases 100/workspace, history 100 events/case, proposals 20/workspace, artifact history 40/workspace, workflow request history 1,000/workspace, 100 selected proposal results, 200 allocation entries, 20 observation references. Lists page at 20. Exceeding a cap fails explicitly; expired artifact content cleanup retains history and does not free the artifact-count cap.
+
+
+## Planned business workflow extension — Phase 6
+
+The current case/proposal/artifact schema is the foundation. Phase 6 owns the missing operational layer: bounded work queue/actions, snapshot-change observations, supplier draft/follow-up history, separate reversal/reclaim review tracking and recorded-date reminders. Link each record to its live workspace/registration, source versions and relevant result/case; keep reasons, evidence provenance, expected versions and audit history. Preserve original claim/reversal facts separately from later observations and reviewer outcomes. New evidence may propose review or require reopening; it cannot silently mark credit reclaimed, payment executed or notice resolved.
+
+Choose exact tables and transitions after inspecting existing services, then align document 08 and a backed-up additive SQLite upgrade before implementing routes. Do not describe conceptual task tables or timers as existing schema. Restart, retention, quota admission, two-scope access and backup/restore are part of the Phase 6 acceptance gate in 05. Website and WhatsApp must reuse this same service state.
+
+
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.
