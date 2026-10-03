@@ -1,18 +1,18 @@
 # GST-Shield — backend and data specification
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
 ## Architecture and dependency direction
 
 ```text
-Existing website ── JWT ──> FastAPI routes ──> application services
+Existing website ── session + CSRF ──> FastAPI routes ──> application services
 Meta webhook ── signature ──> durable inbox ──> linked-user command adapter
                                                │
                              same application services
                                                │
-                   PostgreSQL app schema + private file storage
+                   SQLite database + private PC file storage
                                                │
                          persisted jobs + single-process dispatcher
 ```
@@ -29,23 +29,22 @@ backend/
   app/contracts/              # Pydantic models and enums
   app/services/               # import, run, review, case, report
   app/domain/                 # canonical values, matching, policy facts
-  app/db/                     # models, session factory, repositories
+  app/storage/                # local SQLite, scoped statements, file boundary
   app/adapters/               # storage, Meta, portal format adapters
   app/jobs/                   # durable claim, dispatcher, recovery
-  app/security/               # JWT, HMAC, capabilities, limits
-  migrations/                # Alembic
+  app/security/               # local sessions, HMAC, capabilities, limits
   tests/fixtures/             # synthetic data and expected outputs
 frontend/                    # supplied website, preserve its framework
-docs/                        # this eight-document pack
+md/                          # this eight-document pack
 ```
 
-Start with one Uvicorn worker. Parsing/PDF creation use a bounded thread executor; impose input bounds before launching work. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during Storage or Meta requests.
+Start with one Uvicorn worker. Parsing/PDF creation use a bounded thread executor; impose input bounds before launching work. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during file-processing or Meta requests.
 
 ## Persistence conventions
 
-All application tables live in the unexposed `app` schema. UUID primary keys are generated server-side. Timestamps are timezone-aware UTC. Monetary values are `numeric(18,2)` INR, represented by Decimal in Python and strings in JSON. Scores are `numeric(5,2)`. Database integer `version` supports optimistic concurrency.
+Application tables live in the private SQLite file, with STRICT types and foreign keys enabled on every connection. UUIDs are generated server-side. Phase 2 timestamps are integer Unix seconds exposed as UTC RFC3339 Z strings. Future monetary columns use INTEGER paise, checked for bounds; Python uses Decimal and JSON uses fixed two-decimal strings. Never use SQLite REAL for money. Future scores use bounded scaled integers or validated decimal text. Integer version supports optimistic concurrency.
 
-Every tenant-owned row carries `workspace_id`; child references use composite `(workspace_id, id)` foreign keys where appropriate to prevent cross-workspace references. Index each unique pair referenced by those keys. Authentication identity is the verified Auth subject; membership comes from our database, not editable profile metadata.
+Every tenant-owned row carries `workspace_id`; child references use composite `(workspace_id, id)` foreign keys where appropriate to prevent cross-workspace references. Index each unique pair referenced by those keys. Authentication identity is the active local account resolved from an unexpired opaque session; membership comes from our database, not editable profile metadata.
 
 | Entity | Core fields / constraints |
 |---|---|
@@ -78,6 +77,20 @@ Every tenant-owned row carries `workspace_id`; child references use composite `(
 For an assigned portal record enforce a partial unique index on `(run_id, assigned_portal_id)` where assigned_portal_id is not null. This prevents two purchase records claiming the same portal row. Candidate suggestions are not assignments. Tenant-scoped referenced rows must be validated even for JSON payloads; JSON is not a foreign-key substitute.
 
 Do not add a global uniqueness constraint that destroys repeated snapshot observations. The same invoice may appear in successive snapshots; imports remain immutable and run selection chooses the relevant snapshot. Duplicates within an import are rejected or categorized, never added twice to monetary totals.
+
+## Implemented Phase 2 schema and future extension boundary
+
+Current tables: metadata, users, workspaces, memberships, registrations, sessions and rate_windows. The entity catalog above is a future domain design; files/imports/runs/results/jobs/phone/report/audit tables are not present yet. Phase 2 creates no financial columns and performs no tax computation.
+
+Users have a normalized unique username, salt/digest/algorithm, active flag and version. Sessions hold only the SHA-256 digest of a random 256-bit cookie token, user reference and absolute creation/expiry timestamps. Workspaces and registrations include versions. Memberships have a composite workspace/user primary key, checked role and active state.
+
+Registration uniqueness is per workspace/GSTIN, so separate workspaces can hold their own observation of the same taxpayer. Provisioning validates only structural GSTIN format in Phase 2; government status and checksum-based validation remain future domain work. Synthetic identifiers are not official registration evidence.
+
+The OS process lock is held for the runtime or offline administration lifetime. BEGIN IMMEDIATE serializes writes; explicit read transactions keep membership/resource queries consistent. Busy waiting is finite. No transaction spans password hashing, network calls or report computation.
+
+Schema application ID, version, exact schema fingerprint, quick integrity check and foreign-key check are verified at startup and for backups. An unknown version fails visibly and preserves data. Before Phase 3 extends the schema, define a versioned, backed-up upgrade and rollback/recovery procedure; do not delete an old file to make new startup succeed.
+
+Backup/restore currently covers this database. When Phase 3 adds source files, extend the manifest and restore validation so database references cannot claim missing private bytes. Before a write, check retained bytes, free-disk reserve and SQLite maximum pages. The configured budget includes rollback journal and backup overhead.
 
 ## Canonical document values
 
@@ -136,7 +149,7 @@ Proposal creation locks in current run/result versions, requested reviewed alloc
 
 ## Durable jobs and message ambiguity
 
-Worker claims a queued job using a short `FOR UPDATE SKIP LOCKED` transaction, assigns a random lease token and commits. Serialize heavy-job claims with a shared database coordination row, so a local fallback and deployed server cannot both claim different heavy jobs simultaneously. While holding that row, check for an unexpired RUNNING heavy job before claiming. Renew periodically; all completion writes compare token and lease ownership. Only one global heavy task and one workspace processing task run initially. On restart, expired jobs return to QUEUED up to three attempts; permanent parser/validation errors require user correction.
+Future worker claims use a short SQLite BEGIN IMMEDIATE transaction and conditional state/version update, assign a random lease token and commit. SQLite has no row-lock or SKIP LOCKED API. The OS data lock permits one backend process. Inside its dispatcher, enforce one active heavy claim before accepting another; do not provision a second fallback server against this local database. Renew periodically; all completion writes compare token and lease ownership. Only one global heavy task and one workspace processing task run initially. On restart, expired jobs return to QUEUED up to three attempts; permanent parser/validation errors require user correction.
 
 Long side effects are separated from transactional state. Reconciliation/PDF jobs can safely regenerate derived outputs with deterministic object keys and unique artifact records. A complete output requires successful file storage plus database record; a crash may leave an orphan file that cleanup can find by reservation/job ID.
 
@@ -148,7 +161,7 @@ PDF: workspace/registration/period, source hashes, snapshot timestamps, counts, 
 
 Do not cache business truth in process memory. Browser lists paginate; backend queries cap rows; report jobs paginate/stream without unbounded accumulation. Temporary files are removed after processing. Audit logs record action metadata without complete invoices, phone numbers, provider tokens or bank accounts.
 
-Definition of foundation proof: real PostgreSQL constraints reject duplicate assignments; a private file survives process restart; a crash leaves a discoverable job state; both channel adapters call the same services; unauthorized identifiers cannot reach repository queries without workspace scoping.
+Definition of foundation proof: real SQLite constraints reject duplicate assignments; a private file survives process restart; a crash leaves a discoverable job state; both channel adapters call the same services; unauthorized identifiers cannot reach repository queries without workspace scoping.
 
 ## Transaction boundaries in detail
 
@@ -167,12 +180,12 @@ The worker reads immutable inputs, computes outside the transaction, then writes
 
 ### Accept a candidate
 
-Lock the result row and verify expected_version. Confirm the candidate belongs to that result and passes immutable hard gates. Check assigned portal availability, update assignment/status/version, insert review event and recompute summary in the same transaction.
+Use BEGIN IMMEDIATE and a conditional update to verify expected_version; SQLite does not support SELECT FOR UPDATE. Confirm the candidate belongs to that result and passes immutable hard gates. Check assigned portal availability, update assignment/status/version, insert review event and recompute summary in the same transaction.
 
 - Database unique assignment settles a contested portal claim.
 - Two concurrent reviews cannot both succeed against the same result version.
 - A constraint conflict rolls back the whole transaction and returns ASSIGNMENT_CONFLICT.
-- Do not catch a statement error and continue using an aborted PostgreSQL transaction.
+- Do not catch a statement error and continue using a failed SQLite operation/transaction.
 - Return the freshly committed representation; website and bot display it.
 
 ### Supersede a snapshot
@@ -208,7 +221,7 @@ Index workspace/context/state for import/run lists, run/source_row_number for re
 
 Never return all original source rows in every summary response. Load result detail on demand. Paginate audit/case timelines. Keep original JSON behind authorized detail access; redact unneeded supplier contacts from standard list results.
 
-Start with one batch insertion strategy for canonical rows and one bounded read for the 2,000-row ceiling. Measure before adding streaming complexity. Database pool configuration is a total process budget, not a per-router setting.
+Start with one batch insertion strategy for canonical rows and one bounded read for the 2,000-row ceiling. Measure before adding streaming complexity. Connections belong to one operation and close in finally; there is no connection pool or shared cross-thread connection.
 
 ## Service contracts inside Python
 
@@ -230,7 +243,7 @@ AuthorizedContext contains server-verified actor, workspace and role. It is buil
 
 Maintain finite queries for expired reservations, abandoned leases, incomplete artifact writes and queued outbox records. Operator diagnostics show identifiers/counts/error codes, not confidential file payloads. A permanent failure remains visible for user recovery.
 
-Processing cleanup must use reserved object keys and compare operation state before deleting. A cleanup task cannot delete a successfully referenced file merely because its original reservation timestamp is old. Storage deletion can fail independently from database cleanup; keep the reference and retry state until provider confirmation.
+Processing cleanup must use reserved object keys and compare operation state before deleting. A cleanup task cannot delete a successfully referenced file merely because its original reservation timestamp is old. Storage deletion can fail independently from database cleanup; keep the reference and retry state until confirmed filesystem deletion.
 
 ## Implementation simplifications to keep
 
@@ -241,6 +254,6 @@ Processing cleanup must use reserved object keys and compare operation state bef
 - One provider adapter per external system.
 - One durable queue mechanism rather than several background-task styles.
 - One server-derived summary consumed by website, bot and PDF.
-- One schema migration path; no opportunistic startup DDL.
+- One reviewed SQLite schema upgrade path; initial startup only initializes an exclusively new file, and rejects unknown existing schemas.
 - Small orchestration functions with named transaction/side-effect steps.
 - Factual error states instead of catch-all empty success.

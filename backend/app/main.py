@@ -1,4 +1,4 @@
-"""Phase 1: local HTTP foundation. No data, uploads or provider calls yet."""
+"""Local HTTP foundation with private SQLite accounts and browser sessions."""
 
 import logging
 from collections.abc import AsyncIterator
@@ -11,9 +11,13 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp
 
+from app.api.access import router
 from app.config import ConfigurationError, Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
+from app.errors import APIError, StorageError
 from app.security.http import LocalHTTPBoundary
+from app.services.access import AccessService
+from app.storage.local import LocalStore
 
 logger = logging.getLogger("gstshield")
 
@@ -26,12 +30,17 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        # Readiness currently means configuration + HTTP startup, not SQLite connectivity.
-        application.state.ready = True
+        store = LocalStore(settings)
         try:
+            store.acquire()
+            store.initialize()
+            application.state.store = store
+            application.state.access = AccessService(store)
+            application.state.ready = True
             yield
         finally:
             application.state.ready = False
+            store.close()
 
     application = FastAPI(
         title="GSTShield Local API",
@@ -43,6 +52,30 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         openapi_url="/openapi.json" if settings.app_env in {"local", "test"} else None,
     )
     application.state.ready = False
+    application.include_router(router)
+
+    @application.exception_handler(APIError)
+    async def application_error(request: Request, exc: APIError) -> JSONResponse:
+        return JSONResponse(
+            error_payload(
+                request.state.request_id, exc.code, exc.message, retryable=exc.status in {429, 503}
+            ),
+            status_code=exc.status,
+            headers={"Retry-After": str(exc.retry_after)} if exc.retry_after else None,
+        )
+
+    @application.exception_handler(StorageError)
+    async def storage_error(request: Request, exc: StorageError) -> JSONResponse:
+        return JSONResponse(
+            error_payload(
+                request.state.request_id,
+                "STORAGE_UNAVAILABLE",
+                "Private local storage is unavailable; contact the local operator.",
+                retryable=True,
+            ),
+            status_code=503,
+            headers={"Retry-After": "2"},
+        )
 
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
@@ -73,6 +106,15 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             ),
             status_code=exc.status_code,
             headers=headers,
+        )
+
+    @application.exception_handler(RecursionError)
+    async def nested_json_error(request: Request, exc: RecursionError) -> JSONResponse:
+        return JSONResponse(
+            error_payload(
+                request.state.request_id, "VALIDATION_ERROR", "Request nesting is excessive."
+            ),
+            status_code=422,
         )
 
     @application.exception_handler(RequestValidationError)
@@ -122,8 +164,8 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         response_model=HealthResponse,
         responses={503: {"model": ErrorResponse}},
     )
-    async def ready(request: Request) -> dict | JSONResponse:
-        if not application.state.ready:
+    def ready(request: Request) -> dict | JSONResponse:
+        if not application.state.ready or not application.state.store.ready():
             return JSONResponse(
                 error_payload(
                     request.state.request_id,
@@ -140,12 +182,13 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         CORSMiddleware(
             application,
             allow_origins=settings.cors_origins,
-            allow_credentials=False,
-            allow_methods=["GET"],  # Expand with actual authenticated mutation routes.
-            allow_headers=["Content-Type", "Authorization"],
+            allow_credentials=True,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type", "X-CSRF-Token"],
             expose_headers=["X-Request-ID"],
             max_age=600,
         ),
         settings.cors_origins,
         testing=settings.app_env == "test",
+        max_body_bytes=settings.max_api_body_bytes,
     )

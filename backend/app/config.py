@@ -87,6 +87,20 @@ class Settings(BaseSettings):
 
     storage_backend: Literal["sqlite"] = "sqlite"
     local_data_dir: Path = Path("data")
+    max_database_bytes: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1048576, le=1073741824)
+    ] = 67108864
+    max_local_data_bytes: PositiveInt = 268435456
+    min_free_disk_bytes: PositiveInt = 16777216
+    max_local_backups: Annotated[int, BeforeValidator(parse_integer), Field(ge=2, le=10)] = 3
+    max_local_users: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=100)] = 20
+    max_local_workspaces: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=100)] = 20
+    max_registrations_per_workspace: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1, le=100)
+    ] = 20
+    max_api_body_bytes: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1024, le=1048576)
+    ] = 65536
     web_concurrency: SingleWorker = 1
     session_ttl_seconds: PositiveInt = 1800
     memory_state_max_bytes: PositiveInt = 67108864
@@ -187,11 +201,22 @@ class Settings(BaseSettings):
         advertised_port = api_origin.port or (443 if api_origin.scheme == "https" else 80)
         if api_origin.scheme != "http" or advertised_port != self.port:
             raise ValueError("PUBLIC_API_URL must use HTTP and match PORT for this local launcher")
+        web_origin = urlsplit(self.public_web_url)
+        if web_origin.scheme != "http" or web_origin.hostname != api_origin.hostname:
+            raise ValueError(
+                "Website and API must use the same HTTP hostname for local browser sessions"
+            )
         compatible_hosts = {"localhost", self.host}
         if api_origin.hostname not in compatible_hosts:
             raise ValueError("PUBLIC_API_URL must match the configured loopback HOST")
         if self.public_web_url not in self.cors_origins:
             raise ValueError("PUBLIC_WEB_URL must be included in CORS_ORIGINS")
+        if self.max_local_data_bytes < self.max_database_bytes * 3 + 131072:
+            raise ValueError(
+                "MAX_LOCAL_DATA_BYTES must cover database, journal, backup and reserve"
+            )
+        if self.session_ttl_seconds > 86400:
+            raise ValueError("SESSION_TTL_SECONDS must not exceed one day")
         if self.max_upload_bytes > self.memory_state_max_bytes:
             raise ValueError("MAX_UPLOAD_BYTES exceeds MEMORY_STATE_MAX_BYTES")
         if self.max_xlsx_uncompressed_bytes < self.max_upload_bytes:

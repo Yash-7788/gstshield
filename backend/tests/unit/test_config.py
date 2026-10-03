@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from app import config
 from app.config import BACKEND_DIR, ConfigurationError, Settings, load_settings
 
 
@@ -15,7 +16,7 @@ def test_template_and_loader_cover_exactly_the_same_variables():
     assert set(names) == {name.upper() for name in Settings.model_fields}
     settings = Settings(_env_file=BACKEND_DIR / ".env.example")
     assert settings.storage_backend == "sqlite"
-    assert settings.local_data_dir == (BACKEND_DIR / "data").resolve()
+    assert settings.local_data_dir == (config.BACKEND_DIR / "data").resolve()
     assert settings.match_amount_tolerance == Decimal("0.01")
     assert not settings.whatsapp_enabled
 
@@ -50,6 +51,14 @@ def test_template_and_loader_cover_exactly_the_same_variables():
         {"cors_origins": ["http://localhost:70000"]},
         {"public_web_url": "http://localhost:3001"},
         {"public_api_url": "https://external.example"},
+        {"public_api_url": "http://127.0.0.1:8000"},
+        {"public_web_url": "https://localhost:3000", "cors_origins": ["https://localhost:3000"]},
+        {"max_database_bytes": 100},
+        {"max_local_data_bytes": 100},
+        {"max_local_backups": 1},
+        {"max_local_users": 101},
+        {"max_api_body_bytes": 0},
+        {"session_ttl_seconds": 86401},
         {"local_data_dir": ".."},
         {"local_data_dir": Path("data/../../private")},
         {"fuzzy_suggestion_threshold": "NaN"},
@@ -134,5 +143,10 @@ def test_invalid_dotenv_syntax_or_duplicate_keys_fails_safely(tmp_path, monkeypa
 
 
 def test_ipv6_binding_and_advertised_origin_agree():
-    settings = Settings(host="::1", public_api_url="http://[::1]:8000")
+    settings = Settings(
+        host="::1",
+        public_api_url="http://[::1]:8000",
+        public_web_url="http://[::1]:3000",
+        cors_origins=["http://[::1]:3000"],
+    )
     assert settings.host == "::1"

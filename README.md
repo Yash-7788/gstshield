@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 adds the local backend foundation; the remaining phases are pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phases 3–13 remain pending.
 
 ## Start here
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phase 1 is complete; Phases 2–13 are not started.
+The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phase 1 is complete; Phase 2 is complete; Phases 3–13 are not started.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -51,7 +51,7 @@ The [build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) contains each phase's det
 
 ## Active first-demo scope
 
-Run GSTShield on the local PC; no cloud server or external database. Phase 1 provides local HTTP/configuration. Phase 2 will store data in a local SQLite file. See [backend setup](backend/README.md) and the [phased implementation plan](md/05_BUILD_AND_VERIFICATION_PLAN.md). The older cloud and memory-only proposals are historical reference.
+Run GSTShield on the local PC; no cloud server or external database. Phase 1 provides local HTTP/configuration. Phase 2 stores identities, sessions and workspace context in a local SQLite file. See [backend setup](backend/README.md) and the [phased implementation plan](md/05_BUILD_AND_VERIFICATION_PLAN.md). All eight active specifications now use the local architecture. The three original foundation documents remain historical context.
 
 ```text
 gstshield/
@@ -65,4 +65,4 @@ gstshield/
   frontend/                   # reserved for the supplied website
 ```
 
-Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite persistence, GST imports/reconciliation and WhatsApp are not implemented yet.
+Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. GST imports/reconciliation, frontend wiring and WhatsApp remain future phases.

@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -84,7 +84,7 @@ Do not say: “We guarantee no ITC loss,” “this account is legal escrow,” 
 
 ## Unresolved evidence register
 
-Before implementation expands claims: inspect supplied frontend; obtain a permitted portal file; resolve and boot dependency combination; confirm account-specific hosting quotas; provision and test Meta assets; reconcile detailed messaging pricing; validate any bank format; obtain professional review for current-year statutory calculations. The build can proceed with clearly bounded synthetic adapters while these are resolved.
+Before implementation expands claims: inspect supplied frontend; obtain a permitted portal file; maintain the tested locked backend combination; verify PC disk/availability budgets; provision and test Meta assets; reconcile detailed messaging pricing; validate any bank format; obtain professional review for current-year statutory calculations. The build can proceed with clearly bounded synthetic adapters while these are resolved.
 
 ## Evidence ledger for this planning pass
 
@@ -93,9 +93,9 @@ Before implementation expands claims: inspect supplied frontend; obtain a permit
 | Original GST report | READ | Product ambition retained; claims not automatically adopted |
 | GST report review | READ | Reproduced engine defects become targeted regressions |
 | ENGINEERING_HEADSTART.md | READ | Server authority, contract and failure-boundary lessons carried forward |
-| Render free-host behavior | VERIFIED_SOURCE, documentation | Account-specific deployment still needs proof |
-| Supabase pricing/changelog | VERIFIED_SOURCE, documentation | Actual project configuration still needs inspection |
-| Package release candidates | VERIFIED_SOURCE, release listings | Compatibility/install not yet verified |
+| Local runtime/storage | IMPLEMENTED_AND_TESTED, Phase 2 | PC availability and private SQLite storage replace cloud deployment |
+| Local account access | IMPLEMENTED_AND_TESTED, Phase 2 | Operator-created accounts and opaque sessions replace hosted identity |
+| Locked backend dependencies | INSTALLED_AND_TESTED, Phase 1 | Actual versions in 02; future parser/report dependencies remain pending |
 | GSTN post-login 2B downloads | VERIFIED_SOURCE, FAQ | Parser must prove actual layout support |
 | IMS recomputation | VERIFIED_SOURCE, draft guidance | Store immutable snapshots and supersession |
 | Rule 37/37A notification | VERIFIED_SOURCE, published notification | Current applicability/form details require reviewed implementation |
@@ -206,7 +206,7 @@ When a provider cannot support the chosen free path, record the exact blocker an
 - Which real portal export sections are available for validation?
 - Which Meta account assets can the team provision before the deadline?
 - Which message types remain within the actual no-cost entitlement?
-- Which exact dependency combination boots and deploys successfully?
+- Which exact dependency combination installs and runs locally successfully?
 - Which evidence facts can the user provide without government API access?
 - Is an actual bank-specific artifact required by the hackathon, or is a proposal sufficient?
 - Does the hackathon require a separate AI component, and can it remain optional?

@@ -53,4 +53,4 @@ Record before/after results, agreed budgets and remaining limits. Do not promise
 
 ## Current boundary
 
-The backend currently provides Phase 1 health/configuration only. SQLite/private access, imports, reconciliation and reports remain later implementation. No frontend or phone journey is represented as connected today.
+The backend provides Phase 1 health/configuration plus Phase 2 local SQLite accounts, session recovery/logout and scoped workspace/registration reads. Use credentials:include, same-host website/API URLs and in-memory CSRF from the session endpoint. Imports, reconciliation and reports remain later phases. No frontend or phone journey is represented as connected today.

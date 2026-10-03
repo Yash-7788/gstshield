@@ -1,12 +1,12 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
 ## Active channel implementation phases
 
-Follow the expanded [13-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 7 inspects/finishes the supplied website, Phase 8 connects real backend operations, Phase 9 reviews browser security, Phase 11 measures smoothness, Phase 12 proves WhatsApp and Phase 13 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 6/10. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. The active private-access mechanism is selected locally in Phase 2; older Supabase/cloud setup paragraphs below are reference alternatives, not a selected dependency.
+Follow the expanded [13-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 7 inspects/finishes the supplied website, Phase 8 connects real backend operations, Phase 9 reviews browser security, Phase 11 measures smoothness, Phase 12 proves WhatsApp and Phase 13 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 6/10. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. Phase 2 selects local accounts, HTTP-only browser cookies and CSRF-protected mutations. No hosted auth SDK is needed.
 
 ## Preserve and connect the supplied website
 
@@ -14,7 +14,7 @@ The website has not yet been supplied. Do not choose a new frontend framework or
 
 Build one API client around the actual framework. Generate TypeScript types from the backend OpenAPI document after contracts stabilize. Keep monetary values as strings; use decimal-aware display or server-formatted values. A JavaScript Number must not become the source of financial calculation.
 
-Pre-created Supabase Auth users sign in through the supported client. Website sends `Authorization: Bearer <access_token>` to FastAPI. A 401 allows one controlled token refresh; a second failure returns to sign-in. Clear workspace-bound state on logout or account change. Never ship backend credentials in browser environment variables.
+Local accounts are provisioned with the offline operator command. POST /api/v1/auth/login sets an HttpOnly SameSite=Strict cookie. The API client uses credentials:include on requests, obtains CSRF state with GET /api/v1/auth/session, and sends X-CSRF-Token on private mutations. A 401 clears private state and returns to sign-in; there is no refresh-token flow. Keep CSRF state in memory and never copy the session cookie into localStorage. Clear scoped state on logout or account change.
 
 | Website feature | Contract / result |
 |---|---|
@@ -31,11 +31,21 @@ Pre-created Supabase Auth users sign in through the supported client. Website se
 | Download PDF/proposal | Artifact creation job, then authorized artifact download |
 | WhatsApp linking | POST link-code; display expiry and linked status |
 
+## Current browser connection handoff
+
+Use the same HTTP hostname for website and API: localhost:3000 and localhost:8000 by default. Different ports are permitted; mixing localhost and 127.0.0.1 breaks the intended SameSite cookie flow. CORS allows exact configured origins and credentials; it never grants membership by itself.
+
+Implemented backend operations are login, session recovery, logout, workspace list and registration list. The broader feature table is a phased contract plan, not a list of working routes. The supplied frontend is not present and no browser UI wiring has been claimed complete.
+
+On initial load, recover the session once. If authenticated, load workspaces and only then registrations for the selected permitted workspace. A 404 on a scope picker should remove the stale selection and refetch allowed context. A 429/503 follows Retry-After without an unbounded retry loop. Failed sign-in does not expose which usernames exist.
+
+Local administrator commands run with the backend stopped. They create accounts/workspaces, add registrations, set/revoke membership and reset passwords. Do not invent public signup or membership editing screens in Phase 7 from this operator mechanism.
+
 ## Website state model
 
 Show source import readiness separately from run readiness. A uploaded file may still need parsing, mapping or confirmation. Disable `Run` until both sources are READY and contexts agree. Row validation errors are downloadable and actionable; never disappear behind a generic failure toast.
 
-Poll active jobs approximately every two seconds while the relevant view is visible; back off after repeated network failures. Pause polling when hidden. A cold backend gets a truthful “server waking” message after delayed response; the website must not announce analysis failure solely because the first request is slow. Use idempotency keys when retrying creates, so a network timeout does not create duplicate runs.
+Poll active jobs approximately every two seconds while the relevant view is visible; back off after repeated network failures. Pause polling when hidden. An unavailable local backend shows “Start GSTShield on the PC” with controlled retry; it does not claim a cloud server is waking. A slow request retains a truthful pending state. Use idempotency keys when retrying creates, so a network timeout does not create duplicate runs.
 
 Filter results by server enum rather than label text. Counts come from the committed summary. Display fuzzy score as similarity, not probability or legal confidence. Show sample-evidence badges near relevant facts rather than only in a footer.
 
@@ -43,7 +53,7 @@ Review mutation waits for the committed server result before changing financial 
 
 ## WhatsApp as a second working interface
 
-Use Meta Cloud API directly; avoid introducing a paid messaging aggregator or an unofficial browser-session bridge as the core setup. WhatsApp is not only a `wa.me` link: success requires a deployed callback, real phone input, authorized processing and a real response.
+Use Meta Cloud API directly; avoid introducing a paid messaging aggregator or an unofficial browser-session bridge as the core setup. WhatsApp is not only a `wa.me` link: success requires a reachable HTTPS callback, real phone input, authorized processing and a real response.
 
 Meta's official collection describes WABA/phone assets, access tokens, message requests and test-message setup. Dashboard user tokens have a short lifetime, so the demonstration must verify token validity beforehand. Exact account/test recipient restrictions and free entitlements must be checked in the actual dashboard. [Meta collection](https://www.postman.com/meta/whatsapp-business-platform/collection/wlk6lh4/whatsapp-cloud-api)
 
@@ -104,13 +114,13 @@ Persist outbox intent before sending. A response containing provider_message_id 
 
 For the demo, prefer user-initiated replies within the account's permitted messaging window. Scheduled supplier outreach requires opt-in, template/category compliance and verified account pricing. Keep it disabled until that proof; draft copy is always available. Do not promise the original report's “100 free alerts” as an account fact. [WhatsApp pricing](https://whatsappbusiness.com/products/platform-pricing/)
 
-REPORT returns an opaque expiring capability rather than a permanent public bucket URL. Generate at least 128 random bits, store a hash, bind to artifact/link, expire after ten minutes, limit download count, and check active link/membership on redemption. This intentionally permits the recipient browser without an additional login, so treat it as a bearer secret. Do not put raw phone numbers or user JWTs in the link. Revoke it on unlink; return a generic expired/not-found page without leaking file ownership.
+REPORT returns an opaque expiring capability rather than a permanent public file URL. Generate at least 128 random bits, store a hash, bind to artifact/link, expire after ten minutes, limit download count, and check active link/membership on redemption. This intentionally permits the recipient browser without an additional login, so treat it as a bearer secret. Do not put raw phone numbers or session tokens in the link. Revoke it on unlink; return a generic expired/not-found page without leaking file ownership.
 
 Sending a PDF as a Meta document is optional and must be separately tested; Meta then receives a copy. The link-based flow keeps report delivery simple and controllable for the first demo.
 
 ## Verification and failure UX
 
-Test a physical phone: LINK, STATUS, purchase attachment, portal attachment, RUN, REPORT and UNLINK. Refresh website after phone upload; compare imported IDs and counts. After unlink, STATUS and old capability both fail. Repeat a callback and confirm one import/job. Expired token, wrong signature, unsupported file and backend wake-up have useful outcomes.
+Test a physical phone: LINK, STATUS, purchase attachment, portal attachment, RUN, REPORT and UNLINK. Refresh website after phone upload; compare imported IDs and counts. After unlink, STATUS and old capability both fail. Repeat a callback and confirm one import/job. Expired token, wrong signature, unsupported file and local backend stop/restart have useful outcomes.
 
 If account setup is blocked, keep an internal adapter emulator for development and mark it clearly. It is not the final WhatsApp proof. Record the blocker and preserve website functionality; never quietly replace the promised phone workflow with a visual mock.
 
@@ -191,7 +201,7 @@ If interactive buttons are implemented, the callback payload references a server
 | Message API accepts but phone sees nothing | Provider delivery/error status; acceptance is not delivery |
 | Document retrieval fails | Media ID flow, token permission, expired URL, allowed redirect host |
 | Callback duplicated | Event key uniqueness and acknowledgement after persistence |
-| Response delayed after inactivity | Render cold start and queued job status |
+| Response delayed after inactivity | Local backend availability and queued job status |
 | Cross-context summary | Link context, job captured context and result lookup scoping |
 | REPORT link expired | Generate new capability from current authorized link |
 | CSV upload from phone unsupported MIME | Validate content/type mapping, not only filename |

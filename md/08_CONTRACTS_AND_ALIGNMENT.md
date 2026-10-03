@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -12,7 +12,33 @@ Absent optional fields and null are documented distinctly. Create requests may o
 
 Selected registration belongs to the authorized workspace. If body registration_id conflicts with import metadata, return CONTEXT_MISMATCH; never switch context silently. Read responses include IDs/context needed to prevent stale frontend cross-workspace updates.
 
-Public routes: liveness, bounded readiness, Meta challenge/callback with their own authentication, and opaque artifact capability redemption. Everything else requires JWT, active membership and role authorization.
+Current public routes are liveness/readiness and origin-checked sign-in. Session recovery/logout and workspace resources require a valid local browser session; resources also require current membership and the appropriate role. Developer docs are local/test only. Future Meta callbacks and capability redemption have their own explicit authentication and remain unimplemented.
+
+## Implemented Phase 2 website access contracts
+
+| Method / path | Input | Success |
+|---|---|---|
+| POST /api/v1/auth/login | JSON username/password; configured Origin | 200 SessionResponse; HttpOnly cookie |
+| GET /api/v1/auth/session | Cookie | 200 SessionResponse |
+| POST /api/v1/auth/logout | Cookie, Origin, X-CSRF-Token | 200 {data:{logged_out:true},meta:{request_id}}; expired cookie |
+| GET /api/v1/workspaces | Cookie | 200 {data:WorkspaceData[],meta:{request_id}} |
+| GET /api/v1/workspaces/{workspace_id}/registrations | Cookie + permitted UUID context | 200 {data:RegistrationData[],meta:{request_id}} |
+
+LoginRequest rejects unexpected fields. Username is 3–64 lowercase ASCII letters/digits/._-, beginning with a letter/digit. Password is 12–128 characters, at most 512 UTF-8 bytes; preserve its exact characters. Password input is a secret type, never echoed in errors.
+
+SessionData: user_id UUID, username string, expires_at UTC RFC3339 Z, csrf_token 64-character hex string. No session token or password appears in JSON. Cookie gstshield_session is opaque, HttpOnly, SameSite=Strict, Path=/api/v1, with Max-Age matching the backend absolute expiry.
+
+WorkspaceData: id UUID, name string, role OWNER/REVIEWER/VIEWER, created_at UTC RFC3339 Z, version positive integer. RegistrationData: id UUID, workspace_id UUID, gstin string, display_name string, created_at UTC RFC3339 Z, version positive integer.
+
+These small lists are bounded by provisioned account/workspace/registration limits and sorted by ID. They have no pagination cursor in Phase 2. Later financial lists use the paginated contract below. Role restrictions on future writes apply when those routes are implemented; membership provisioning is offline administration now.
+
+The client uses credentials:include and the same HTTP hostname for website/API. Recover CSRF in memory after reload through the session endpoint. Authenticated mutations require a single exact Origin and a single X-CSRF-Token; credentials do not go into Authorization headers or query strings. No refresh-token endpoint exists.
+
+Invalid credentials are a generic 401 for unknown/inactive users or a wrong password. Missing/expired/revoked/malformed sessions return AUTH_REQUIRED. Cross-workspace resources return NOT_FOUND. Login/private request limits return RATE_LIMITED with Retry-After; unavailable storage/hash slots/session capacity return their documented 503 with Retry-After.
+
+Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
+
+The broad catalog below covers later phases and is not a claim of implemented imports/jobs/reports/WhatsApp endpoints. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
 
 ## Shared enums
 
@@ -61,14 +87,14 @@ Success has `data` and `meta.request_id`; paginated responses add `meta.next_cur
 | HTTP | Codes / behavior |
 |---|---|
 | 400 | INVALID_REQUEST, UNSUPPORTED_FORMAT, CONTEXT_MISMATCH |
-| 401 | AUTH_REQUIRED, TOKEN_INVALID; Meta SIGNATURE_INVALID on callback |
-| 403 | ROLE_FORBIDDEN for in-scope forbidden action |
+| 401 | AUTH_REQUIRED, INVALID_CREDENTIALS; Meta SIGNATURE_INVALID on callback |
+| 403 | ROLE_FORBIDDEN, ORIGIN_REQUIRED, ORIGIN_NOT_ALLOWED, CSRF_INVALID |
 | 404 | NOT_FOUND for absent/inaccessible tenant object or capability |
 | 409 | VERSION_CONFLICT, IDEMPOTENCY_CONFLICT, ASSIGNMENT_CONFLICT, IMPORT_NOT_READY, RUN_SUPERSEDED, WORKSPACE_BUSY |
-| 413 | FILE_TOO_LARGE, ARCHIVE_TOO_LARGE, ROW_LIMIT_EXCEEDED |
-| 422 | VALIDATION_FAILED, MAPPING_REQUIRED, INCOMPLETE_EVIDENCE |
+| 413 | PAYLOAD_TOO_LARGE currently; future FILE_TOO_LARGE, ARCHIVE_TOO_LARGE, ROW_LIMIT_EXCEEDED |
+| 422 | VALIDATION_ERROR currently; future MAPPING_REQUIRED, INCOMPLETE_EVIDENCE |
 | 429 | RATE_LIMITED with Retry-After |
-| 503 | DEPENDENCY_UNAVAILABLE, FEATURE_UNAVAILABLE |
+| 503 | NOT_READY, STORAGE_UNAVAILABLE, AUTH_BUSY, SESSION_LIMIT currently; future adapter-specific failures |
 
 Stable cursor order is `(created_at, id)` or `(source_row_number, id)` for run results, specified per endpoint. Opaque cursor encodes context/order, is validated and cannot override workspace filters. Page size defaults 50, max 100. List empty data is valid; authorization failures are never empty-success.
 
@@ -80,7 +106,7 @@ For upload hashing include bytes, declared context, mapping and adapter choice. 
 
 Mutating existing resources requires `expected_version`. Atomic update compares version and advances it only on success. A network failure does not tell the client whether the update committed; retry the same key or fetch the resource. GET can be retried; ambiguous Meta sends cannot be retried as if they were pure reads.
 
-One workspace job running does not reject the next valid operation: it is QUEUED. Initial pending-heavy-job ceiling is five per workspace; only exceeding that ceiling returns WORKSPACE_BUSY. Database coordination enforces the documented one-global-heavy-job execution limit even if a local fallback is also connected.
+One workspace job running does not reject the next valid operation: it is QUEUED. Initial pending-heavy-job ceiling is five per workspace; only exceeding that ceiling returns WORKSPACE_BUSY. Database coordination enforces the documented one-global-heavy-job execution limit inside the selected single local backend process; a second runtime is refused by its data lock.
 
 ## Endpoint catalog
 

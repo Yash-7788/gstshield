@@ -1,238 +1,200 @@
-# GST-Shield — technology, dependencies and zero-cost deployment
+# GST-Shield — actual technology stack and local setup
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
-Researched 2026-10-03. This is a proposed setup; no accounts, deployments or dependency installations were performed during document creation. Related: [product](01_PRODUCT_AND_DEMO.md), [backend](03_BACKEND_AND_DATA_SPEC.md), [security](06_SECURITY_AND_PRIVACY.md), [build gates](05_BUILD_AND_VERIFICATION_PLAN.md).
+## Selected architecture
 
-## Selected small architecture
+Use one FastAPI backend process on the local PC, Python's standard-library SQLite driver, and private files under backend/data. The website is a browser interface supplied by the user later. It calls the same application services that a future WhatsApp adapter will call. The PC must remain running while the backend is used.
 
-Use Python/FastAPI for one HTTP backend, managed PostgreSQL for durable data, Supabase Auth for pre-created demonstration accounts, Supabase private Storage for imports/reports, and Meta Cloud API for WhatsApp. Reuse the supplied website. Deploy the backend on Render Free. Prefer Cloudflare Pages for a static frontend; if the supplied website needs server rendering, select its compatible host after inspection rather than rewrite it prematurely.
+This decision replaces the earlier cloud plan throughout this planning pack. There is no database account, service connection string, hosted authentication project, object-storage bucket or application hosting bill. Internet access remains useful for dependency installation and necessary for real Meta messaging; local website/backend behavior does not need a provider round-trip.
 
-Run one backend process with a PostgreSQL jobs table and a small embedded dispatcher. Heavy parsing executes outside the event loop with bounded concurrency. This avoids a paid worker and Redis while persisting job state. It does not provide continuous computation while the free service sleeps. Document processing and reminders resume when the server is active; the UI must say that. Deadline reminders are initially manual/on-demand.
-
-The reconciler is deterministic and needs no AI service. Do not add Pandas just to process a 100-row spreadsheet: standard-library CSV/JSON, openpyxl, Decimal and RapidFuzz are sufficient. Generate PDFs with ReportLab to avoid introducing a browser renderer or native HTML rendering libraries.
-
-## Technology selection and version evidence
-
-Current release pages were checked, but a version listing is not a successful combination test. These are **candidate pins for the first clean installation gate**, not a verified lockfile. Resolve all transitive packages together and keep the resulting lock. Re-check releases/security notices if implementation starts later.
-
-| Component | Candidate / selection | Why and validation |
+| Earlier proposal | Current choice | Reason / effect |
 |---|---|---|
-| Python | 3.13.16, conventional GIL build | Recently published supported patch; verify availability on Render and binary wheels before locking. [Python release](https://www.python.org/downloads/release/python-31316/) |
-| FastAPI | 0.142.2 | Current listed stable release; OpenAPI is the shared contract source. [PyPI](https://pypi.org/project/fastapi/) |
-| Pydantic | 2.13.5 | Stable v2; avoid the listed 2.14 beta. [PyPI](https://pypi.org/project/pydantic/) |
-| SQLAlchemy | 2.1.2 candidate | Listed stable release; use documented 2.x transaction patterns and test with psycopg. [PyPI](https://pypi.org/project/SQLAlchemy/) |
-| psycopg | 3.3.6 with binary extra | PostgreSQL driver; prove Windows and Linux installation. [PyPI](https://pypi.org/project/psycopg/) |
-| RapidFuzz | 3.14.6 | Similarity suggestions, never legal/payment authority. [PyPI](https://pypi.org/project/RapidFuzz/) |
-| openpyxl | 3.1.5 | XLSX read-only import; release age alone is not incompatibility. Enforce archive bounds and formula rejection. [PyPI](https://pypi.org/project/openpyxl/) |
-| ReportLab | 5.0.1 candidate | PDF report generator; verify font and paragraph escaping behavior. [PyPI](https://pypi.org/project/reportlab/) |
-| Supporting packages | Uvicorn, HTTPX, Alembic, PyJWT with crypto extra, pydantic-settings, python-multipart, defusedxml | Select current non-prerelease versions using the resolver; exact pins pending the foundation build |
-| Quality packages | pytest, Ruff; frontend's existing type checker/test runner | Meaningful money, contract and isolation checks |
-| Frontend runtime | Existing framework, Node 22+ where needed | Inspect supplied manifest before selecting exact runtime/package pins |
+| PostgreSQL / hosted database | Local SQLite file | Durable PC storage without a separate database process |
+| Supabase Auth / signed JWTs | Local operator provisioned accounts + opaque sessions | No public signup, auth provider or refresh-token integration |
+| Supabase Storage / signed bucket URLs | Private local directory | Paths stay server generated; future file access goes through scoped backend routes |
+| Render / static cloud hosting | Backend and supplied website run locally | PC availability determines uptime; no cloud deployment is required |
+| SQLAlchemy, psycopg, Alembic | sqlite3 + explicit schema version | Fewer dependencies; later upgrades are reviewed, backed up and tested |
+| Redis / external worker | Future SQLite job records + one bounded local dispatcher | Only one backend process may hold the data lock |
+| Browser localStorage as business storage | Backend SQLite as authority | Browser reloads and account changes cannot invent or lose financial truth |
 
-Use one tool for Python locking, preferably uv, and commit `pyproject.toml`, `uv.lock` and `.python-version`. Export a frozen requirements file if the deployment build needs pip. Do not force dependency overrides to bypass a resolver failure. FastAPI advises pinning a known working version and letting it choose its compatible Starlette dependency. [FastAPI version guidance](https://fastapi.tiangolo.com/deployment/versions/)
+## Installed runtime, not release candidates
 
-The Supabase changelog was checked because old integrations drift: client libraries dropped Node 20 support; public tables are changing their default API exposure; default SMTP customization changed. Our app keeps business tables in an unexposed schema, does not use GraphQL, and avoids email-driven demo onboarding. [Supabase changelog](https://supabase.com/changelog)
+The committed `backend/uv.lock` records the full resolved graph and hashes. The versions below were installed and exercised on this Windows PC. This establishes compatibility for the tested code, not a claim that every future parser or provider integration is already implemented.
 
-## Free hosting facts and project budgets
-
-Render Free supports the Python backend but sleeps after 15 idle minutes, takes approximately a minute to wake, loses local files on restart and provides 750 workspace instance-hours/month. Its free PostgreSQL expires after 30 days, so use the separate managed database. Keep payment methods off where supported if strict spend prevention is required; reaching free limits may disable services. These are provider constraints, not problems solved by a keepalive script. [Render Free](https://render.com/docs/free)
-
-Supabase Free currently lists 500 MB database space, 1 GB file storage, 5 GB ordinary egress and 5 GB cached egress, with inactivity pausing. Treat these as shared project budgets; confirm the actual project dashboard before presenting. [Supabase pricing](https://supabase.com/pricing)
-
-Cloudflare Pages static assets are free/unlimited; functions consume Workers quotas. Prefer static hosting only here and send API traffic directly to FastAPI. A framework that requires server rendering needs a separate compatibility decision. [Pages pricing](https://developers.cloudflare.com/pages/functions/pricing/)
-
-| Project budget | Initial ceiling | Action when reached |
-|---|---|---|
-| Import | 5 MB, 2,000 rows/source | Reject with useful limit error; do not silently truncate |
-| Total stored demo files | 100 MB soft ceiling | Warn and remove expired synthetic artifacts through authenticated cleanup |
-| Workspace processing | One job at a time | Queue the next job and expose position/status |
-| Global parsing/report work | One task at a time initially | Measure responsiveness before raising |
-| Database connections | Pool 3 + overflow 2, one process | Short transactions; no database connection held over network/file operations |
-| WhatsApp sends | Explicit low demo budget | Stop at budget; do not switch to paid routes automatically |
-| External requests | Finite connect/read/write timeout | Record failure and allow controlled recovery |
-
-₹0 hosting is feasible for bounded demonstration use. **₹0 complete WhatsApp operation remains conditional on the actual Meta test/account entitlements.** Meta's public marketing pricing page and accessible material do not establish every current test scenario. Validate actual delivery/billing in the account before promising unlimited free responses. [WhatsApp pricing](https://whatsappbusiness.com/products/platform-pricing/), [Meta API collection](https://www.postman.com/meta/whatsapp-business-platform/collection/wlk6lh4/whatsapp-cloud-api)
-
-## Database connection choice
-
-Use the Supabase dashboard's session-pooler connection string on IPv4-only networks. Store its secret in `DATABASE_URL`; do not construct it from remembered host patterns. Use TLS and validate connectivity. Run migrations with a compatible direct/session connection. If transaction pooling is later selected, review prepared statements/session features rather than changing only the port. [Supabase connection guide](https://supabase.com/docs/guides/database/connecting-to-postgres)
-
-App transactions use a dedicated backend database role restricted to the `app` schema. Auth and Storage are accessed through their supported APIs. Do not query or alter provider-managed auth tables to build homemade sessions. Backend privilege does not substitute for tenant filtering.
-
-## Required accounts and setup inputs
-
-Git repository; Render account; Supabase project; frontend hosting account if separate; Meta developer account, app, WhatsApp Business Account and provisioned test/registered phone number; physical recipient phone with WhatsApp; recipient registration where test mode requires it. Use provider-generated HTTPS URLs, not a purchased domain, for the demo.
-
-Meta account availability, recipient restrictions, token lifetime, message categories and billing are checked at the first milestone. Meta's official collection supports user/system-user tokens and a test-message request; a dashboard user token expires after 24 hours. Use an appropriately scoped token whose validity spans rehearsal and presentation. [Meta Cloud API collection](https://www.postman.com/meta/whatsapp-business-platform/collection/wlk6lh4/whatsapp-cloud-api)
-
-## Configuration contract
-
-For the active database-free demo, use [backend/.env.example](../backend/.env.example) and [its configuration rules](../backend/README.md#environment-configuration). The table below describes the later integrated/persistent setup; its database and Supabase fields are not required by the current scaffold. The loader and runtime validation are pending backend implementation.
-
-| Variable | Owner / exposure | Meaning |
-|---|---|---|
-| `APP_ENV` | Backend | `local`, `demo`, `test` |
-| `DATABASE_URL` | Backend secret | Session/direct PostgreSQL connection |
-| `SUPABASE_URL` | Both, public | Project origin |
-| `SUPABASE_PUBLISHABLE_KEY` | Browser public | Auth client key; never privileged key |
-| `SUPABASE_SECRET_KEY` | Backend secret | Supported server key for Storage/admin setup; adapter must use documented key headers |
-| `SUPABASE_JWT_ISSUER` | Backend | Exact expected token issuer |
-| `SUPABASE_JWT_AUDIENCE` | Backend | Expected audience, verified against actual project |
-| `SUPABASE_JWT_ALGORITHM` | Backend | Explicit configured asymmetric algorithm |
-| `STORAGE_BUCKET` | Backend | Private `gst-shield-private` bucket |
-| `CORS_ORIGINS` | Backend | Exact website origins, parsed as a list |
-| `PUBLIC_WEB_URL` | Backend public | Website origin for authenticated links |
-| `PUBLIC_API_URL` | Both, public | Canonical deployed API origin |
-| `WHATSAPP_ENABLED` | Backend | Default false until configured |
-| `META_GRAPH_VERSION` | Backend | Supported account/API version selected from current docs |
-| `META_PHONE_NUMBER_ID` | Backend | Outbound sender identity |
-| `META_WABA_ID` | Backend | Expected subscribed account |
-| `META_ACCESS_TOKEN` | Backend secret | Send/media access token |
-| `META_APP_SECRET` | Backend secret | Incoming signature verification |
-| `META_VERIFY_TOKEN` | Backend secret | GET subscription challenge token, distinct from app secret |
-| `DEMO_MODE` | Backend | Enables sample labels/controlled reset, never auth bypass |
-| `WHATSAPP_SEND_BUDGET` | Backend | Hard project send ceiling |
-
-Do not commit `.env`. `.env.example` contains names and harmless placeholders. Missing required DB/auth configuration blocks readiness; incomplete enabled WhatsApp configuration blocks that feature visibly. There is no fallback secret or “accept unsigned webhook” demo option.
-
-## Planned setup sequence
-
-1. Resolve candidate dependencies in a new GST repository. Prove FastAPI boot, PostgreSQL transaction, private Storage round-trip, JWT verification and one PDF generation.
-2. Create Supabase project. Record region, limits and actual database version. Create a private bucket, unexposed `app` schema, restricted backend role and two pre-created synthetic demo users.
-3. Configure asymmetric signing keys and publishable browser key. Select email/password login for pre-created accounts; avoid relying on SMTP delivery at the presentation.
-4. Apply reviewed migration once using Alembic and its dedicated migration credential. Seed synthetic data separately. Verify ordinary backend credential cannot perform schema administration.
-5. Deploy one Render web service from the dedicated GST repository. Build using the frozen dependency lock. Start with `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`. The shell expands Render's assigned port.
-6. Configure `/health/live` and `/health/ready`; readiness includes a bounded DB check and configuration validation. Do not require a Meta network round-trip for every health request.
-7. Deploy the supplied website using its existing build. Set its public API/Auth variables. Configure CORS with its exact origin. Verify login and one protected API request.
-8. Set Meta webhook URL to `/webhooks/whatsapp`, verify GET challenge, subscribe the appropriate WABA/messages events, then prove a physical phone inbound/outbound flow.
-9. Restart the backend and confirm database/file persistence and queued-job recovery. Record installed versions and working deployment settings back in this document.
-
-These are future commands and setup actions, not a claim they have run. Document 05 owns milestone evidence.
-
-## Demo resilience and upgrade path
-
-Open readiness and process one sample run before presenting to reveal a paused database or cold backend. Keep a local backend against the same database as a rehearsal fallback; only one dispatcher may own a job through its lease. A temporary HTTPS tunnel can support local webhook development, but its changing URL and laptop dependence make it a fallback requiring its own rehearsal.
-
-If internet/Meta fails, demonstrate the website and show a clearly identified recording of the previously verified phone flow. A mocked chat panel is useful for development but does not satisfy the live WhatsApp acceptance gate.
-
-After the hackathon, an always-on backend/worker, monitoring, stronger approval separation and reviewed provider access can be added without replacing the reconciler. Provider adapters isolate storage/messaging. No AWS integration, paid queue, custom domain, credit grant or paid AI subscription is needed for the proposed core.
-
-## Alternatives considered
-
-| Alternative | Decision for this hackathon |
+| Component | Installed version / use |
 |---|---|
-| SQLite on deployed ephemeral disk | Reject for hosted persistence; acceptable only in an explicitly local disposable prototype |
-| Render Free PostgreSQL | Avoid its expiry for the main demonstration database |
-| AWS multi-service architecture | Unnecessary account/configuration/cost surface for this bounded build |
-| Redis + Celery | Defer; durable SQL jobs suffice for the chosen small workload |
-| Python running inside an edge worker | Avoid uncertain heavy parsing/runtime compatibility |
-| Entirely browser-side reconciliation | Does not provide the shared persisted WhatsApp workflow |
-| Paid WhatsApp aggregator | Optional later; direct Meta avoids an additional commercial prerequisite |
-| Unofficial WhatsApp Web automation | Avoid as core; unstable session and provider-policy assumptions |
-| WeasyPrint/browser PDF renderer | Defer native/runtime dependencies; ReportLab is simpler here |
-| Paid OCR/LLM for every upload | Not required for structured files; keep optional |
-| Full frontend rewrite | Reject until actual website inspection demonstrates a need |
+| CPython | 3.13.16, selected by .python-version |
+| uv | 0.12.22 used on this PC |
+| FastAPI | 0.142.2, HTTP routes and schema |
+| Starlette | 1.7.0, resolved framework dependency |
+| Pydantic | 2.13.5, input/output validation |
+| Pydantic Settings | 2.15.0, validated environment configuration |
+| python-dotenv | 1.2.4, dotenv parsing |
+| Uvicorn | 0.54.0, supported local launcher |
+| HTTPX2 | 2.13.1, test client only |
+| pytest | 9.1.1, regression checks |
+| Ruff | 0.16.10, lint and formatting |
+| SQLite | 3.53.1 in this PC's selected interpreter; stdlib driver |
+| Password/session/CSRF primitives | hashlib.scrypt, secrets, hmac from the standard library |
 
-## Foundation installation recipe
+HTTPX2 matches the installed Starlette test client; do not reintroduce the deprecated HTTPX dependency from the early candidate list. Do not silently refresh the lock during the demo. New dependencies belong to the phase that actually uses them.
 
-The following is an implementation recipe, not commands already executed. Run it in the future GST repository, never in Jainune.
+## Dependencies reserved for future phases
 
-1. Install the selected Python runtime and uv through their documented platform installers.
-2. Create `backend/pyproject.toml` with the candidate direct versions from the table.
-3. Resolve once with `uv lock` and inspect resolver output for constraints/security notices.
-4. Install with `uv sync --frozen` in a clean environment.
-5. Import FastAPI, Pydantic, SQLAlchemy, psycopg, RapidFuzz, openpyxl and ReportLab.
-6. Run the minimal health application; test one exact-money JSON round-trip.
-7. Prove a PostgreSQL transaction and a PDF page on Linux-compatible deployment runtime.
-8. Commit the lock only after these pass.
+- Phase 3: standard-library CSV/JSON first; evaluate openpyxl and bounded XML handling for XLSX. Commit tested versions when the parser is implemented.
+- Phase 4: Decimal for canonical monetary arithmetic; evaluate RapidFuzz for suggestions. Similarity never becomes automatic legal approval.
+- Phase 5: evaluate ReportLab for PDF generation with a bundled tested font. Do not install a browser renderer only to generate a small evidence report.
+- Phase 7: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
+- Phase 12: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
 
-Example subsequent commands, after the referenced files exist:
+Pandas, an AI service, a messaging aggregator and an external queue are not required for the deterministic core. Optional packages need a concrete implemented use and compatibility proof.
+
+## Local installation and launch
+
+From PowerShell on this PC:
 
 ```powershell
-# From backend/ in the new GST repository
-uv sync --frozen
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+Set-Location 'C:\Users\yashk\Downloads\gstshield\backend'
+..\.tooling\Scripts\uv.exe sync --frozen
+if (!(Test-Path -LiteralPath '.env')) {
+    Copy-Item -LiteralPath '.env.example' -Destination '.env'
+}
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage user-create --username demo-owner --workspace 'Demo Workspace'
+..\.tooling\Scripts\uv.exe run --frozen python -m app
 ```
 
-```sh
-# Render build/start settings; export file generated from the same committed lock
-python -m pip install -r requirements.lock.txt
-uvicorn app.main:app --host 0.0.0.0 --port "$PORT" --workers 1
+The account command prompts privately for a chosen password and confirmation. There is no shipped default account/password. It prints the new user/workspace IDs. Stop the backend before account changes or backup/restore maintenance.
+
+Teammates install [uv](https://docs.astral.sh/uv/getting-started/installation/) and use `uv sync --frozen` and `uv run --frozen ...` from backend/. The ignored .tooling directory is this PC's convenience installation; it is not a requirement to commit a runtime or share a virtual environment.
+
+Use `python -m app` through the locked environment. The launcher honors validated HOST/PORT, uses one worker, disables URL access logs and does not trust proxy headers. A direct alternate Uvicorn command can invalidate these guarantees; do not use the old cloud start command.
+
+Liveness is /health/live. Readiness is /health/ready and includes a local storage query. Developer docs/schema are enabled in local/test and hidden in demo. A healthy response does not certify GST calculations or future phone/report features.
+
+## Browser connectivity
+
+Default website origin: http://localhost:3000. Default API origin: http://localhost:8000. Different ports are allowed; both must use the same HTTP hostname for SameSite=Strict cookies. Do not mix localhost with 127.0.0.1 in the browser's chosen API base URL.
+
+If choosing IPv4 literals, change PUBLIC_WEB_URL and PUBLIC_API_URL together and include the exact website origin in CORS_ORIGINS. If changing API port, change PORT and PUBLIC_API_URL together. IPv6 binding uses ::1 and matching website/API hostname configuration.
+
+The API currently binds only to loopback. A separately hosted website cannot reach a private PC backend from an arbitrary remote browser. LAN access, public HTTPS and a phone callback require a later deliberate connectivity decision; no tunnel is provisioned in Phase 2.
+
+The future API client uses credentials:include, not a JavaScript-held access token. It recovers session/CSRF state through GET /api/v1/auth/session and includes X-CSRF-Token plus Origin on authenticated mutations. Details are authoritative in 08.
+
+## Local persistence and recovery
+
+The database is backend/data/gstshield.sqlite3. Settings allow a nested directory only within backend/data. The process holds an OS lock; a second runtime or maintenance process is refused. Symlinks, junctions, traversal and non-ordinary private storage entries are rejected.
+
+SQLite uses STRICT tables, foreign keys, DELETE journaling, FULL synchronization and short explicit transactions. A new file is created exclusively. Existing empty, corrupt, foreign, changed or unsupported-version databases are refused and preserved; runtime reads never silently recreate a missing live file.
+
+Data persists across backend restarts. Session expiry is absolute, normally 30 minutes, with no sliding refresh. A new login replaces the previous session for that account. Expiry is checked in the backend independently of the cookie lifetime.
+
+Backup commands copy the actual Phase 2 database and validate the result. Generated UUIDs identify backups. Backup count, total retained bytes, database page limits and free-disk reserve are enforced. Archive an old backup outside the private directory before filling the backup budget.
+
+```powershell
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage backup
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage restore --backup-id '<printed UUID>'
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage password-reset --username demo-owner
 ```
 
-If uv is installed in the deployment image, use its frozen sync/run path instead of maintaining a second independently selected dependency list. `requirements.lock.txt` must be a lock export, not manually edited floating requirements.
+Restore preserves the previous database, validates/stages the chosen backup, removes restored sessions/request windows, disables restored accounts, and replaces the live database. Review memberships and reset the passwords of intended users before launch. This prevents a backup from silently reactivating old revoked credentials.
 
-## Supabase setup details to record
+An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator recovery rather than deleting evidence. Future imports/artifacts will require extending the backup manifest to include private source files. A Phase 2 database backup does not claim to protect files that are not implemented yet.
 
-- Project reference and region, without database password.
-- Actual PostgreSQL version and enabled extensions used by our code.
-- Selected connection mode and proven TLS behavior.
-- Restricted role grants and migration credential location.
-- `app` excluded from Data API exposure.
-- Private bucket creation and upload bounds.
-- Auth issuer/audience/algorithm and JWKS endpoint.
-- Published frontend auth origin/redirect configuration.
-- Two demonstration user subjects and workspace membership IDs.
-- Current project limits and inactivity state.
+## Environment contract
 
-Pre-created accounts avoid live SMTP dependency at judging. Do not disable authentication to avoid email setup. Privileged account creation belongs to a controlled setup script/dashboard, not a public signup endpoint with owner-role assignment.
+`backend/.env.example` is the complete recognized template. OS settings override dotenv values; unknown OS names are ignored, unknown/malformed/duplicate dotenv settings are refused. No secret values are printed in configuration failures.
 
-## Runtime validation checklist
+The table below is generated from the template for this planning update. Blank Meta values are deliberate: WhatsApp remains disabled. Parser, link and provider limits are reservations until those phases enforce their boundaries; storage, sessions, JSON body bounds and private request limits are enforced now.
 
-| Validation | Fail behavior |
+| Variable | Example default |
 |---|---|
-| DATABASE_URL missing/invalid | Startup/readiness failure with secret-redacted error |
-| Database connection unavailable | Readiness false; business requests return dependency error |
-| JWT issuer/algorithm missing | Refuse protected operation configuration |
-| Bucket accidentally public | Setup gate fails before real document use |
-| WhatsApp enabled but token/secret missing | Feature configuration failure, never unsigned operation |
-| CORS contains wildcard with credentials | Reject configuration |
-| Public API URL uses local HTTP in demo deployment | Setup error |
-| Unknown schema migration version | Readiness false until reviewed migration applied |
+| `APP_ENV` | `local` |
+| `DEMO_MODE` | `true` |
+| `LOG_LEVEL` | `INFO` |
+| `HOST` | `127.0.0.1` |
+| `PORT` | `8000` |
+| `PUBLIC_WEB_URL` | `http://localhost:3000` |
+| `PUBLIC_API_URL` | `http://localhost:8000` |
+| `CORS_ORIGINS` | `["http://localhost:3000","http://127.0.0.1:3000"]` |
+| `STORAGE_BACKEND` | `sqlite` |
+| `LOCAL_DATA_DIR` | `data` |
+| `WEB_CONCURRENCY` | `1` |
+| `SESSION_TTL_SECONDS` | `1800` |
+| `MEMORY_STATE_MAX_BYTES` | `67108864` |
+| `MAX_ACTIVE_DEMO_SESSIONS` | `20` |
+| `MAX_CONCURRENT_PROCESSING_JOBS` | `1` |
+| `MAX_QUEUED_JOBS_PER_SESSION` | `5` |
+| `MAX_UPLOAD_BYTES` | `5242880` |
+| `MAX_IMPORT_ROWS` | `2000` |
+| `MAX_IMPORT_COLUMNS` | `50` |
+| `MAX_CELL_CHARACTERS` | `10000` |
+| `MAX_JSON_DEPTH` | `20` |
+| `MAX_XLSX_UNCOMPRESSED_BYTES` | `52428800` |
+| `MAX_XLSX_ARCHIVE_ENTRIES` | `1000` |
+| `PROCESSING_TIMEOUT_SECONDS` | `60` |
+| `CURRENCY` | `INR` |
+| `MATCH_AMOUNT_TOLERANCE` | `0.01` |
+| `FUZZY_SUGGESTION_THRESHOLD` | `88.00` |
+| `FUZZY_MIN_SCORE_GAP` | `5.00` |
+| `MATCH_POLICY_VERSION` | `match-v1` |
+| `WHATSAPP_ENABLED` | `false` |
+| `META_GRAPH_VERSION` | `` |
+| `META_PHONE_NUMBER_ID` | `` |
+| `META_WABA_ID` | `` |
+| `META_ACCESS_TOKEN` | `` |
+| `META_APP_SECRET` | `` |
+| `META_VERIFY_TOKEN` | `` |
+| `WHATSAPP_SEND_BUDGET` | `0` |
+| `HTTP_CONNECT_TIMEOUT_SECONDS` | `5` |
+| `HTTP_READ_TIMEOUT_SECONDS` | `20` |
+| `HTTP_WRITE_TIMEOUT_SECONDS` | `20` |
+| `HTTP_POOL_TIMEOUT_SECONDS` | `5` |
+| `LINK_CODE_TTL_SECONDS` | `600` |
+| `LINK_ATTEMPTS_PER_WINDOW` | `5` |
+| `LINK_ATTEMPT_WINDOW_SECONDS` | `600` |
+| `DOWNLOAD_CAPABILITY_TTL_SECONDS` | `600` |
+| `DOWNLOAD_CAPABILITY_MAX_DOWNLOADS` | `3` |
+| `READ_REQUESTS_PER_MINUTE` | `60` |
+| `MUTATION_REQUESTS_PER_MINUTE` | `10` |
+| `IMPORT_REQUESTS_PER_MINUTE` | `3` |
+| `MAX_DATABASE_BYTES` | `67108864` |
+| `MAX_LOCAL_DATA_BYTES` | `268435456` |
+| `MIN_FREE_DISK_BYTES` | `16777216` |
+| `MAX_LOCAL_BACKUPS` | `3` |
+| `MAX_LOCAL_USERS` | `20` |
+| `MAX_LOCAL_WORKSPACES` | `20` |
+| `MAX_REGISTRATIONS_PER_WORKSPACE` | `20` |
+| `MAX_API_BODY_BYTES` | `65536` |
 
-Do not do provider-changing DDL in application startup. Keep migrations deliberate so a restart cannot accidentally rewrite the schema.
+## Enforced current resource policy
 
-## Health and diagnostic endpoints
+- Database: 64 MiB; all private data: 256 MiB; free-disk reserve: 16 MiB.
+- Backups: three retained files, including preserved recovery copies counted toward the same directory budget.
+- Accounts/workspaces: twenty each; registrations: twenty per workspace; absolute configured upper bounds keep lists finite.
+- Active sessions: twenty; one active session per account; session lifetime at most one day even if configured above the demo default.
+- Small mutation bodies: 64 KiB actual streamed bytes; malformed duplicate Content-Length is rejected.
+- Sign-in: five attempts per username per minute and thirty globally; one scrypt hash computation at a time.
+- Private requests: sixty reads and ten mutations per session per minute, stored in SQLite across restart.
+- SQL lock waiting: bounded to two seconds; failure is a truthful storage error, never successful empty data.
 
-`/health/live` answers whether the process can handle a request. It returns no secrets/config values. `/health/ready` checks validated configuration and database connectivity under a short timeout. It reports an opaque status/build identifier; internal logs carry redacted details.
+These bounds are hackathon choices. Phase 10 measures implemented workload behavior before increasing them. Future upload routes need their own authenticated streaming bounds and multipart overhead policy; the current small-body bound must not be increased globally to bypass import checks.
 
-Storage and Meta setup are tested separately through authorized diagnostics or setup scripts. Requiring an external message send in each health check would spend quotas and couple the application's availability to an unrelated provider probe.
+## Checks and evidence
 
-The deployment dashboard records CPU/memory and restart events during a full 100-row run. Before raising row limits, inspect actual peak memory and callback latency. A long-lived HTTP request should not be the only evidence that a job exists; `202` follows a committed job record.
+```powershell
+..\.tooling\Scripts\uv.exe sync --frozen
+..\.tooling\Scripts\uv.exe run --frozen ruff check .
+..\.tooling\Scripts\uv.exe run --frozen ruff format --check .
+..\.tooling\Scripts\uv.exe run --frozen python -m compileall -q app
+..\.tooling\Scripts\uv.exe run --frozen pytest -q
+```
 
-## Secrets lifecycle
+The GitHub workflow uses Windows/Linux test runners; Ubuntu in CI is a verification environment, not a deployed server. Local test success and remote workflow results are separate evidence. Record failures and fixes rather than declaring unrun checks green.
 
-Use separate secrets for local/deployed environments where possible. Rotate an accidentally exposed token immediately and remove it from working files/logs. A copied secret in Git history remains exposed even after deleting the current line.
+The current project is a website, not a native phone app. Real WhatsApp is Phase 12 and needs Meta assets, internet connectivity, an HTTPS callback and account-specific entitlement checks. Do not promise zero messaging cost merely because local backend/storage has no hosting bill.
 
-For Meta, record expiry and required permissions without recording the token itself. Before presentation, send one controlled test reply and verify it reached the phone. For database credentials, test the restricted role rather than relying on a successful migration connection.
+## Technical references
 
-No automatic environment fallback may connect the demo to a different writable database. A missing URL is an error, not permission to initialize a local SQLite database and falsely report persistence.
-
-## Cost and outage review before judging
-
-- Confirm selected account plans remain free.
-- Confirm no automatic paid upgrade/overage route is enabled unintentionally.
-- Check Storage/egress use after PDF and phone tests.
-- Check Meta send allowance/billing from the account, not remembered historical rates.
-- Confirm database has not paused and backend can wake.
-- Confirm browser/API URLs point to the same expected environment.
-- Confirm no trial-only feature is critical to the main flow.
-- Record a known working commit and deployed build identifier.
-
-## Deployment proof register
-
-| Item | Current status |
-|---|---|
-| Candidate release pages researched | DONE; candidates listed above |
-| Dependency resolver/install | NOT_RUN |
-| Python runtime on selected host | NOT_PROVED |
-| PostgreSQL role/connection/migration | NOT_RUN |
-| Auth/JWKS verification | NOT_RUN |
-| Private Storage round-trip | NOT_RUN |
-| Supplied frontend build | WAITING_FOR_FRONTEND |
-| Physical WhatsApp round-trip | NOT_RUN |
-| Account-specific ₹0 messaging proof | NOT_PROVED |
-| Deployed restart/recovery | NOT_RUN |
-
-Move entries to proved only with observed outcomes. Keep provider facts date-stamped; free tiers and package releases can change between planning and implementation.
+Python documents SQLite connections, bound SQL and backup APIs in the [Python 3.13 sqlite3 reference](https://docs.python.org/3.13/library/sqlite3.html). STRICT table behavior is defined by [SQLite](https://www.sqlite.org/stricttables.html). Current access choices and their limits are explained in 06 and implemented in the backend; these references do not certify the entire app.

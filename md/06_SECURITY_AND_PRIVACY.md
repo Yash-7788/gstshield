@@ -1,12 +1,12 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
 ## Active security phase ownership
 
-The [expanded plan](05_BUILD_AND_VERIFICATION_PLAN.md) gives backend security/failure review its own Phase 6 and frontend security/privacy its own Phase 9. Initial access, upload limits, SQL/file boundaries, safe rendering, private state and download authorization must be implemented in their feature phases first. Performance changes in Phases 10/11 repeat affected security checks; Phase 12 adds real callback/link protections and Phase 13 verifies combined regressions. The current local identity/storage decision comes from Phase 2; the JWT/JWKS/Supabase/managed-database-specific passages below are reference designs, not a requirement to provision an external service. These phases remain planned work.
+The [expanded plan](05_BUILD_AND_VERIFICATION_PLAN.md) gives backend security/failure review its own Phase 6 and frontend security/privacy its own Phase 9. Initial access, upload limits, SQL/file boundaries, safe rendering, private state and download authorization must be implemented in their feature phases first. Performance changes in Phases 10/11 repeat affected security checks; Phase 12 adds real callback/link protections and Phase 13 verifies combined regressions. Phase 2 enforces local identity and private storage now. Later feature-specific safeguards remain planned until their routes exist.
 
 ## Threat model and scope
 
@@ -16,9 +16,9 @@ Use synthetic documents for public judging. Real company uploads require consent
 
 ## Identity, authorization and permissions
 
-Verify JWT signature using the configured project's asymmetric JWKS and fixed algorithm, issuer, audience, expiry and subject requirements. Do not accept the algorithm or key URL from untrusted token input. JWKS has only asymmetric public keys; an empty set in a legacy symmetric configuration is a setup failure, not permission to skip verification. [Supabase JWT guide](https://supabase.com/docs/guides/auth/jwts)
+Local accounts use salted scrypt (N=32768, r=8, p=3, 32-byte digest; 16-byte random salt), matching one documented OWASP scrypt configuration. Passwords are prompted in an interactive terminal, 12–128 characters, never supplied as command arguments or returned in JSON. One password hash runs at a time; unknown usernames also perform a dummy hash. Persisted login limits apply before hashing. [OWASP password storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 
-On every protected operation load the active workspace membership and authorize the requested resource. WhatsApp uses the linked Auth user and the same live membership check. No supplied `user_id`, `role`, phone number or `workspace_id` grants access by itself. Editable Auth user metadata is not a role authority.
+On every protected operation load the active workspace membership and authorize the requested resource. WhatsApp uses the linked local user and the same live membership check. No supplied `user_id`, `role`, phone number or `workspace_id` grants access by itself. Browser-supplied identity/profile fields are not a role authority.
 
 | Action | Owner | Reviewer | Viewer |
 |---|---|---|---|
@@ -29,19 +29,31 @@ On every protected operation load the active workspace membership and authorize 
 | Link own WhatsApp / unlink own phone | Yes | Yes | Yes |
 | Run/import through linked WhatsApp | Yes | Yes | No |
 
-One reviewer may approve a demonstration proposal; production maker/checker separation is deferred. The proposal has no bank execution authority. Reject users with inactive membership immediately even if their JWT remains unexpired. Deleting an Auth user does not itself invalidate every access token, so strict account shutdown also revokes app membership/links and provider sessions as appropriate.
+One reviewer may approve a demonstration proposal; production maker/checker separation is deferred. The proposal has no bank execution authority. Reject inactive users or memberships on each protected operation even if the cookie has not expired. Password reset revokes sessions. Restored accounts are disabled until the operator resets intended users and reviews their restored memberships.
 
 Return 404 for inaccessible tenant-owned objects to avoid disclosing their existence; use 403 for a known in-scope action forbidden by role. An expired token gets 401, not an empty successful result. Parameterize SQL and validate UUIDs/enums before repository calls.
 
-## Database and Storage exposure
+## Private local storage boundary
 
-Keep business tables in an unexposed `app` schema; revoke anonymous/authenticated direct grants. Backend role has only necessary CRUD rights, not migration/admin powers. Add composite tenant foreign keys and explicit repository workspace predicates. A privileged backend connection can bypass RLS: do not advertise RLS as protecting a query that never checks ownership.
+The SQLite file is private to the backend, never a static website asset. Every connection enables foreign keys and trusted_schema=OFF. Every resource query uses the authorized workspace; inaccessible IDs return 404. Future tenant-owned child tables need composite workspace foreign keys and uniqueness when their features are implemented.
 
-For any accidentally or intentionally exposed table, enable RLS and add actual ownership/membership policies; being `authenticated` is not sufficient. Keep privileged functions out of exposed schemas and avoid SECURITY DEFINER for convenience. Ordinary clients use supported Auth APIs and our backend for business data.
+Generated private paths stay under backend/data. Reject traversal, symlinks, junctions and non-ordinary filesystem entries. A client filename is display metadata, never a file path. No cloud key, bucket permission, database role or row-level security policy is part of this SQLite setup.
 
-Private bucket only. Server generates object paths; client cannot submit an arbitrary storage path for reading/deleting. Storage privileged credentials stay backend-only and bypass provider access controls, so the app must check file ownership before using them. [Storage access control](https://supabase.com/docs/guides/storage/security/access-control)
+One OS process lock prevents two runtimes/maintenance commands against this data directory. Quotas and free-space reserves precede writes; maximum page count limits database growth. Corrupt/foreign/unsupported existing files are preserved and refused, including a missing live file during runtime.
 
-Use supported key types/headers through the Storage adapter; a publishable key is not a user token and a new opaque secret is not a JWT. Never copy the backend key into a public environment variable. [Supabase key guide](https://supabase.com/docs/guides/getting-started/api-keys)
+POSIX files are created with restrictive modes; Windows uses inherited local filesystem access controls. The database and backups are not encrypted. Use a private OS account and synthetic demo data; someone with administrative filesystem access is outside the browser authorization boundary. No anti-tamper certification is claimed.
+
+Backups contain password hashes and private business metadata and need the same care as the live file. Restore preserves the previous file, revokes sessions, clears request windows, and disables accounts to prevent resurrecting old access. Offline password reset/review is required before reopening intended accounts.
+
+## Current access and request bounds
+
+Login requires a configured Origin and application/json. The backend refuses duplicate/malformed session cookies and duplicate CSRF headers. Each account has one active session; logging in again replaces it. Default expiry is 30 minutes, absolute and backend enforced. Cookie deletion alone is insufficient: logout deletes its persisted session.
+
+Private reads and logout are rate limited in SQLite. Small POST/PUT/PATCH bodies are bounded to 64 KiB by actual streamed bytes before parsing; malformed/duplicate length headers are refused. Later upload/callback routes must preserve authentication/raw-signature order with their own route-appropriate byte limits.
+
+One bounded hash slot and five login attempts per username/minute plus thirty global/minute limit the costly password operation. This is a small shared-PC demo policy; an attacker on the same machine can still consume the allowed budget. Fixed-window limits are explicit rather than advertised as an Internet-scale abuse system.
+
+Readiness makes a local DB query; liveness remains independent. Failed storage returns a sanitized 503 and Retry-After. Responses never include SQL, filesystem paths, supplied password values, session cookies or private exception text. Unimplemented routes remain absent.
 
 ## Upload and output safety
 
@@ -65,17 +77,17 @@ Media download goes through the verified Graph/media API flow. Validate returned
 
 ## Download capabilities and sessions
 
-Website downloads require JWT and current membership. WhatsApp capability links are a deliberate bearer-access exception: >=128 bits random, hashed storage, ten-minute expiry, limited download count, artifact/link binding, and current link/member check. Forwarding one can expose that one artifact until expiry; limit content and lifetime accordingly.
+Future website downloads require the current browser session and current membership. WhatsApp capability links are a deliberate bearer-access exception: >=128 bits random, hashed storage, ten-minute expiry, limited download count, artifact/link binding, and current link/member check. Forwarding one can expose that one artifact until expiry; limit content and lifetime accordingly.
 
 Capability responses use `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, no analytics/third-party assets, and token-redacted application/proxy logs. Revoke on unlink. Signing a bucket URL alone does not support immediate membership-aware revocation, so the preferred capability endpoint authorizes then streams the private object.
 
-Browser sessions follow the supplied framework's supported Supabase pattern. If SPA storage is JavaScript-accessible, record that tradeoff and prevent XSS through escaped rendering, no raw HTML injection and a compatible CSP. Do not claim native secure storage guarantees on the website. Never send user access tokens through WhatsApp links.
+Browser sessions use a 256-bit random opaque cookie with HttpOnly, SameSite=Strict, Path=/api/v1 and an absolute expiry. SQLite retains only the token hash. Secure is false for the selected loopback HTTP listener; public HTTPS would require a reviewed secure-cookie configuration. The session endpoint recovers a per-session HMAC CSRF token for in-memory browser use. Private POST requires exact Origin and X-CSRF-Token. Neither the cookie nor credentials belong in browser localStorage. [OWASP session guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 
 ## Limits, secrets and logging
 
-Exact-origin CORS; HTTPS for deployment; no wildcard credentialed access. CORS is a browser policy, not API authorization. Tokens go in authorization headers, never query strings. Validate environment configuration at startup. Missing signatures/secrets deny processing; a demo flag never disables authentication.
+Exact-origin CORS; loopback HTTP for current execution; reachable HTTPS and its security review are deferred to the phone connectivity phase; no wildcard credentialed access. CORS is a browser policy, not API authorization. Current sessions use HttpOnly cookies; credentials and CSRF secrets never go in query strings. Validate environment configuration at startup. Missing signatures/secrets deny processing; a demo flag never disables authentication.
 
-Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, one active workspace job, five link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; a simple process-local general request limiter is acceptable on the documented one-process demo topology, with reset-on-restart explicitly understood.
+Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, one active workspace job, five link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; current read/mutation and login windows are persisted in SQLite and survive restart. They are fixed windows, not a production distributed limiter.
 
 Store provider tokens only in deployment/local secret stores. Logs include request/job IDs, error codes, durations and category counts; exclude source file contents, credentials, link codes, capability tokens, bank accounts and full phone identities. Audit events record actor/action/target without confidential payload dumps.
 
@@ -94,8 +106,8 @@ These checks establish the required bounded demonstration behavior. They do not 
 | Forged/expired user token | Auth dependency | Protected request denied, no repository mutation |
 | Different workspace object ID | Service/repository | 404 with no private fields |
 | Viewer attempts upload | Permission dependency | 403 before expensive parsing |
-| Cross-workspace child reference | Composite DB foreign key | Invalid reference rejected by actual PostgreSQL |
-| Public bucket misconfiguration | Setup gate | Unauthenticated object retrieval fails |
+| Cross-workspace child reference | Composite DB foreign key | Invalid reference rejected by actual SQLite |
+| Private local file exposure | Backend/route gate | No static mount of backend/data; unauthorized file retrieval fails |
 | Forged Meta callback | Raw-body signature validator | No event/job inserted |
 | Valid callback repeated | Inbox unique key | One logical job/effect |
 | Link code reused | Atomic consume transaction | Exactly one valid link created |
@@ -149,7 +161,7 @@ Do not let a frontend or supplier elevate its own evidence to verified status. A
 
 Use parameterized statements for values. Dynamic column/sort choices come from fixed allowlists, not request strings. Tenant filters cannot be omitted by an optional query argument. Avoid raw SQL fragments assembled from uploaded headers.
 
-Review/assignment races rely on constraints and transactions. If a constraint raises, roll back before another query. Do not translate every database exception into successful empty data. A migration account used during setup is never the regular runtime identity.
+Review/assignment races rely on constraints and transactions. If a constraint raises, roll back before another query. Do not translate every database exception into successful empty data. The browser never receives direct SQLite access. Local OS administrators can read/edit files; this boundary does not claim protection from the machine owner.
 
 An audit event belongs in the same transaction as the action it describes. A failure should not leave an audit record falsely claiming success. External send/delete attempts have separate attempt/result records because the provider and database do not share an atomic transaction.
 
@@ -173,7 +185,7 @@ These values are project choices requiring measurement. Parser jobs have a deadl
 
 Good: `request_id=req_104 action=import_parse state=failed code=ROW_LIMIT_EXCEEDED`.
 
-Bad: dumping full multipart contents, authorization headers, Graph request token, JWT, linking code or capability URL. Also avoid printing signed Storage URLs; they carry temporary authority.
+Bad: dumping full multipart contents, authorization headers, Graph request token, session cookie, linking code or capability URL. Also avoid printing future capability URLs; they carry temporary authority.
 
 For debugging, use synthetic fixtures and redacted structural payloads. Record field names/error counts without supplier banking data. Provider errors may contain URLs or input values; normalize them into safe codes before sending them to the frontend/logs.
 
@@ -183,14 +195,14 @@ Membership removal immediately invalidates subsequent API/phone actions. An alre
 
 Unlink revokes next-file intents and report capabilities. Re-link creates a new link identity; old capabilities do not reactivate. Demo reset touches only synthetic workspace resources and leaves unrelated workspaces intact.
 
-File deletion marks a pending-delete state, calls Storage outside the transaction, then records confirmed deletion. On partial/failed external deletion preserve path/retry state. A database row disappearing cannot be treated as evidence the provider object disappeared.
+File deletion marks a pending-delete state, removes the generated local file outside the transaction, then records confirmed deletion. On partial/failed filesystem deletion preserve path/retry state. A database row disappearing cannot be treated as evidence the private file disappeared.
 
 ## Security regression scenarios
 
 1. Legitimate reviewer imports a valid file successfully.
 2. Same reviewer uses another workspace's registration ID and is denied.
 3. Viewer uses the legitimate import body and is denied before parse.
-4. Missing JWT and malformed JWT both fail without internal error leaks.
+4. Missing cookie and malformed session token both fail without internal error leaks.
 5. Signed callback with wrong WABA/phone asset has no business effect.
 6. Valid inbound message replay produces one command.
 7. Delivery status replay does not create an inbound command.

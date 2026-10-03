@@ -13,8 +13,16 @@ logger = logging.getLogger("gstshield")
 
 
 class LocalHTTPBoundary:
-    def __init__(self, app: ASGIApp, origins: list[str], *, testing: bool = False) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        origins: list[str],
+        *,
+        testing: bool = False,
+        max_body_bytes: int = 65536,
+    ) -> None:
         self.app = app
+        self.max_body_bytes = max_body_bytes
         self.origins = frozenset(origins)
         self.allowed_hosts = {"localhost", "127.0.0.1", "::1"}
         if testing:
@@ -84,6 +92,58 @@ class LocalHTTPBoundary:
             )
             await response(scope, receive, send_with_headers)
             return
+        if scope["method"] in {"POST", "PUT", "PATCH"}:
+            lengths = [value for key, value in headers if key.lower() == b"content-length"]
+            invalid_length = len(lengths) > 1 or bool(
+                lengths and (len(lengths[0]) > 20 or not lengths[0].isdigit())
+            )
+            too_large = bool(
+                lengths and not invalid_length and int(lengths[0]) > self.max_body_bytes
+            )
+            body = bytearray()
+            if not invalid_length and not too_large:
+                while True:
+                    message = await receive()
+                    if message["type"] == "http.disconnect":
+                        return
+                    chunk = message.get("body", b"")
+                    if len(body) + len(chunk) > self.max_body_bytes:
+                        too_large = True
+                        break
+                    body.extend(chunk)
+                    if not message.get("more_body", False):
+                        break
+            if invalid_length or too_large:
+                response = JSONResponse(
+                    error_payload(
+                        request_id,
+                        "BAD_REQUEST" if invalid_length else "PAYLOAD_TOO_LARGE",
+                        "Request length is invalid."
+                        if invalid_length
+                        else "Request exceeds the allowed size.",
+                    ),
+                    status_code=400 if invalid_length else 413,
+                    headers={
+                        "Access-Control-Allow-Origin": origins[0],
+                        "Access-Control-Allow-Credentials": "true",
+                        "Vary": "Origin",
+                    }
+                    if origins
+                    else None,
+                )
+                await response(scope, receive, send_with_headers)
+                return
+            original_receive = receive
+            delivered = False
+
+            async def bounded_receive() -> Message:
+                nonlocal delivered
+                if not delivered:
+                    delivered = True
+                    return {"type": "http.request", "body": bytes(body), "more_body": False}
+                return await original_receive()
+
+            receive = bounded_receive
         try:
             await self.app(scope, receive, send_with_headers)
         except Exception as exc:
@@ -104,6 +164,7 @@ class LocalHTTPBoundary:
                 status_code=500,
                 headers={
                     "Access-Control-Allow-Origin": origins[0],
+                    "Access-Control-Allow-Credentials": "true",
                     "Vary": "Origin",
                 }
                 if origins

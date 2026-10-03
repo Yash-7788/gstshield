@@ -1,6 +1,6 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Planning baseline: 2026-10-03. Status: implementation specification, not implemented functionality. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
@@ -12,7 +12,7 @@ The implementation sequence now has 13 phases, owned by [05](05_BUILD_AND_VERIFI
 
 | Document | Owns |
 |---|---|
-| [02_TECH_STACK_AND_DEPLOYMENT.md](02_TECH_STACK_AND_DEPLOYMENT.md) | Technology decisions, dependency candidates, free deployment and setup |
+| [02_TECH_STACK_AND_DEPLOYMENT.md](02_TECH_STACK_AND_DEPLOYMENT.md) | Technology decisions, installed dependencies, local setup and recovery |
 | [03_BACKEND_AND_DATA_SPEC.md](03_BACKEND_AND_DATA_SPEC.md) | Persistence, processing, reconciliation and service architecture |
 | [04_WEBSITE_AND_WHATSAPP_INTEGRATION.md](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) | Channel behavior and connection instructions |
 | [05_BUILD_AND_VERIFICATION_PLAN.md](05_BUILD_AND_VERIFICATION_PLAN.md) | Build sequence, acceptance checks and demonstration rehearsal |
@@ -26,7 +26,7 @@ Read 01, 07 and 02 first; align 03 and 08 before implementing either channel. Th
 
 The three foundations are [GST_ITC_SHIELD_REPORT.md](GST_ITC_SHIELD_REPORT.md), [GST_ITC_SHIELD_REVIEW.md](GST_ITC_SHIELD_REVIEW.md), and [ENGINEERING_HEADSTART.md](ENGINEERING_HEADSTART.md), included in this directory. The user confirmed that the headstart is the third document. The report supplies product ambition; the review supplies reproduced defects and corrections; the headstart supplies transferable implementation lessons and their limitations. All three were read for this pack.
 
-Jainune supplies engineering lessons: verify provider fit and dependency combinations early; define shared contracts before wiring screens; preserve unknown states; trace work across database, storage and callbacks; prove the foundation through a running deployed flow. Jainune's application features and early infrastructure choices are not copied here.
+Jainune supplies engineering lessons: verify provider fit and dependency combinations early; define shared contracts before wiring screens; preserve unknown states; trace work across database, storage and callbacks; prove the foundation through a running local flow. Jainune's application features and early infrastructure choices are not copied here.
 
 ## The product we will build
 
@@ -53,7 +53,7 @@ The initial dataset target is 100 purchase rows. Hard application limit: 2,000 r
 | Reversal/reclaim case | Real persisted case workflow using clearly marked sample evidence | A new observation proposes review; it never marks a return filed |
 | E-invoice check | IRN presence/format and evidence status | Fabricated hexadecimal IRN is never described as authenticated |
 | Evidence pack | Real PDF and manifest generated from persisted facts | File hashes, snapshot IDs, unresolved issues and sample labels included |
-| WhatsApp companion | Real link, command, upload and reply flow on approved test recipients | Physical phone receives a response from the deployed integration |
+| WhatsApp companion | Real link, command, upload and reply flow on approved test recipients | Physical phone receives a response from the connected integration |
 | Supplier reminder | Draft always; send only through explicitly enabled verified recipient flow | Correct invoice details, opt-in conditions and delivery state |
 
 No government credentials, bank credentials, real escrow, autonomous filings, subscriptions or ERP OAuth are prerequisites. The demonstration can show an illustrative allocation, but cannot call it a legally established safe harbour. Use fixture observations for supplier filing status until a documented authorized integration exists.
@@ -97,15 +97,15 @@ Do not force the original 84/8/8 distribution into the engine. The fixture desig
 
 ## Quality bar and priorities
 
-Must ship: working import, persistent reconciliation, transparent review, aligned website/WhatsApp access, private artifacts, deploy/restart persistence, and a rehearsed demo. Should ship: case timeline, useful PDF, proposal CSV, supplier reminder draft. Stretch: consented live supplier reminder, signed e-invoice verification, richer natural-language explanations, validated additional portal tables.
+Must ship: working import, persistent reconciliation, transparent review, aligned website/WhatsApp access, private artifacts, local restart/backup persistence, and a rehearsed demo. Should ship: case timeline, useful PDF, proposal CSV, supplier reminder draft. Stretch: consented live supplier reminder, signed e-invoice verification, richer natural-language explanations, validated additional portal tables.
 
 The architecture stays small: one backend, one database, one file store, one durable job mechanism. Security must protect accounts, documents and callbacks, but the hackathon does not need enterprise SSO, Kubernetes, distributed caches or extensive compliance machinery.
 
-Definition of done: a clean checkout can be installed using committed locks; deployment reaches readiness; a real website action creates persisted results; a linked phone sees those results; unauthorized users cannot retrieve them; restarting the backend does not erase imports; demo fixtures produce the expected results.
+Definition of done: a clean checkout can be installed using committed locks; local startup reaches readiness; a real website action creates persisted results; a linked phone sees those results; unauthorized users cannot retrieve them; restarting the backend does not erase imports; demo fixtures produce the expected results.
 
 ## Decisions awaiting evidence
 
-The supplied frontend framework, real portal sample layout, Meta account/test-number availability, actual account quotas, and dependency installation proof remain explicit inputs. These do not prevent implementing the deterministic core, but they prevent claims that the complete deployed integration is already verified.
+The supplied frontend framework, real portal sample layout, Meta account/test-number availability, Meta account entitlements remain external inputs; installed backend dependency proof is recorded in 02. These do not prevent implementing the deterministic core, but they prevent claims that the complete connected integration is already verified.
 
 ## Feature-level product requirements
 

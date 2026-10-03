@@ -4,9 +4,9 @@
 
 Decision: 2026-10-03. Run the hackathon website backend on the local PC. No Render, cloud server, external database, cloud storage, Redis or hosted identity setup. A local backend process is still required for the website to call Python functionality.
 
-Phase 1 implements the HTTP/configuration foundation. Phase 2 will use a local SQLite file and private files under `backend/data/`. SQLite uses Python's standard library and requires no database service or account. No database, schema, uploads or private-data endpoints exist in Phase 1.
+Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phase 2 is complete. No uploads, reconciliation, reports or phone routes exist yet.
 
-The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) overrides older cloud and temporary-memory proposals in the planning pack. Work proceeds one phase at a time, with a review gate before the next phase.
+The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) defines the local architecture; the eight MDs now use this decision throughout. Work proceeds one phase at a time, with a review gate before the next phase.
 
 ## Start on this PC
 
@@ -34,11 +34,16 @@ If port 8000 is occupied, set both `PORT` and `PUBLIC_API_URL` to the same new p
 | Route | Behavior |
 |---|---|
 | GET /health/live | HTTP process can answer; returns status=ok |
-| GET /health/ready | Configuration validated and application lifespan started; returns status=ready |
+| GET /health/ready | Startup complete and local SQLite query succeeds; returns status=ready |
+| POST /api/v1/auth/login | Origin-checked local sign-in; sets HttpOnly session cookie |
+| GET /api/v1/auth/session | Recover identity, expiry and CSRF token from the cookie |
+| POST /api/v1/auth/logout | Origin/CSRF-protected session revocation and cookie deletion |
+| GET /api/v1/workspaces | Current account's active memberships only |
+| GET /api/v1/workspaces/{workspace_id}/registrations | Registrations within a currently permitted workspace |
 | GET /docs | Developer API documentation in local/test mode |
 | GET /openapi.json | Schema in local/test mode |
 
-Readiness returns 503 before startup/after shutdown. It does not claim SQLite connectivity, file durability, import readiness, GST correctness or WhatsApp availability. Developer docs/schema are disabled in APP_ENV=demo; this mode still runs locally.
+Readiness returns 503 before startup/after shutdown. It checks SQLite availability, but does not claim import readiness, GST correctness or WhatsApp availability. Developer docs/schema are disabled in APP_ENV=demo; this mode still runs locally.
 
 Health successes use `data` and `meta.request_id`. Application errors use `error.code/message/details/retryable` and `meta.request_id`. Each HTTP request receives a server-generated ID also returned in X-Request-ID; client-supplied IDs are not trusted.
 
@@ -61,23 +66,23 @@ Implemented validation includes:
 
 Startup configuration failures print a sanitized message and exit with code 2. Never print the settings object/model_dump, raw validation errors or environment values.
 
-Upload/parser/session/rate/linking/download settings are validated reservations for later phases. They are not enforced features yet. WHATSAPP_ENABLED must remain false: even complete provider configuration cannot activate an unfinished integration.
+Storage, session, private request-rate and small streamed-body limits are enforced in Phase 2. Upload/parser/linking/download/provider limits remain validated reservations until their features are implemented. WHATSAPP_ENABLED must remain false: even complete provider configuration cannot activate an unfinished integration.
 
-## HTTP safeguards and limits of Phase 1
+## Current HTTP safeguards
 
-The launcher binds to loopback. The HTTP boundary rejects non-local Host values and duplicate Host/Origin headers. Requests carrying an unapproved Origin are rejected before routes run. CORS permits exact configured origins, implemented GET operations and explicit headers; credentialed cross-origin cookies are not enabled.
+The launcher binds to loopback. The HTTP boundary rejects non-local Host values and duplicate Host/Origin headers. Requests carrying an unapproved Origin are rejected before routes run. CORS permits exact configured origins, GET/POST, Content-Type and X-CSRF-Token, with credentials enabled. The website/API must use the same HTTP hostname for SameSite=Strict cookies, such as localhost on ports 3000/8000.
 
 Security/no-store headers and request IDs cover successful and failed HTTP responses. Unexpected errors return a generic message; logging keeps the request ID and exception class rather than the private exception contents. The outer boundary prevents the framework's completed 500 response from causing Uvicorn to log the original exception again. Partially sent responses abort with a sanitized failure.
 
-These controls are not authentication. Before accepting documents, Phase 2 must implement private access and data scoping. DEMO_MODE is a sample-data flag and never an authentication bypass.
+Host/Origin controls complement the current session and membership checks; they do not grant access on their own. DEMO_MODE is a sample-data flag and never an authentication bypass.
 
-There are no upload routes in Phase 1. Streaming-body, parser, disk and processing quotas will be enforced at their actual boundaries in later phases; a configuration field alone does not provide that protection.
+There are no upload routes yet. Small mutation bodies are bounded by actual streamed bytes before JSON parsing. Upload/parser/processing limits will be enforced at their own authenticated boundaries in Phase 3; the small-body bound is not a finished upload implementation.
 
 ## Local storage decision
 
-Phase 2 will keep authoritative data in a local SQLite file, with bounded private artifact/source files on the PC. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
+Phase 2 keeps accounts, scopes and sessions in backend/data/gstshield.sqlite3. Source/artifact files are introduced and bounded in their feature phases. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
 
-The local file should survive normal process restarts. Durability, transactions, expiry, backup/restore and denied cross-session access require Phase 2 implementation and tests; they are not proven by a health response. Local data is not encrypted by this foundation.
+Committed records and unexpired sessions survive normal backend restarts. Explicit transactions, parameterized SQL, STRICT tables, foreign keys, schema validation, an OS process lock and storage quotas protect the implemented local flow. Existing incompatible/corrupt files are refused and preserved. Local data/backups are not encrypted; Windows file access follows the local OS account permissions.
 
 The database/data directory, dotenv credentials and tooling are ignored by Git. Keep real taxpayer documents out of the public repository and use synthetic fixtures for development.
 
@@ -86,7 +91,7 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 | Phase | Work | Status |
 |---|---|---|
 | 1 | Local runtime, configuration and HTTP foundation | Complete |
-| 2 | Local SQLite/private files and private access | Not started |
+| 2 | Local SQLite/private files and private access | Complete |
 | 3 | Bounded imports, checking and confirmation | Not started |
 | 4 | Reconciliation and versioned human review | Not started |
 | 5 | Backend reports, cases and evidence workflow | Not started |
@@ -147,16 +152,75 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 
 | Folder | Responsibility |
 |---|---|
-| app/api | Future HTTP routes and access dependencies |
+| app/api | Current access/workspace routes; future feature routes |
 | app/contracts | Shared HTTP/input/output contracts |
 | app/domain | Future exact-money and reconciliation rules |
-| app/services | Future use cases shared by website and WhatsApp |
+| app/services | Local account/session access now; future shared feature use cases |
 | app/adapters | Future import/report/provider boundaries |
-| app/storage | Future local SQLite/private-file persistence |
+| app/storage | Current SQLite, data locking, quota, backup/restore foundation |
 | app/jobs | Future bounded local processing |
-| app/security | HTTP boundary now; private access/upload/callback checks later |
+| app/security | Host/Origin/security headers and streamed body boundary; upload/callback checks later |
 | tests/unit | Configuration and HTTP-boundary regressions |
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-No later-phase endpoint or result is represented as working. The next implementation increment is Phase 2 after Phase 1 review.
+No Phase 3–13 endpoint or result is represented as working. Phase 3 remains a separate user-directed increment after the current review gate.
+
+## Create local accounts and context
+
+Stop the backend before operator commands. There are no seeded credentials or public registration route. The new account command creates a private workspace and OWNER membership atomically:
+
+```powershell
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage user-create --username demo-owner --workspace 'Demo Workspace'
+```
+
+Choose/confirm a 12–128 character password through the private terminal prompt. The command prints user/workspace IDs. Do not put passwords in terminal command arguments, screenshots or Git. Add a synthetic registration using the printed workspace UUID:
+
+```powershell
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage registration-create --workspace-id '<workspace UUID>' --gstin '27ABCDE1234F1Z5' --name 'Synthetic Demo Registration'
+```
+
+The example GSTIN is synthetic, structurally formatted and not government-verified. Phase 2 does not verify taxpayer existence, checksum, filing status or ITC eligibility.
+
+Each additional account gets its own workspace. Grant/revoke a membership through offline administration when sharing a team workspace:
+
+```powershell
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage membership-set --username teammate --workspace-id '<workspace UUID>' --role REVIEWER
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage membership-set --username teammate --workspace-id '<workspace UUID>' --role REVIEWER --revoke
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage password-reset --username demo-owner
+```
+
+Offline administration has the local operator's filesystem authority. It is not a public API or a browser role bypass. Every website resource query still checks current active membership and session state. Password reset revokes prior sessions.
+
+## Website access contract
+
+The supplied frontend is pending. The implemented API flow is POST /api/v1/auth/login with JSON username/password and Origin, GET /api/v1/auth/session after reload, then workspace/registration reads. Use credentials:include in the browser client. The HttpOnly cookie is never copied to JavaScript storage.
+
+Session JSON carries user_id, username, expires_at and csrf_token. Hold CSRF in memory and attach X-CSRF-Token plus the configured Origin to logout and later private mutations. A 401 requires sign-in; a 429/503 follows Retry-After with a bounded retry policy. Current lists are finite from provisioned scope limits; future financial lists paginate.
+
+Use localhost consistently on the browser's website/API URLs. CORS alone cannot fix a SameSite cookie blocked by mixing localhost and 127.0.0.1. The configuration loader now checks this alignment. Current HTTP cookies intentionally lack Secure because the backend is a loopback HTTP listener; reachable HTTPS is a later separate integration decision.
+
+There is one active session per account. Sign-in again replaces it; tabs in the same browser share the cookie. Expiry is absolute, normally 30 minutes. Logout deletes the SQLite session, not just the browser cookie. No refresh-token or JWT service is used.
+
+## Offline backup and recovery
+
+With the backend stopped:
+
+```powershell
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage backup
+..\.tooling\Scripts\uv.exe run --frozen python -m app.manage restore --backup-id '<printed backup UUID>'
+```
+
+Backups live in backend/data/backups and contain private account hashes/data. Only generated UUIDs are accepted for restore. The default budget permits three backup/recovery files; archive an old file safely outside private storage before filling it. Restore needs space/count budget to preserve the current database, including a corrupt file.
+
+Restore validates/stages the backup, preserves the old database, clears sessions/request windows, disables restored accounts, and replaces the live file. Review memberships and reset passwords for intended users before reopening access. An old password/session must not silently regain access from a historical backup.
+
+Existing unresolved journal/WAL/SHM files prevent restore; preserve them for operator recovery. Normal SQLite journaling handles interrupted transactions; do not delete a sidecar to bypass recovery. Unknown schema versions require a reviewed upgrade or supported backup, not deletion/recreation.
+
+This backup covers the Phase 2 database. Phase 3 must extend the backup/restore contract when private source files exist. No report/source-file retention is claimed before those features are implemented.
+
+## Phase 2 verification record
+
+Local Windows verification on 2026-10-03: **118 passed, 1 skipped** in the complete Phase 1 + Phase 2 suite. Frozen sync, Ruff lint/format, syntax compilation and diff checks passed. The skipped test requires Windows symlink privilege; the separate actual Windows junction denial test passed. Focused tests cover two identities, session/CSRF/role boundaries, persistent limits, actual process restart, offline backup/restore, preserved corrupt/foreign/future-schema files, SQL rollback and disk/database quotas. The real restart test exercises the same Phase 1 launcher and HTTP boundary with Phase 2 accounts/scoped reads.
+
+The Windows symlink creation check may skip when Developer Mode/privilege is unavailable; a separate Windows junction check exercises the reparse-point denial without that privilege. Linux CI exercises symlinks when available. Remote workflow results remain separate evidence.

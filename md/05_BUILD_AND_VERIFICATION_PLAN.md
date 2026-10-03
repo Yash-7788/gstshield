@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active PC-only scope (2026-10-03):** Run the website backend on the local PC. No Render, cloud server, external database, ORM or cloud-storage service. Phase 1 provides the HTTP/configuration foundation only. Phase 2 will persist data in a local SQLite file under backend/data. The phase plan in [05](05_BUILD_AND_VERIFICATION_PLAN.md) and [backend README](../backend/README.md) overrides the older cloud, managed-auth and temporary-memory proposals below. Local storage does not remove access checks or callback signature requirements.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,12 +10,12 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **13 phases**. Phase 1 remains complete; Phases 2–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **13 phases**. Phase 1 remains complete; Phase 2 is complete and locally verified; Phases 3–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
 | 1 | Local runtime and HTTP foundation | Backend | Complete |
-| 2 | Local storage and private access | Backend | Not started |
+| 2 | Local storage and private access | Backend | Complete |
 | 3 | File imports, checking and confirmation | Backend | Not started |
 | 4 | GST reconciliation and human review | Backend | Not started |
 | 5 | Backend reports, cases and evidence workflow | Backend | Not started |
@@ -52,9 +52,9 @@ Review gate:
 5. Run lint, formatting, syntax compilation, regression tests and a real loopback HTTP smoke check.
 6. Record what is implemented and what remains a future setting or feature. Readiness must not claim a database check before persistence exists.
 
-Completed locally on 2026-10-03: 78 tests passed, including real local process/socket startup; Ruff lint/format, syntax compilation and frozen dependency installation passed. Configuration coercion, malformed dotenv handling, API port alignment and exception-log redaction defects found during review were fixed and covered by regressions. See the [verification record](../backend/README.md#phase-1-verification-record). GitHub workflow results are separate from this local proof. Phase 2 remains unstarted and is deferred until the next user-directed work session.
+Completed locally on 2026-10-03: 78 tests passed, including real local process/socket startup; Ruff lint/format, syntax compilation and frozen dependency installation passed. Configuration coercion, malformed dotenv handling, API port alignment and exception-log redaction defects found during review were fixed and covered by regressions. See the [verification record](../backend/README.md#phase-1-verification-record). GitHub workflow results are separate from this local proof. Phase 2 has completed its local review gate; its verification record is maintained in the backend README.
 
-### Phase 2 — Local storage and private access (not started)
+### Phase 2 — Local storage and private access (complete)
 
 Owner: backend. Outcome: Store data and establish private access on the PC before any document-handling route is opened.
 
@@ -363,209 +363,37 @@ Apply the user-requested [Ponytail rules](https://github.com/DietrichGebert/pony
 
 Record actual commands/results after review. A green foundation is evidence for Phase 1 only; it does not certify future parsers, GST logic, authentication or phone integration as secure or correct.
 
-## Original cloud-oriented sequence — reference only
+## Phase 2 concrete implementation and gate
 
-The material below is retained research/history. Its PostgreSQL/Supabase/Render milestones do not instruct the current local-only build.
+The local access choice is operator provisioned accounts, scrypt passwords, opaque cookie sessions, Origin/CSRF checks and scoped reads. SQLite is authoritative; browser localStorage is reserved for harmless UI preferences. No upload/reconciliation/report/phone feature has been added by this phase.
 
-## Order of work
+Implemented schema v1: metadata, users, workspaces, memberships, registrations, sessions and rate_windows. Future tables are added only with their phase and a backed-up schema upgrade procedure. Financial storage will use integer paise; Phase 2 has no monetary rows or tax calculations.
 
-Do not implement every feature first and discover deployment/WhatsApp problems at the end. Prove runtime, persistence, auth and a phone round-trip; then grow a vertical import-to-result flow. The supplied website is connected once available, keeping its design intact.
-
-Use the original report for ambition, the review for known defect regressions, and ENGINEERING_HEADSTART.md for cross-layer verification. This is a bounded hackathon workflow, not a production certification program. Tests target meaningful risks; do not write thousands of assertions that simply mirror code.
-
-## Milestone 0 — freeze the foundation inputs
-
-Inputs: this pack, existing website when supplied, current provider docs, permitted samples, Meta developer account.
-
-Deliverables:
-
-- Dedicated GST repository, separate from Jainune.
-- Recorded actual frontend manifest/build requirements.
-- One selected database/storage/backend setup with clear cost ceilings.
-- Candidate Python package resolution and committed lockfile.
-- Minimal environment template and startup config validation.
-- Meta setup register: app/WABA/phone IDs, recipient status and token lifetime, with secrets kept outside docs.
-
-Completion: a clean Linux/Windows-compatible dependency installation, application imports, and minimal health endpoint work. If a candidate version fails, diagnose the specific compatibility issue and revise the pin rather than bypassing the resolver. Record the working lock and runtime.
-
-## Milestone 1 — deployed skeleton and early WhatsApp proof
-
-Implement JWT verification, workspace membership, private Storage adapter, PostgreSQL connection, health routes, durable inbox/outbox and a minimal linked-user STATUS command.
-
-Deploy the backend and existing frontend skeleton if available. Pre-create two synthetic users in different workspaces. Prove a private file round-trip and a restart. Configure the callback, verify GET challenge, then receive a real message from a physical phone and send a real response.
-
-Completion evidence:
-
-- Deployed URL reaches readiness; missing config fails visibly.
-- Authorized user sees their workspace; second workspace cannot retrieve the first's file.
-- Stored file survives restart.
-- Wrong callback signature has no effects; repeated valid callback has one effect.
-- Real phone reply and provider IDs are recorded without logging confidential message contents.
-- Actual account entitlements/costs and token expiry are known.
-
-If Meta setup is blocked, deterministic core work can continue using an explicitly labeled emulator. Keep the live phone proof pending and do not describe WhatsApp as complete.
-
-## Milestone 2 — import and canonical data
-
-Implement CSV and XLSX purchase adapters plus canonical-demo-v1 portal JSON. Implement staged rows, mapping preview, row errors, confirmation, file hashing, duplicate-import behavior and context validation.
-
-Expose the upload/preview/confirm routes. Website and WhatsApp upload invoke the same services. Add official portal adapter only after validating an authorized actual layout.
-
-Completion evidence:
-
-- Accepted rows persist exact tax components and dates.
-- Rejected records have stable field/row reasons.
-- Same file retry does not duplicate records.
-- Missing tax components remain unknown.
-- Unsupported sections/layouts do not turn into empty successful imports.
-- XLSX formulas and archive expansion beyond bounds stop safely.
-- Both channels create visible imports in the same selected context.
-
-## Milestone 3 — deterministic reconciliation and review
-
-Implement exact gates, duplicate detection, candidate scoring, competition ambiguity, unique assignment, versioned runs, review events and committed summaries.
-
-Create a small golden fixture first, independently calculating each expected result. Then create the 100-row presentation dataset. Do not tune expectations to whatever the code happens to return.
-
-Completion evidence:
-
-- Counts sum to accepted purchase rows.
-- Money equations hold exactly.
-- Shuffling input does not change semantic results.
-- One portal row cannot satisfy two purchases.
-- Same invoice number a year apart does not match.
-- Two competing reviews cannot claim the same portal record.
-- A fuzzy suggestion remains a suggestion until approved.
-- Stale review fails with VERSION_CONFLICT rather than overwriting new evidence.
-
-## Milestone 4 — website experience and usable WhatsApp companion
-
-Connect real UI data, loading/empty/error states, category drilldown and review actions. Generate TypeScript types from OpenAPI. Implement the complete linking, context, upload, run, status, report and unlink command set.
-
-Completion evidence:
-
-- A website run appears in a physical phone STATUS response.
-- Phone upload appears in website import history.
-- ACCOUNT/workspace switches clear private cached data.
-- Viewer role cannot mutate from either channel.
-- Expired link code and unlinked phone cannot access results.
-- Repeated RUN callback/retry returns one logical run.
-- Slow/waking backend is represented honestly without duplicate operation creation.
-
-## Milestone 5 — cases, proposals and evidence artifacts
-
-Implement one real persisted sample case per selected demonstration scenario, with evidence provenance. Generate PDF and generic proposal CSV. Add optional supplier reminder draft; live sending remains conditional on verified recipient/account rules.
-
-Completion evidence:
-
-- Report source IDs/hashes/timestamps correspond to persisted imports.
-- Sample filing observation remains sample in UI, WhatsApp and PDF.
-- PDF renders rupee/Unicode safely and escapes supplied markup.
-- CSV text cannot execute spreadsheet formulas.
-- Proposal version/allocations are frozen; stale source invalidates export.
-- Download does not mark payment or filing complete.
-- Unlink immediately invalidates old phone report capabilities.
-
-## Milestone 6 — demo readiness
-
-Run targeted tests, database integration checks, frontend type/build checks and one deployed end-to-end rehearsal. Record versions, commit, deployed URLs, fixture hashes and results. No fabricated green status for unavailable checks.
-
-Freeze feature additions once rehearsal works. Fix blockers first: login, uploads, exact math, duplicate handling, phone delivery, downloads and deployment restart. Cosmetics and optional natural-language improvements follow.
-
-## Regression matrix from the original engine review
-
-| Trigger | Required outcome | Verification layer |
-|---|---|---|
-| Two purchases / one portal row | Conflict or ambiguity, never two assignments | Domain + real unique constraint |
-| Same number/value across years | No exact match | Domain |
-| Empty invoice numbers | Row rejected | Parser |
-| Gross 99,000 for base 1,000 + tax 180 | Amount equation rejected | Parser + request model |
-| Non-MSME absent from snapshot | No automatic MSME settlement label | Policy/report |
-| Fabricated 64-hex IRN | FORMAT_ONLY, not VERIFIED | Domain + serialized output |
-| Negative invoice amount | Reject; credit note requires explicit type | Parser + DB |
-| Original advertised fuzzy example below threshold | Honest suggestion/missing outcome | Domain; actual RapidFuzz |
-| Different CGST/SGST despite same total | Component mismatch | Domain |
-| Repeated import/request key | Same operation or explicit conflict | API + database |
-| Equal candidates / order shuffled | Stable ambiguity | Domain |
-| Latest snapshot supersedes old | Historical run retained, new run explicit | Integration |
-| Missing filing evidence | Unknown/EVIDENCE_REQUIRED | Case service |
-| Payment partially observed | Proposal bounded by evidenced balance | Service |
-| New evidence while reviewing | Stale version fails | Real concurrent DB check |
-| Forged provider event | No persistence/effects | HTTP signature test |
-| Valid repeated provider event | One logical effect | Inbox uniqueness |
-| Meta send timeout after acceptance | UNKNOWN; no blind resend | Adapter fault test |
-| Cross-workspace file/run ID | 404, no data | API + real role/membership |
-| Revoked member / still valid JWT | Denied | Auth integration |
-| Huge XLSX expansion / deeply nested JSON | Bounded rejection | Parser safety |
-| Spreadsheet formula in supplier name | Neutralized text on CSV export | Artifact consumer test |
-
-## Test strategy
-
-Fast unit checks: amount conversion/equation/rounding, conservative normalization, exact gates, fuzzy ranking, ambiguity and policy unknown states. Use actual RapidFuzz, not a mocked scorer that guarantees the desired output.
-
-Contract checks: real Pydantic serialization through FastAPI, complete enum/status/error shapes, pagination boundaries and money strings. Consume at least one response with the frontend adapter. Type checking alone cannot prove the API's actual shape.
-
-Database checks: real PostgreSQL transaction rollback, unique assignment, composite tenant references, idempotency races, job lease compare-and-complete and optimistic version updates. SQLite/in-memory mocks cannot establish PostgreSQL locking behavior.
-
-Integration checks: private Storage upload/download/delete outcome; actual Auth project token/issuer configuration; Meta callback and physical phone delivery; restart recovery. Provider mocks cover failure branches but are explicitly separate from actual provider proof.
-
-Artifact checks: open generated PDF, inspect pages visually once for clipping/font/escaping, compare monetary totals; open CSV as plain text and in a spreadsheet-safe test context. An existing PDF filename is not render verification.
-
-## Crash-point rehearsal
-
-| Crash boundary | Recovery expectation |
+| Proof | Required observation |
 |---|---|
-| File reservation before upload | Reservation discoverable; retry/cleanup possible |
-| Storage success before DB reference | Deterministic reserved path permits reconciliation |
-| Parse before confirmation | No run uses unconfirmed data |
-| Run computation before completion transaction | No partial successful summary |
-| Job lease expires during computation | Old owner cannot complete after takeover |
-| Report file stored before artifact READY | Recovery links verified file or cleanup removes orphan |
-| Inbound callback persisted before processing | Queued command resumes after restart |
-| Outbound message transmitted before response | UNKNOWN, requires status/manual recovery |
+| Phase 1 compatibility | Config/HTTP redaction, health and origin/Host regressions continue to pass |
+| Browser access | Login -> session -> workspace -> registration -> logout works with envelopes and credentials |
+| Identity isolation | Two local users cannot retrieve the other's registrations by changing UUID |
+| Revocation | Expiry, logout, new login, inactive membership and password reset deny old authority |
+| Role boundary | A VIEWER cannot pass an OWNER-only membership gate |
+| Retention | Actual restarted process retains committed records and unexpired session |
+| Backup/restore | Offline commands validate backup; restored sessions fail and accounts require recovery |
+| Corruption/schema | Existing empty, corrupt, foreign, future-version or modified-schema DB is refused unchanged |
+| SQL atomicity | Duplicate and foreign-key failures roll back the whole operation |
+| Resource bounds | Body, account/session/list, disk/database and backup limits fail safely |
+| Process ownership | Second runtime or maintenance command cannot acquire the active data lock |
+| No leakage | Errors never contain password, session token, private filename or raw SQL |
 
-These are finite targeted cases; do not attempt exhaustive distributed chaos infrastructure for the hackathon.
+Phase 2 completed locally on 2026-10-03: 118 tests passed, one Windows symlink-privilege test skipped; the actual Windows junction test and process restart/offline backup/restore proof passed. Frozen dependency installation, lint/format, syntax and diff checks passed. The Windows backup flush defect found during review was fixed, as were same-host browser-cookie alignment and bounded validation/prompt failure paths. Local verification and remote CI remain separate evidence. Phase 3 starts only after a new user-directed increment.
 
-## Deployment checklist
+## Future regression set to carry through the phases
 
-- [ ] Frozen install and clean frontend build succeed.
-- [ ] Backend binds assigned port with one worker.
-- [ ] Migrations applied through the dedicated migration credential.
-- [ ] Ordinary backend role cannot perform schema administration.
-- [ ] Exact production demo origin in CORS.
-- [ ] Auth redirect/project configuration matches deployed URL.
-- [ ] Private bucket and tenant access denial checked.
-- [ ] Backend sleep/wake understood; sample job processed before judging.
-- [ ] Callback signature, WABA subscription and phone-number ID verified.
-- [ ] Token remains valid through demonstration.
-- [ ] Account-level quotas and send budget checked.
-- [ ] Restart retains sources/results and resumes eligible jobs.
-- [ ] Secrets absent from frontend bundle and repository.
-- [ ] Previous working deployment/commit known for rollback.
+Keep independently prepared expected counts/totals and deliberate bad cases. Import gates cover corrupt XLSX/JSON, nested/expanded bounds, malformed decimals, missing tax components, ambiguous headers and partial confirmation. Reconciliation gates cover duplicate identities, cross-year invoice numbers, paise tolerance, ties, competing candidates, unique assignment and shuffle invariance.
 
-Rollback for the demo: prefer redeploying the previous working commit when schema is backward compatible. Avoid destructive migrations during rehearsal. If restoring a database snapshot is needed, stop processing first and verify schema/record compatibility; a frontend rollback alone cannot repair incompatible database changes.
+Review/case/report gates cover stale versions, transaction rollback, superseded snapshots, rejected candidates, missing evidence, report source manifests, safe formulas/markup and truthful proposal labels. No report claims official filing verification or payment execution.
 
-## Rehearsal script and fallback
+Frontend connection gates cover same-host cookies, session reload, selected-context changes, denied IDs, cancellation, network failure, controlled Retry-After, double-click creates, private cache clearing and real committed responses replacing mocks.
 
-Use a fixed synthetic workspace and documented reset command/route restricted to its owner. Confirm reset deletes only synthetic resources. Practice from a fresh account/session and empty run state, not a browser that secretly retains a prepared result.
+Phone gates cover raw signatures, configured assets, link expiry/single consumption, event replay, media bounds, unlink revocation, ambiguous send UNKNOWN and exact agreement with website summaries. Real phone proof remains required; an adapter emulator is development evidence only.
 
-Rehearse: sign in -> upload purchase -> upload snapshot -> preview/confirm -> run -> inspect exact/fuzzy/missing -> review -> phone STATUS -> REPORT -> download -> sample case -> proposal export. Record elapsed times rather than promise the original eight-second target without measurement.
-
-Keep the fixtures locally and in the repository; keep a recording of a genuinely verified phone flow and a PDF ready only as openly labeled outage fallback. If internet is unavailable, explain which portions are local and which cannot execute. Do not replace live evidence with a fake webhook event while describing it as a real phone interaction.
-
-## Readiness ledger template
-
-Update this in the implementation repository as work occurs:
-
-| Gate | Status | Evidence | Remaining issue |
-|---|---|---|---|
-| Dependencies / clean build | NOT_RUN | None yet | Resolve/install candidates |
-| Auth / tenant isolation | NOT_RUN | None yet | Provision test project |
-| Imports / golden fixtures | NOT_RUN | None yet | Implement parsers |
-| Matching / real DB races | NOT_RUN | None yet | Implement engine/schema |
-| Supplied website integration | WAITING_INPUT | Website not supplied | Inspect frontend |
-| Physical WhatsApp flow | NOT_RUN | None yet | Configure Meta assets |
-| Private reports / proposals | NOT_RUN | None yet | Implement artifacts |
-| Deployed restart / rehearsal | NOT_RUN | None yet | Deploy and rehearse |
-
-Record PASSED, FAILED, BLOCKED or NOT_RUN honestly; include the exact command/environment when relevant. Later create LOGICAL_CORRECTNESS.md from discovered causes, invariants and regressions rather than claiming these planned safeguards are already implemented.
+Every later phase repeats affected earlier checks after edits. Test the enforcing layer with allowed adjacent cases, rather than asserting that a named helper exists. Performance work records measured time/memory and does not weaken exact matching, privacy or validation to achieve a faster number.

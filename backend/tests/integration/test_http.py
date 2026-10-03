@@ -49,7 +49,7 @@ def assert_envelope(response, code):
     assert response.headers["x-content-type-options"] == "nosniff"
 
 
-def test_health_readiness_tracks_lifespan_and_does_not_promise_storage(application):
+def test_health_readiness_tracks_storage_lifespan(application):
     client = TestClient(application)
     response = client.get("/health/ready")
     assert response.status_code == 503
@@ -69,7 +69,7 @@ def test_health_readiness_tracks_lifespan_and_does_not_promise_storage(applicati
 @pytest.mark.parametrize(
     ("method", "path", "status", "code"),
     [
-        ("GET", "/api/v1/workspaces", 404, "NOT_FOUND"),
+        ("GET", "/api/v1/workspaces", 401, "AUTH_REQUIRED"),
         ("GET", "/webhooks/whatsapp", 404, "NOT_FOUND"),
         ("POST", "/health/live", 405, "METHOD_NOT_ALLOWED"),
         ("GET", "/test/forbidden", 403, "FORBIDDEN"),
@@ -157,7 +157,7 @@ def test_duplicate_origin_and_host_headers_are_rejected(application):
     assert bad_origin.status_code == 403
 
 
-def test_cors_preflight_only_advertises_implemented_read_operations(application):
+def test_cors_preflight_advertises_session_operations_with_credentials(application):
     with TestClient(application) as client:
         response = client.options(
             "/health/live",
@@ -165,12 +165,12 @@ def test_cors_preflight_only_advertises_implemented_read_operations(application)
         )
         forbidden_method = client.options(
             "/health/live",
-            headers={"Origin": ORIGIN, "Access-Control-Request-Method": "POST"},
+            headers={"Origin": ORIGIN, "Access-Control-Request-Method": "DELETE"},
         )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == ORIGIN
-    assert response.headers["access-control-allow-methods"] == "GET"
-    assert "access-control-allow-credentials" not in response.headers
+    assert response.headers["access-control-allow-methods"] == "GET, POST"
+    assert response.headers["access-control-allow-credentials"] == "true"
     assert forbidden_method.status_code == 400
 
 

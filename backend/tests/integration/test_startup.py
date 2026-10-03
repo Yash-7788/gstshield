@@ -14,6 +14,8 @@ from app.config import BACKEND_DIR, Settings
 # Disable the actual presenter's dotenv in this child only. Exercise the same main()
 # used by python -m app, without importing their credentials or local custom settings.
 LAUNCH = (
+    "import os; from pathlib import Path; from app import config; "
+    "config.BACKEND_DIR = Path(os.environ['TEST_BACKEND_DIR']); "
     "from app.config import Settings; Settings.model_config['env_file'] = None; "
     "from app.__main__ import main; raise SystemExit(main())"
 )
@@ -33,7 +35,11 @@ def test_real_local_http_startup_and_readiness():
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
     env = child_environment()
-    env.update(PORT=str(port), PUBLIC_API_URL=f"http://127.0.0.1:{port}")
+    env.update(
+        PORT=str(port),
+        PUBLIC_API_URL=f"http://127.0.0.1:{port}",
+        PUBLIC_WEB_URL="http://127.0.0.1:3000",
+    )
     process = subprocess.Popen(
         [sys.executable, "-c", LAUNCH],
         cwd=BACKEND_DIR,
