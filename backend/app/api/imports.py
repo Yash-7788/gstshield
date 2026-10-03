@@ -24,6 +24,7 @@ from app.contracts.imports import (
     UploadMetadata,
 )
 from app.errors import APIError
+from app.security.http import unique_json_object
 
 router = APIRouter(prefix="/api/v1/workspaces/{workspace_id}")
 
@@ -40,15 +41,6 @@ def request_key(request):
     except ValueError:
         raise APIError(400, "IDEMPOTENCY_KEY_REQUIRED", "Send one UUID Idempotency-Key.") from None
     return keys[0]
-
-
-def unique_mapping(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("Duplicate mapping field")
-        result[key] = value
-    return result
 
 
 async def bounded_upload(request, settings):
@@ -178,7 +170,9 @@ async def upload(request: Request, workspace_id: UUID):
         values = {field: value for field, value in fields if field != "file"}
         if "mapping" in values:
             try:
-                values["mapping"] = json.loads(values["mapping"], object_pairs_hook=unique_mapping)
+                values["mapping"] = json.loads(
+                    values["mapping"], object_pairs_hook=unique_json_object
+                )
             except (ValueError, RecursionError):
                 raise APIError(
                     422, "MAPPING_INVALID", "Mapping must be a JSON dictionary."

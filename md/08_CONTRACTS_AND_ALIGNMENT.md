@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -366,3 +366,8 @@ Relevant codes: ACTION_SOURCE_STALE, STALE_VERSION, IDEMPOTENCY_CONFLICT, ACTION
 
 
 A future supplier-filing observation or future recorded claim/reversal period cannot produce a current reclaim-review candidate. Such facts stay retained for review with reclaim_conditions_require_evidence_review rather than being treated as observed recovery evidence. Recorded future review dates remain valid for scheduling; this guard is specific to claimed past observations, not statutory deadline calculation.
+
+
+## Phase 7 request envelope errors
+
+All ordinary POST/PUT/PATCH bodies are bounded before JSON processing. REQUEST_TIMEOUT is a sanitized HTTP 408 with the normal error/meta envelope when the total receive deadline is exceeded. No completed command is claimed. BAD_REQUEST (400) covers actual/declaration byte mismatch or ambiguous Content-Type; PAYLOAD_TOO_LARGE remains 413. Duplicate/nested/escaped JSON keys, malformed JSON/encoding and NaN/Infinity constants produce VALIDATION_ERROR (422). These replies retain no-store, server request IDs and allowed-origin headers. Existing source/role/version/CSRF contracts are unchanged. The environment example includes MAX_API_RECEIVE_SECONDS=20; uploads retain their separate deadline and authorization order.

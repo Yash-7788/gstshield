@@ -344,3 +344,8 @@ A later committed snapshot updates the same investigation only for the retained 
 Drafts remain NOT_SENT and preserve action state. An operator attempt needs the same draft/contact/request and date; it is explicitly unverified. Actual filing/submission observations need accepted review and same-case DOCUMENT evidence; the backend executes nothing and verifies no government receipt. Closing needs an explicit recorded outcome. Private PDFs include compact action history/coverage and become stale when linked action/source versions change. Normal offline backup/restore includes the whole action layer and still revokes restored access.
 
 No new dependency, hosted server, external database, government integration or WhatsApp provider was added. Use `storage-upgrade` offline for a validated schema 1–4 store; version 5 restore accepts current backups. Final verification and accepted operating boundaries are recorded in 05.
+
+
+## Phase 7 backend security/failure review
+
+Complete locally: 230 affected tests passed, one Windows privilege skip, plus frozen dependencies, lint/format/syntax and whitespace checks. Ordinary bodies now have a 20-second total receive deadline, strict framing/JSON ambiguity checks and safe errors. Shutdown retains storage ownership until both background threads stop. All 33 workspace operations have an access scenario. See 05/06 for findings, dated dependency advisory evidence and accepted local limits. Phases 8–9 now build/connect the internal website; the landing page is supplied later. Full regression follows Phase 9.

@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -325,3 +325,8 @@ Action states are operational workflow states, separate from case states and leg
 A reclaim candidate requires evidence-backed original claim, positive reversal within recorded claim/tax/case amounts, consistent recorded periods no later than the current UTC month and a matching supplier-filing observation no later than today. Credit notes, missing facts, first-time unclaimed credit and contradictory amounts/periods do not become candidates. This is a conservative review trigger, not legal entitlement. Rule 37 buyer-payment facts remain separate from Rule 37A supplier-return facts. Partial payment uses exact paise; absent payment is unknown.
 
 Actual filing/submission is a separately recorded user observation: accepted review, dated reference, linked supporting DOCUMENT evidence and applicable exact amount. The backend performs no submission and verifies no government receipt. PDFs include compact outstanding action/history coverage and uncertainty; source/action version changes mark snapshots stale. Full evidence/audit snapshots remain in SQLite. All four new tables are included in normal backup/restore; restoring access still invalidates sessions and disables accounts.
+
+
+## Phase 7 shared request and shutdown boundary
+
+Small mutation bodies retain the byte limit and now have a total 20-second receive deadline (MAX_API_RECEIVE_SECONDS, validated integer 1–60). Actual bytes must match a declared length. Duplicate Content-Type, repeated JSON keys, malformed encoding and non-standard constants are rejected before route processing with sanitized 400/408/413/422 replies. Multipart mappings reuse the shared unique-object validator; larger uploads still authenticate first and use their separate deadline. Both background threads must stop before storage ownership is released. Schema 5 and dependency versions remain unchanged. The full local security/failure proof is in the Phase 7 record in 05.

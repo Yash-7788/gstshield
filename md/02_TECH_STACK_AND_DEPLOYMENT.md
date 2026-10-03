@@ -1,10 +1,10 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
-Use one FastAPI backend process on the local PC, Python's standard-library SQLite driver, and private files under backend/data. The website is a browser interface supplied by the user later. It calls the same application services that a future WhatsApp adapter will call. The PC must remain running while the backend is used.
+Use one FastAPI backend process on the local PC, Python's standard-library SQLite driver, and private files under backend/data. The internal website is a browser interface authorized for Phases 8–9. The user will supply the landing page/design separately later. It calls the same application services that a future WhatsApp adapter will call. The PC must remain running while the backend is used.
 
 This decision replaces the earlier cloud plan throughout this planning pack. There is no database account, service connection string, hosted authentication project, object-storage bucket or application hosting bill. Internet access remains useful for dependency installation and necessary for real Meta messaging; local website/backend behavior does not need a provider round-trip.
 
@@ -175,6 +175,7 @@ The table below is generated from the template for this planning update. Blank M
 | `MAX_LOCAL_WORKSPACES` | `20` |
 | `MAX_REGISTRATIONS_PER_WORKSPACE` | `20` |
 | `MAX_API_BODY_BYTES` | `65536` |
+| `MAX_API_RECEIVE_SECONDS` | `20` |
 | `MAX_CASES_PER_WORKSPACE` | `100` |
 | `MAX_CASE_EVENTS` | `100` |
 | `MAX_PROPOSALS_PER_WORKSPACE` | `20` |

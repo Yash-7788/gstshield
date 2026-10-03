@@ -1,8 +1,8 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
-Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
+Baseline 2026-10-03. Implemented safeguards and the bounded Phase 7 backend review are recorded below; future channel/browser controls remain planned. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
 ## Active security phase ownership
 
@@ -280,3 +280,22 @@ The Phase 6 whole-regression run exposed a storage quota-scan race with disappea
 
 
 Concurrent reproduction also exposed false linked-path rejection when Windows resolved a disappearing ordinary journal. `check_path` still checks each ancestor and existing entry with lstat, type and reparse flags; final-path resolution remains required for directories, while an ordinary file already rejected if linked no longer needs the racy final-path call. Traversal, junction/symlink rejection, missing-database refusal and capacity limits retain focused regressions. A three-thread stress check completed 200 writes and 800 scans with zero failures and valid SQLite integrity. Public errors remain generic; operator diagnostics use an internal category plus type/code, never raw exception text, paths or imported data.
+
+
+## Phase 7 route and file-operation review
+
+| Implemented surface | Identity/ownership | State and resource controls |
+|---|---|---|
+| Login/session/logout | Exact permitted Origin on login/logout; opaque session, CSRF on logout; live active account | Scrypt slot and persisted windows, absolute expiry/revocation; body byte/deadline/strict-JSON controls |
+| Workspace/registration reads | Live identity and membership; other workspace refused | Bounded local account/workspace/registration quotas; no direct browser database access |
+| Imports, mapping, confirmation, jobs | Current membership; OWNER/REVIEWER mutation; scoped import/registration/job | Auth before larger multipart buffer; immutable sources, context/version/idempotency, receive/parser/archive/row limits |
+| Runs/results/review | Scoped live membership; OWNER/REVIEWER mutation | Frozen current sources, exact paise, versions, unique assignment, one worker and bounded comparisons/candidates |
+| Cases/evidence/proposals | Scoped membership and child evidence; OWNER/REVIEWER mutation | Typed facts, same-case references, finite events, source/current-version checks and audit/retry atomicity; no payment execution |
+| Artifacts/download/cleanup | Live scoped read; OWNER/REVIEWER creation; OWNER cleanup | Bounded snapshot/bytes/pages/expiry, source/action freshness, verified bytes/hash, explicit historical mode, server filename; no raw-file route |
+| Actions/worksheet/follow-up/outcomes | Live scoped read; OWNER/REVIEWER mutation and active in-workspace assignee | Current evidence, expected version, finite action/events, private NOT_SENT draft, same-case evidence for unverified operator outcomes |
+| SQLite/backups/child scratch | Private generated paths, ordinary-file/reparse checks and exclusive OS process lock | Offline backup/restore, no live-file recreation, quotas/free-space/page caps, short atomic transactions, killable child; lock retained until both threads stop |
+| Public health and local developer schema | Health has no private job/document metadata; developer schema only local/test | Generic errors/headers; demo hides docs/schema; URLs/access logs never disclose records or tokens |
+
+Phase 7 fixed small-body framing/receive and JSON ambiguity, sanitized receive failures and shutdown ownership. The actual workspace route inventory is 33 operations. All SQL value parameters stay bound; dynamic table/field identifiers are fixed internal choices. Logs were reviewed at the HTTP, storage, job, action and offline-administration paths; public HTTP replies never echo private exception text or raw inputs. Workers/export adapters perform no provider/network retrieval from source text. Exact evidence, scope, version and role enforcement continues in services, not only in frontend controls.
+
+The canonical [Phase 7 verification record](05_BUILD_AND_VERIFICATION_PLAN.md#phase-7-completion-and-verification--2026-10-03) records 230 passing targeted checks, the Windows skip, frozen/lint/format/syntax checks and the dated 38-package OSV result. Accepted restrictions remain local OS trust, unencrypted files/backups, finite quotas/histories, sampled worker limits, no provider authenticity/legal guarantee and deferred browser/channel review. Full combined regression follows Phase 9 under the user-approved batch cadence.

@@ -83,8 +83,10 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
                     if dispatcher is not None:
                         dispatcher.close()
                 finally:
-                    # Preserve the process lock if a timed-out monitor can still access storage.
-                    if monitor is None or not monitor.thread.is_alive():
+                    # Both threads can still access storage after a shutdown timeout.
+                    if (monitor is None or not monitor.thread.is_alive()) and (
+                        dispatcher is None or not dispatcher.thread.is_alive()
+                    ):
                         store.close()
 
     application = FastAPI(
@@ -270,4 +272,5 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         settings.cors_origins,
         testing=settings.app_env == "test",
         max_body_bytes=settings.max_api_body_bytes,
+        receive_timeout_seconds=settings.max_api_receive_seconds,
     )

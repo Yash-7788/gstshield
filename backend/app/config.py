@@ -101,6 +101,7 @@ class Settings(BaseSettings):
     max_api_body_bytes: Annotated[
         int, BeforeValidator(parse_integer), Field(ge=1024, le=1048576)
     ] = 65536
+    max_api_receive_seconds: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=60)] = 20
     web_concurrency: SingleWorker = 1
     session_ttl_seconds: PositiveInt = 1800
     memory_state_max_bytes: PositiveInt = 67108864

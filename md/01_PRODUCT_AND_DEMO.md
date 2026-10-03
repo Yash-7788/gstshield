@@ -1,12 +1,12 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Planning baseline: 2026-10-03. Status: Phases 1–6 implemented and locally verified; later capabilities remain specifications until their gates pass. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
 ## Active whole-application phase scope
 
-The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–6 are complete; Phases 7–14 are not started. The original product capabilities and evidence boundaries below still apply.
+The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–7 are complete; Phases 8–14 are not started. The original product capabilities and evidence boundaries below still apply.
 
 ## Read this pack
 

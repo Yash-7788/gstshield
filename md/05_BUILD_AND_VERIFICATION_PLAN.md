@@ -1,16 +1,16 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
 Read before coding: product scope (01), installed stack/configuration (02), backend/data behavior (03), website/WhatsApp connection (04), this plan (05), security/privacy (06), GST evidence boundaries (07), and API alignment (08). The original report/review and Engineering Headstart remain supporting context.
 
-Latest user decisions: local PC execution and local PC storage; proceed one phase at a time; review each phase before starting the next; expand the full application plan with dedicated frontend improvement/connection/security/smoothness and backend security/performance phases. Do not create hosting infrastructure or external databases. Do not replace the supplied website before receiving it. The phase order is a dependency order, not a ranking of importance.
+Latest user decisions: local PC execution and local PC storage; proceed one phase at a time; review each phase before starting the next; expand the full application plan with dedicated frontend improvement/connection/security/smoothness and backend security/performance phases. Do not create hosting infrastructure or external databases. The latest user instruction authorizes building the internal application now; the separately supplied landing page/design is later work. The phase order is a dependency order, not a ranking of importance.
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–6 are complete and locally verified; Phases 7–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–7 are complete and locally verified; Phases 8–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -20,7 +20,7 @@ The active plan now contains **14 phases**. Phases 1–6 are complete and locall
 | 4 | GST reconciliation and human review | Backend | Complete and locally verified |
 | 5 | Backend reports, cases and evidence workflow | Backend | Complete |
 | 6 | Business workflows for all six original problems | Backend | Complete and locally verified |
-| 7 | Backend security and failure review | Backend | Not started |
+| 7 | Backend security and failure review | Backend | Complete and locally verified |
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
 | 9 | Frontend and backend connection | Both | Not started |
 | 10 | Frontend security and privacy review | Frontend | Not started |
@@ -35,7 +35,7 @@ The sequence is a dependency order, not a ranking of importance. Security and re
 
 Continue coding one coherent phase at a time, with targeted review before the next phase. The user requested faster future delivery rather than repeating the full suite for every phase. From now on, run lint/format/syntax plus affected correctness, security, edge-case and previous-phase integration checks after each phase; run one full regression suite after a batch of two or three related phases. Do not skip focused checks until the batch ends.
 
-Run full regression sooner for major shared storage/schema, authentication/session, core monetary/matching changes or a discovered regression whose scope is not contained. Run it once after final edits, rather than repeatedly during feature drafting. A failed full run requires diagnosis and a focused reproduction before another full attempt. Keep evidence explicit: passing targeted checks is not the same as a passing whole-suite gate. Phase 6 completed its full check under the original gate; subsequent phase batching uses this cadence. GitHub full-suite CI continues asynchronously on pushes; its remote results remain separate evidence and failures require diagnosis. Missing supplied frontend/provider prerequisites still prevent dependent implementation; batching does not authorize invented replacements.
+Run full regression sooner for major shared storage/schema, authentication/session, core monetary/matching changes or a discovered regression whose scope is not contained. Run it once after final edits, rather than repeatedly during feature drafting. A failed full run requires diagnosis and a focused reproduction before another full attempt. Keep evidence explicit: passing targeted checks is not the same as a passing whole-suite gate. Phase 6 completed its full check under the original gate; subsequent phase batching uses this cadence. GitHub full-suite CI continues asynchronously on pushes; its remote results remain separate evidence and failures require diagnosis. The internal application is now authorized independently of the later landing page. Missing provider prerequisites still prevent the dependent channel implementation.
 
 
 ## Capability status and remaining-work ledger
@@ -60,8 +60,8 @@ This ledger reconciles the original six business problems with the active eight 
 | Notice case and private evidence pack | IMPLEMENTED: notice facts/checklist, linked action, recorded-date reminder, preparation PDF, accepted review and documented user submission observation | 5 complete for foundation; 6 for remaining workflow |
 | Automatic local due-review reminders and evidence-change alerts | IMPLEMENTED: bounded local monitor, persisted checkpoints/errors, deduplicated date events, startup and authenticated-read catch-up; PC/backend must run | 6: durable deduplicated tasks while backend runs, overdue catch-up after restart; visible in website 9 |
 | Private reports and generic proposal/error exports | IMPLEMENTED: bounded PDF/CSV snapshots/private downloads plus compact action/history coverage, stale action-set checks and JSON worksheet | 5 complete; extend for 6, browser 9 |
-| Supplied website screens and real operations | WAITING_INPUT/PLANNED: actual website not yet received; backend operations are not a shipped portal | 8 inspect/finish, 9 connect; 10 security, 12 measured usability |
-| Whole-backend security/failure and measured performance review | PLANNED: safeguards exist in completed features; dedicated whole-backend gates have not run | 7 security/failure, 11 performance |
+| Supplied website screens and real operations | PLANNED: internal application is authorized now; the landing page/design remains pending | 8 inspect/finish, 9 connect; 10 security, 12 measured usability |
+| Whole-backend security/failure and measured performance review | IMPLEMENTED for the bounded Phase 7 backend review; measured performance remains PLANNED | 7 complete; 11 performance |
 | WhatsApp linking, commands, imports, status, private report access and unlink | CONDITIONAL/PLANNED: no physical-phone/backend integration yet | 13: account/assets, permitted reachable callback and budget proof, real-phone gate |
 | Owner/reviewer reminders and supplier follow-up through WhatsApp | CONDITIONAL/PLANNED: local alerts/drafts do not mean messages sent | 13: explicit enablement, linked/consented verified recipient, window/template/account entitlement and bounded outbox; pending if setup is unavailable |
 | Government filing/IMS write actions, bank execution/escrow | EXCLUDED from corrected hackathon scope; an observation/proposal/export is not execution | No implementation phase; explicit unsupported state throughout 6/9/13/14 |
@@ -239,7 +239,7 @@ Include the supported filing workflow instead: retain original claim and reversa
 
 A generic case form or PDF alone does not pass this phase. Passing it demonstrates local evidence and action tracking for the six problems; it does not establish legal entitlement, guarantee recovered tax or complete the website/phone interfaces.
 
-### Phase 7 — Backend security and failure review (not started)
+### Phase 7 — Backend security and failure review (complete)
 
 Owner: backend. Outcome: Review the working backend as a whole for access loopholes, malformed inputs and recovery failures.
 
@@ -264,12 +264,12 @@ Review gate:
 
 ### Phase 8 — Frontend inspection, cleanup and complete screens (not started)
 
-Owner: frontend. Outcome: Turn the user's supplied website into a coherent interface ready for real backend connection.
+Owner: frontend. Outcome: Build the authorized internal application screens, ready for real backend connection. The user's landing page/design will be integrated later.
 
 Deliverables:
 
-- Requires the supplied website. Inspect its actual framework, package manager, lockfile, build scripts, routes, assets and current mock data before choosing any frontend dependency.
-- Preserve the supplied visual design and record missing screens, dead buttons, broken routes and inconsistent field names.
+- The user authorized a new internal application on 2026-10-03. Select and verify a compatible minimal client stack, lockfile, local build/start commands and public environment example. Landing-page assets are not required for this work.
+- Use a restrained accessible internal layout. Record screens/actions and contract coverage; reserve the separately supplied landing page and final visual design for later integration.
 - Complete the required screens: private access/context selection, imports, mapping/confirmation, job progress, results, review, cases, business work queue, supplier draft/history, due-review actions and reports. Expose every Phase 6 problem workflow with honest evidence/unknown labels.
 - Make empty, loading, error, expired-session and unavailable-feature states explicit. Label any temporary sample/mock state clearly during this phase.
 - Use consistent navigation, spacing, typography, tables, forms, feedback and mobile/desktop layouts.
@@ -279,7 +279,7 @@ Deliverables:
 
 Review gate:
 
-1. Run the supplied project's clean install/build using its lockfile and inspect every required screen.
+1. Run the internal application's clean install/build using its lockfile and inspect every required screen.
 2. Exercise navigation, back/forward behavior, keyboard controls, resizing and mobile layouts.
 3. Document every remaining simulated operation; a mock reply cannot count as connected functionality.
 4. Check that money/context/status labels align with backend meanings and unavailable actions cannot appear successful.
@@ -426,7 +426,7 @@ Review gate:
 
 ## Frontend handoff and measurable performance
 
-Phases 8–10 and 12 require the actual supplied website. Inspect its real manifest/build before proposing frontend dependencies or replacing components. Frontend completion means both a coherent interface and the verified real backend journey; screen appearance alone is insufficient.
+Phases 8–10 and 12 apply to the authorized internal website. Inspect its actual manifest/build. The separately supplied landing page is later design work and does not block core screens or backend connection. Frontend completion means both a coherent interface and the verified real backend journey; screen appearance alone is insufficient.
 
 Phase 11 measures the backend's contribution to delays; Phase 12 measures browser rendering/interactions and repeated requests. Use the same dataset/context and demo hardware when comparing changes. Define a concrete budget after the baseline and record actual results; a promise of zero lag on every PC is not an acceptance criterion.
 
@@ -440,7 +440,7 @@ Useful primary references for the applicable implementation reviews: [OWASP safe
 | 2–5 | Working backend features with persisted truth and independent correctness fixtures |
 | 6 | All six problem scenarios reach a recorded next action and evidence-backed review outcome |
 | 7 | Backend security/failure findings fixed and relevant regressions passing |
-| 8 | Supplied website built, missing screens/actions mapped and interface reviewed |
+| 8 | Internal application built, required screens/actions mapped and interface reviewed |
 | 9 | Real local website/backend journey and aligned data/status/errors |
 | 10 | Browser data-exposure and request-security checks on the actual connected website |
 | 11 | Measured backend improvements with correctness/security regression proof |
@@ -622,3 +622,23 @@ Future ownership remains Phase 7 whole-backend security/failure review, 8 suppli
 ### Phase 6 final source size and CI allowance
 
 Measured physical Python source lines at completion: **8,287 application lines** in 50 files, **5,169 test lines** in 17 files, **13,456 total**. This includes comments and blank lines, excludes docs/configuration/dependencies/generated files and does not count a frontend that has not yet been supplied. The GitHub job allowance increases from 15 to 25 minutes because the passing local full suite alone took nearly 16 minutes; dependency setup and remote hardware variability need headroom. This changes the timeout, not test coverage. Remote CI results are separate from the local proof above.
+
+
+### User-authorized Phases 7–9 batch (2026-10-03)
+
+Finish and verify Phase 7 and push it before Phase 8. Build the core internal website in Phase 8; the user supplies the landing page/design later. Complete the Phase 8 build, screen/accessibility and contract gate, push it, then complete and verify the real Phase 9 backend connection. After Phase 9, run the full backend regression plus the frontend build/browser suite. Retain targeted checks after each phase. This replaces the earlier supplied-website prerequisite only for the core internal application; real WhatsApp and external fetching/filing remain later work.
+
+
+## Phase 7 completion and verification — 2026-10-03
+
+Reviewed the implemented request/authentication/service/storage/job/export boundary across Phases 1–6. The independent workspace access inventory covers **33 operations (18 reads, 15 writes)**; adding a route without an explicit scenario fails the inventory assertion. Tests verify signed-out denial, another workspace, live VIEWER mutation denial, allowed adjacent reads, membership revocation and inactive-account denial without publishing business mutations. Existing source/evidence/report/action checks provide actual-resource isolation, stale-write and atomic rollback proof.
+
+Fixed reproduced ordinary-request defects in shared HTTP middleware: declared/received byte mismatch, unbounded body waiting, ambiguous repeated JSON keys (including nested/escaped equivalents), non-standard constants, malformed encoding and duplicated Content-Type. All small mutation bodies have the existing byte cap and a new **MAX_API_RECEIVE_SECONDS=20** total receive deadline (strict integer 1–60). Multipart retains its separate authorization-first receiver and deadline. Invalid bodies never reach the downstream handler. Safe 400/408/413/422 replies preserve request IDs, no-store and permitted-origin headers; receive exceptions log only request ID/type. Response transmission occurs outside the receive timer, avoiding a second response on a slow error send.
+
+Fixed shutdown ownership in main: the OS data lock is released only after **both** dispatcher and action-monitor threads have stopped. A timed-out worker previously could leave its thread alive while storage ownership was released. Four lifecycle checks prove parser/monitor/both-timeout lock retention and normal release. A real HTTP process test proves an incomplete JSON upload receives 408 while concurrent liveness/readiness stays usable. Reused shared duplicate-object validation in multipart mappings; no phase-named runtime modules, temporary patch helpers, new runtime dependencies or schema migration were added.
+
+**Targeted Phases 1–7 gate: 230 passed, 1 skipped in 367.94 seconds (6 minutes 7 seconds).** The skip requires Windows symlink privilege; actual junction denial passes. The selection covers configuration/environment drift, HTTP/session/CSRF/rate/revocation, malformed structured parsers, storage quota/page limits and missing/linked data, child kill/deadline/RSS and interruption, upload/mapping/retry scope, contested result review, audit rollback, report leases/expiry/escaping/privacy, private action commands/quotas/failure fairness and actual action restart/backup/restore. Unrelated benchmarks and unchanged business golden cases are reserved for the full post-Phase-9 regression. Frozen uv sync checked 37 packages; Ruff lint/format, Python compileall and Git whitespace checks passed. This is a targeted passing gate, not a claimed full-suite run.
+
+On 2026-10-03, the [OSV batch API](https://google.github.io/osv.dev/api/) returned **no known advisories** for all **38 registry package/version entries** in backend/uv.lock (including platform-specific/development entries). Only public package metadata was sent. No dependency changed without cause. This database check is time-bound and does not audit the operating system, native interpreter/SQLite implementation or unpublished vulnerabilities.
+
+Accepted limits: local/single-PC execution and OS-account trust; unencrypted private database/backups; finite histories, fixed-window budgets and one shared heavy worker; sampled child RSS rather than a kernel sandbox; PC-off reminders cannot run; body deadlines do not make the local HTTP listener a public Internet abuse defense; user observations do not certify external filing/IRN/legal facts. Browser security, measured backend performance, conditional physical WhatsApp and whole-product rehearsal retain Phases 10/11/13/14. No production security certification or zero-defect guarantee is made.
