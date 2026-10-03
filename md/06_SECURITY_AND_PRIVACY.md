@@ -1,6 +1,6 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
@@ -87,13 +87,13 @@ Browser sessions use a 256-bit random opaque cookie with HttpOnly, SameSite=Stri
 
 Exact-origin CORS; loopback HTTP for current execution; reachable HTTPS and its security review are deferred to the phone connectivity phase; no wildcard credentialed access. CORS is a browser policy, not API authorization. Current sessions use HttpOnly cookies; credentials and CSRF secrets never go in query strings. Validate environment configuration at startup. Missing signatures/secrets deny processing; a demo flag never disables authentication.
 
-Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, five queued/running import jobs per workspace and one active parser globally, five planned link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; current read/mutation and login windows are persisted in SQLite and survive restart. They are fixed windows, not a production distributed limiter.
+Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, five queued/running import, run and artifact jobs combined per workspace and one active processing child globally, five planned link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; current read/mutation and login windows are persisted in SQLite and survive restart. They are fixed windows, not a production distributed limiter.
 
 Store provider tokens only in deployment/local secret stores. Logs include request/job IDs, error codes, durations and category counts; exclude source file contents, credentials, link codes, capability tokens, bank accounts and full phone identities. Audit events record actor/action/target without confidential payload dumps.
 
 ## Retention and acceptance
 
-Use a chosen seven-day default for synthetic raw files/artifacts and an authenticated cleanup job; this is an application policy, not a legal retention rule. Expiry metadata is not deletion evidence. Deletion state tracks storage result and retries; do not lose the object key before confirmation. Permit demo reset only for the designated synthetic workspace after typed confirmation and owner authorization.
+Phase 5 chooses seven days for generated artifacts only. Raw imports and case facts have no automatic expiry in this phase. Expired downloads are denied even before cleanup. OWNER-only POST /artifacts/cleanup atomically clears expired artifact BLOBs, retains their snapshot/hash/history and cancels any pending artifact lease. It never deletes imports, cases, proposals or arbitrary PC files. SQLite may retain freed pages and old backups still contain prior bytes; this is logical retention cleanup, not secure physical erasure. Workspace artifact history remains bounded at 40 records by default, including expired history. A demo-reset feature is not implemented.
 
 Security acceptance must demonstrate both allowed and denied cases: valid login works; another workspace cannot read a run/file; a viewer cannot import; wrong/absent callback signature has no effects; repeated valid events have one effect; used/expired link code fails; old report capability fails after unlink; malformed/oversized imports stop safely; source text cannot inject HTML/PDF markup/formulas; secrets are absent from the built frontend.
 
@@ -245,3 +245,11 @@ Schema v3 binds results/candidates/events to the same scoped run and source pair
 Imports and runs use one global disposable child and shared workspace queue admission. Pair/candidate/row/result-size/deadline and sampled process-tree RSS bounds fail explicitly. Private child descriptors/results are server generated and removed by the existing dispatcher. Interrupted jobs fail on restart; no automatic replay pretends they succeeded. Backup/restore retains run/review state while revoking restored access as in Phase 2.
 
 These are implemented-scope checks, not a claim of zero defects or a completed Phase 6/9 audit. The backend remains loopback-only and local files follow OS-account protection. No external storage, cloud worker, public upload URL, callback or frontend credential path was added.
+
+## Phase 5 enforced report/evidence controls
+
+Case/proposal/report mutations require live OWNER/REVIEWER membership, session, Origin and CSRF; reads/downloads require current active membership. Cleanup is OWNER-only. Resource lookup and child references stay within workspace and registration context, with additive composite foreign keys. Expected versions and bound audit/idempotency histories prevent stale edits and unbounded replay storage. An audit failure rolls back the whole command.
+
+Untrusted PDF text is HTML-escaped; no active hyperlink or remote resource is introduced by source markup. Bundled font hash/glyph checks prevent silent character loss. Each text flowable is bounded; normal invoice groups stay together. CSV neutralizes formula prefixes after whitespace/BOM and leading control characters in both headers and source values. Server-generated UUID filenames are the only Content-Disposition filenames.
+
+Downloads recheck state, expiry, source freshness, byte count and SHA-256. An explicit historical option allows old PDF/error snapshots with a response marker; it never permits stale payment-proposal CSV. Restart fails interrupted running report jobs, invalid leases cannot publish, and expired cleanup invalidates pending jobs. Artifacts, jobs and proposals contain no bank execution route or provider verification override. These are bounded local controls; Phase 6 remains the focused backend-wide security/failure review.

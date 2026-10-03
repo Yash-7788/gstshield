@@ -1,6 +1,6 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
@@ -242,3 +242,13 @@ The site can eventually create runs from its chosen confirmed import IDs, poll s
 Show a pending/failed run without invented totals. Render known tax subtotals with their unknown-row counts and separate credit-note exposure. Display provenance and source hashes/adapters on detail. Scores are formatted similarity strings, and candidate IDs differ from portal-document IDs. Disable a review if the run is historical or sources_current is false; refresh after STALE_VERSION/ASSIGNMENT_CONFLICT and rely on the server decision.
 
 Create/review retries reuse the same UUID key for the same intended command. Idempotency replays the original committed response, so GET current run/result afterward. A newly intended rerun gets a fresh key. Poll about every two seconds with backoff; rapid polling would exhaust the default 60 reads/minute. No WhatsApp webhook, link, send, report or frontend implementation was introduced in Phase 4.
+
+## Phase 5 website-facing flow
+
+Use the same cookie session, credentials:include, exact Origin and in-memory X-CSRF-Token as imports/review. Every mutation sends a UUID Idempotency-Key. Fetch the selected result before creating a case, including its result ID and stable purchase document ID. Add kind-specific facts and observation events with expected_version; show missing_facts and explicit transition actions.
+
+For a proposal, send expected_run_version, expected_result_versions, matching balance_observations and allocations. Display remaining_balance, evidence case/version, source provenance and PROPOSAL_ONLY. Approval is a separate reasoned command. Refresh detail on 409; never retry a changed payload with the previous request UUID. Effective STALE blocks approval/export.
+
+POST /artifacts returns 202 and job_id. Poll the existing scoped jobs endpoint or artifact detail until READY/FAILED/EXPIRED. Download only through the authenticated artifact URL; no public blob/static path exists. For historical PDFs/error CSV, require a visible explicit choice using historical=true; stale proposal CSV is always denied. Content-Disposition and X-GSTShield-Historical are exposed through exact-origin CORS. Downloads are no-store attachments.
+
+Phase 5 workflow timestamp fields are UTC Unix seconds (created_at, updated_at, expires_at), whereas earlier typed run/import timestamp responses use ISO strings. Normalize deliberately in the eventual website adapter. Monetary inputs/outputs are decimal strings, never JS floating-point authority. All endpoint schemas are in the local OpenAPI document. WhatsApp capabilities, callbacks, messages and linking remain deferred to Phase 12.

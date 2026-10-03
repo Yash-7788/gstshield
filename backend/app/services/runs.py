@@ -182,9 +182,11 @@ class RunService:
                 (
                     "SELECT (SELECT count(*) FROM jobs WHERE workspace_id=? AND state IN "
                     "('QUEUED','RUNNING')) + (SELECT count(*) FROM run_jobs WHERE "
-                    "workspace_id=? AND state IN ('QUEUED','RUNNING'))"
+                    "workspace_id=? AND state IN ('QUEUED','RUNNING')) "
+                    "+ (SELECT count(*) FROM artifact_jobs WHERE workspace_id=? "
+                    "AND state IN ('QUEUED','RUNNING'))"
                 ),
-                (workspace, workspace),
+                (workspace, workspace, workspace),
             ).fetchone()[0]
             if pending >= self.settings.max_queued_jobs_per_workspace:
                 raise APIError(

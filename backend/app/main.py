@@ -14,13 +14,17 @@ from starlette.types import ASGIApp
 from app.api.access import router
 from app.api.imports import router as import_router
 from app.api.runs import router as run_router
+from app.api.workflows import router as workflow_router
 from app.config import ConfigurationError, Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
 from app.errors import APIError, StorageError
 from app.jobs.imports import ImportDispatcher
 from app.security.http import LocalHTTPBoundary
 from app.services.access import AccessService
+from app.services.cases import CaseService
 from app.services.imports import ImportService
+from app.services.proposals import ProposalService
+from app.services.reports import ReportService
 from app.services.runs import RunService
 from app.storage.local import LocalStore
 
@@ -44,7 +48,16 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             application.state.access = AccessService(store)
             application.state.imports = ImportService(application.state.access)
             application.state.runs = RunService(application.state.imports)
-            dispatcher = ImportDispatcher(application.state.imports, application.state.runs)
+            application.state.cases = CaseService(application.state.runs)
+            application.state.proposals = ProposalService(
+                application.state.runs, application.state.cases
+            )
+            application.state.reports = ReportService(
+                application.state.runs, application.state.cases, application.state.proposals
+            )
+            dispatcher = ImportDispatcher(
+                application.state.imports, application.state.runs, application.state.reports
+            )
             dispatcher.start()
             application.state.dispatcher = dispatcher
             application.state.ready = True
@@ -68,6 +81,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     application.include_router(router)
     application.include_router(import_router)
     application.include_router(run_router)
+    application.include_router(workflow_router)
 
     @application.exception_handler(APIError)
     async def application_error(request: Request, exc: APIError) -> JSONResponse:
@@ -204,7 +218,12 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             allow_credentials=True,
             allow_methods=["GET", "POST", "PATCH"],
             allow_headers=["Content-Type", "X-CSRF-Token", "Idempotency-Key"],
-            expose_headers=["X-Request-ID", "Retry-After"],
+            expose_headers=[
+                "X-Request-ID",
+                "Retry-After",
+                "X-GSTShield-Historical",
+                "Content-Disposition",
+            ],
             max_age=600,
         ),
         settings.cors_origins,

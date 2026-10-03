@@ -152,7 +152,8 @@ class JobData(BaseModel):
     workspace_id: UUID
     import_id: UUID | None = None
     run_id: UUID | None = None
-    kind: Literal["IMPORT", "RUN"]
+    artifact_id: UUID | None = None
+    kind: Literal["IMPORT", "RUN", "ARTIFACT"]
     state: Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED"]
     error_code: str | None
     created_at: datetime

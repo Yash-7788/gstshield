@@ -131,6 +131,13 @@ class ImportService:
                     (workspace, identifier),
                 ).fetchone()
             if row is None:
+                row = connection.execute(
+                    "SELECT "
+                    "id,workspace_id,artifact_id,kind,state,error_code,created_at,updated_at "
+                    "FROM artifact_jobs WHERE workspace_id=? AND id=?",
+                    (workspace, identifier),
+                ).fetchone()
+            if row is None:
                 raise APIError(404, "NOT_FOUND", "Resource was not found.")
             return dict(row)
 
@@ -190,9 +197,11 @@ class ImportService:
                 (
                     "SELECT (SELECT count(*) FROM jobs WHERE workspace_id=? AND state IN "
                     "('QUEUED','RUNNING')) + (SELECT count(*) FROM run_jobs WHERE "
-                    "workspace_id=? AND state IN ('QUEUED','RUNNING'))"
+                    "workspace_id=? AND state IN ('QUEUED','RUNNING')) "
+                    "+ (SELECT count(*) FROM artifact_jobs WHERE workspace_id=? "
+                    "AND state IN ('QUEUED','RUNNING'))"
                 ),
-                (workspace, workspace),
+                (workspace, workspace, workspace),
             ).fetchone()[0]
             >= self.settings.max_queued_jobs_per_workspace
         ):

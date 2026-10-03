@@ -32,9 +32,10 @@ LIMIT_NAMES = (
 
 
 class ImportDispatcher:
-    def __init__(self, imports, runs=None):
+    def __init__(self, imports, runs=None, reports=None):
         self.imports = imports
         self.runs = runs
+        self.reports = reports
         self.store = imports.store
         self.settings = imports.settings
         self.stop_event = threading.Event()
@@ -46,6 +47,8 @@ class ImportDispatcher:
             now = int(time.time())
             if self.runs is not None:
                 self.runs.recover(connection, now)
+            if self.reports is not None:
+                self.reports.recover(connection, now)
             connection.execute(
                 "UPDATE imports SET state='FAILED',version=version+1,updated_at=?,"
                 "errors_json=? WHERE id IN (SELECT import_id FROM jobs WHERE state='RUNNING')",
@@ -82,7 +85,8 @@ class ImportDispatcher:
             "SELECT kind,import_id AS target,created_at,id FROM jobs WHERE state='QUEUED' "
             "UNION ALL SELECT kind,run_id AS target,created_at,id FROM run_jobs WHERE"
             " state='QUEUED' "
-            "ORDER BY created_at,id LIMIT 1"
+            "UNION ALL SELECT kind,artifact_id AS target,created_at,id FROM artifact_jobs "
+            "WHERE state='QUEUED' ORDER BY created_at,id LIMIT 1"
         )
         with self.store.transaction(write=False) as connection:
             if connection.execute(queue_sql).fetchone() is None:
@@ -91,6 +95,10 @@ class ImportDispatcher:
             pending = connection.execute(queue_sql).fetchone()
             if pending is None:
                 return None
+            if pending["kind"] == "ARTIFACT":
+                if self.reports is None:
+                    raise StorageError("Report dispatcher is unavailable.")
+                return self.reports.claim(connection, pending["target"])
             if pending["kind"] == "RUN":
                 if self.runs is None:
                     raise StorageError("Reconciliation dispatcher is unavailable.")
@@ -114,7 +122,17 @@ class ImportDispatcher:
         self.store.capacity(self.settings.max_parsed_import_bytes + 131072)
         output = self.store.root / f"parser-{uuid4()}.json"
         module = "app.jobs.import_worker"
-        if row.get("job_kind") == "RUN":
+        if row.get("job_kind") == "ARTIFACT":
+            module = "app.jobs.report_worker"
+            task = {
+                "database": str(self.store.path),
+                "artifact_id": row["id"],
+                "workspace_id": row["workspace_id"],
+                "max_snapshot_bytes": self.settings.max_report_snapshot_bytes,
+                "max_bytes": self.settings.max_artifact_bytes,
+                "max_pages": self.settings.max_report_pages,
+            }
+        elif row.get("job_kind") == "RUN":
             module = "app.jobs.run_worker"
             task = {
                 "database": str(self.store.path),
@@ -223,6 +241,9 @@ class ImportDispatcher:
             raise StorageError("Parser processes could not be stopped.")
 
     def publish(self, row, outcome):
+        if row.get("job_kind") == "ARTIFACT":
+            self.reports.publish(row, outcome)
+            return
         if row.get("job_kind") == "RUN":
             self.runs.publish(row, outcome)
             return

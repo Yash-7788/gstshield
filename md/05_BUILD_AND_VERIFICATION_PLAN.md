@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **13 phases**. Phases 1–4 are complete and locally verified; Phases 5–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **13 phases**. Phases 1–5 are complete and locally verified; Phases 6–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -18,7 +18,7 @@ The active plan now contains **13 phases**. Phases 1–4 are complete and locall
 | 2 | Local storage and private access | Backend | Complete |
 | 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
 | 4 | GST reconciliation and human review | Backend | Complete and locally verified |
-| 5 | Backend reports, cases and evidence workflow | Backend | Not started |
+| 5 | Backend reports, cases and evidence workflow | Backend | Complete |
 | 6 | Backend security and failure review | Backend | Not started |
 | 7 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
 | 8 | Frontend and backend connection | Both | Not started |
@@ -123,7 +123,7 @@ Review gate:
 4. Check concurrent/stale review decisions, retries and restart-visible run state.
 5. Record matching timings and candidate counts at demo/maximum sizes without weakening correctness gates to get faster results.
 
-### Phase 5 — Backend reports, cases and evidence workflow (not started)
+### Phase 5 — Backend reports, cases and evidence workflow (complete and locally verified)
 
 Owner: backend. Outcome: Finish the website-facing backend feature set for evidence, follow-up and downloadable reports.
 
@@ -425,7 +425,7 @@ Phase 3 completed locally on 2026-10-03. The full Phase 1–3 regression passed:
 
 ## Phase 4 implementation decisions (2026-10-03)
 
-Use the existing single killable child dispatcher for imports and runs, with shared workspace queue admission. Add SQLite schema v3 with an explicit validated, backed-up offline v1/v2 upgrade. Preserve confirmed source IDs, hashes, adapters, provenance and server policy settings in every run. Financial arithmetic stays in integer paise. RapidFuzz ratio on an explicitly normalized comparison key produces suggestions requiring review; exact keys preserve separators, zeroes and year tokens. Compare all eligible candidate edges before classification, quarantine duplicates, bound total comparisons/candidates and fail explicitly rather than truncate ambiguous results. Review transactions recheck role, source freshness, expected version and unique assignment; commit result, summary, idempotency response and audit together. A replacement supersedes older completed runs only after its results commit. Interrupted running jobs fail visibly; queued jobs resume. Phase 5 remains untouched.
+Use the existing single killable child dispatcher for imports and runs, with shared workspace queue admission. Add SQLite schema v3 with an explicit validated, backed-up offline v1/v2 upgrade. Preserve confirmed source IDs, hashes, adapters, provenance and server policy settings in every run. Financial arithmetic stays in integer paise. RapidFuzz ratio on an explicitly normalized comparison key produces suggestions requiring review; exact keys preserve separators, zeroes and year tokens. Compare all eligible candidate edges before classification, quarantine duplicates, bound total comparisons/candidates and fail explicitly rather than truncate ambiguous results. Review transactions recheck role, source freshness, expected version and unique assignment; commit result, summary, idempotency response and audit together. A replacement supersedes older completed runs only after its results commit. Interrupted running jobs fail visibly; queued jobs resume. At Phase 4 completion, Phase 5 had not started; its completed implementation is recorded below.
 
 ## Phase 4 initial measured baseline
 
@@ -448,4 +448,65 @@ Concurrent tests prove one winner per contested portal row and per result versio
 
 An actual local HTTP process run was reviewed, stopped, restarted, backed up and restored: result status/assignment/timeline, saved source/policy and job success remained consistent. Restored sessions/accounts stayed revoked until explicit operator recovery. Tests used isolated synthetic storage; no real backend/.env or backend/data was created. GitHub workflow results are separate evidence.
 
-Phase 4 was developed directly in responsibility-named modules: api/runs.py, contracts/runs.py, domain/reconciliation.py, services/runs.py, jobs/run_worker.py and storage/run_schema.py. Existing main/dispatcher/import-job/admission/storage hooks were extended and inspected against their previous versions. No phase/helper editing scripts are retained. All eight active MDs and the environment example now describe the implemented run/review contracts and local schema/queue decisions. Phase 5 remains not started.
+Phase 4 was developed directly in responsibility-named modules: api/runs.py, contracts/runs.py, domain/reconciliation.py, services/runs.py, jobs/run_worker.py and storage/run_schema.py. Existing main/dispatcher/import-job/admission/storage hooks were extended and inspected against their previous versions. No phase/helper editing scripts are retained. All eight active MDs and the environment example now describe the implemented run/review contracts and local schema/queue decisions. At that Phase 4 milestone, Phase 5 had not started; see its completion record below.
+
+
+### Phase 5 implementation status
+
+Completed: additive schema 4, bounded evidence cases, human-approved payment proposals, private PDF/CSV artifacts, expiry cleanup and integration checks. Reports use immutable committed snapshots; proposals never execute payments. Previous schema definitions remain unchanged for validated offline upgrades.
+
+
+## Phase 5 completion and verification — 2026-10-03
+
+Implemented directly in responsibility-named files: contracts/workflows.py, domain/workflows.py,
+services/workflows.py, services/cases.py, services/proposals.py, services/reports.py,
+adapters/reports.py, jobs/report_worker.py, api/workflows.py and storage/workflow_schema.py.
+The existing main/dispatcher/import-job/queue-admission/storage code connects these services
+with Phases 1–4. No phase-named runtime module or retained patch/helper script was introduced.
+
+Decisions: private report BLOBs and source snapshots in SQLite rather than separate cloud/files;
+one existing monitored processing child; additive schema 4 with preserved v1/v2/v3 fingerprints;
+server-generated filenames; approved/current proposal CSV only; explicit historical PDF/error
+CSV downloads; seven-day artifact expiry and owner-only content cleanup. Financial comparisons
+remain integer paise. Cases/proposals preserve uncertainty and require human observation/review.
+No bank transfer, statutory computation, government filing, IRN authenticity adapter, frontend
+or WhatsApp connection is implemented by this phase.
+
+Complete local Windows Phases 1–5 regression: **234 passed, 1 skipped**, in **508.73 seconds**.
+The skip requires Windows symlink privilege; the actual junction-denial check passed. Checks
+cover all five case kinds, current-version transitions/reopen, same-scope observations/hash
+snapshots, invalid money, missing facts, evidence edits requiring renewed observations,
+proposal overdraw/rejection/staleness, generic review-only export, and unchanged amount_paid.
+
+Report checks cover private login/role/scope boundaries, CSRF through the shared middleware,
+shared queue limits, active request deduplication/idempotency conflicts, failed/interrupted
+jobs, invalid/obsolete leases, invalid base64/hash, unavailable/stale/expired downloads,
+explicit historical PDF behavior, stale proposal CSV denial, formula/markup neutralization,
+unsupported glyph failure and bounded pages/bytes. An audit fault rolls back the case command.
+A real HTTP process restart preserves cases, proposal snapshots and byte-identical reports;
+SQLite backup/restore retains them while revoking restored sessions/accounts until offline
+password reset. Explicit old schema 2/3 upgrades retain validated original backups; existing
+schema 1 checks also passed in the full suite.
+
+Final presentation changes group normal invoice entries, keep headings with following text
+and display UTC timestamps readably. All **24 affected report-rule/end-to-end checks passed**
+after those changes; the full suite is the earlier 234-test run, not an unclaimed second full
+run. The 200-row PDF baseline is **41 pages / 68,286 bytes**, clearly showing 200 of a 2,000-row
+run. All page text bounds were inspected programmatically; rendered first/middle/final sample
+pages and all actual HTTP-generated evidence PDF pages were visually reviewed for clipping,
+rupee rendering, footers, readable facts and page continuation. Temporary synthetic QA files
+are outside the repository and are not private user documents.
+
+Frozen uv sync (37 resolved packages), Ruff lint/format, Python compilation and Git whitespace
+checks passed. GitHub CI timeout increases from 10 to 15 minutes because the local full suite
+already takes 8.5 minutes; remote Windows/Linux CI results are separate from local evidence.
+All eight active MDs, both READMEs and .env.example now describe the actual schema/stack/wire
+fields and caps. Original foundation documents remain historical context.
+
+Accepted hackathon limits: localhost/single-PC availability; finite histories including expired
+artifact history; cleanup is logical deletion and old backups retain bytes; PDF glyph coverage
+is limited to the bundled font and unsupported scripts/emoji fail visibly; PDFs may show a
+bounded selection with full totals and fail rather than truncate when a snapshot/page cap is
+exceeded. One reviewer can approve a non-executing draft; production maker/checker, bank/provider
+integrations and legal decision engines are outside this phase. Phase 6 is next and remains
+not started. Passing tests does not establish zero defects or production security certification.

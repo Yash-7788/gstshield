@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -29,7 +29,7 @@ A claim is `VERIFIED_SOURCE`, `PRIOR_REVIEW_SOURCE`, `PROJECT_DECISION`, `SYNTHE
 
 The original monthly/section labels cannot be hardcoded as eternal truth. Income Tax Department guidance distinguishes years beginning before 1 April 2026 from the new Act's tax years. Historical fixtures may use historical references; current-year rules require their own verified mapping. [Official transition FAQ](https://www.incometax.gov.in/iec/foportal/help/all-topics/e-filing-services/objective-and-scope-new-act-faq)
 
-For each policy fact store `rule_id`, `rule_version`, `effective_from`, `effective_to`, `source_url`, `checked_at`, `evidence_required`, `applicability` and `provenance`. The hackathon uses a small reviewed configuration file, not a generalized legal-rule interpreter.
+For each policy fact store `rule_id`, `rule_version`, `effective_from`, `effective_to`, `source_url`, `checked_at`, `evidence_required`, `applicability` and `provenance`. The current engine persists match-v1 reconciliation settings and evidence facts. No date-effective statutory calculation engine or legal-rule configuration file is implemented; statutory calculations require separate current verification before future implementation.
 
 Rule 37 and Rule 37A represent different exposures. The reviewed notification addresses proportionate non-payment reversal and supplier non-filing, including relevant financial-year cutoffs and later re-availment. A case needs original claim period, reversal amount/period, reason, supplier return period and observation evidence. Do not merge these into one `eligible=true` flag. [Notification 26/2022](https://gstcouncil.gov.in/sites/default/files/2024-05/ct26-2022.pdf)
 
@@ -220,3 +220,11 @@ Implemented comparisons use only the selected confirmed source imports and saved
 MISSING_IN_SNAPSHOT is limited to the chosen supplied snapshot, not permanent ITC loss. Rejected related snapshot evidence, unknown components, duplicate identities and contested candidates are retained as uncertainty. Known tax exposure is an exact recorded review subtotal, with explicit unknown-row counts. Credit-note magnitudes remain separate. No comparison total is a recoverable/denied ITC determination, payment instruction or debt calculation.
 
 USER_PROVIDED stays user-provided; canonical-demo-v1 stays SYNTHETIC_DEMO through the run and review. Accepting a candidate never promotes provenance to VERIFIED_SOURCE. Source hashes, adapters, context revisions and policy snapshots preserve reproducibility; they are not third-party certification.
+
+## Phase 5 evidence semantics
+
+REVIEW_READY means the selected facts and referenced observations are sufficient for a human workflow review; CLOSED records a human closure. Neither certifies a supplier classification, filing, payment or ITC claim. User-supplied filing observations remain USER_PROVIDED. Synthetic source provenance conservatively propagates into cases/proposals/artifacts and cannot be promoted by request fields.
+
+Rule 37 facts track original claim plus payment observations; Rule 37A facts separately track claim, reversal and supplier return observations. Dates/periods/amounts are validated but no statutory cutoff, interest, tax-year disallowance or return-filing calculation runs automatically. IRN observation is only NOT_PROVIDED, FORMAT_INVALID or FORMAT_ONLY; VERIFIED remains unavailable.
+
+A proposal records invoice gross, observed amount paid, remaining balance and proposed allocations at frozen versions. It may reserve an illustrative amount for internal review, but establishes no escrow, lawful withholding or bank-ready instruction. An exported CSV does not change payment facts. Source hash and report hash establish traceability relative to stored bytes, never government authenticity or legal success.

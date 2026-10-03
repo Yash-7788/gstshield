@@ -15,7 +15,15 @@ from app.config import Settings
 from app.errors import APIError
 from app.main import create_app
 from app.services.access import AccessService
-from app.storage.local import APPLICATION_ID, VERSION2_DIGEST, VERSION2_SCHEMA, LocalStore
+from app.storage.local import (
+    APPLICATION_ID,
+    SCHEMA_VERSION,
+    VERSION2_DIGEST,
+    VERSION2_SCHEMA,
+    VERSION3_DIGEST,
+    VERSION3_SCHEMA,
+    LocalStore,
+)
 from tests.integration.test_imports import (
     PASSWORD,
     completed,
@@ -479,22 +487,29 @@ def test_queued_recovery_interruption_shared_queue_and_quota(account):
         assert create(client, workspace, headers, payload).json()["error"]["code"] == "RUN_LIMIT"
 
 
-def test_explicit_v2_upgrade_validates_and_preserves_old_database():
+@pytest.mark.parametrize(
+    "version,schema,fingerprint",
+    [
+        (2, VERSION2_SCHEMA, VERSION2_DIGEST),
+        (3, VERSION3_SCHEMA, VERSION3_DIGEST),
+    ],
+)
+def test_explicit_old_schema_upgrade_preserves_backup(version, schema, fingerprint):
     store = LocalStore(Settings())
     store.acquire()
     try:
         with closing(sqlite3.connect(store.path)) as connection, connection:
-            for statement in VERSION2_SCHEMA:
+            for statement in schema:
                 connection.execute(statement)
             connection.execute(f"PRAGMA application_id={APPLICATION_ID}")
-            connection.execute("PRAGMA user_version=2")
-            connection.execute("INSERT INTO metadata VALUES ('schema',?)", (VERSION2_DIGEST,))
+            connection.execute(f"PRAGMA user_version={version}")
+            connection.execute("INSERT INTO metadata VALUES ('schema',?)", (fingerprint,))
         backup = store.upgrade()
         store.validate()
-        store.validate(store.root / "backups" / f"{backup}.sqlite3", version=2)
+        store.validate(store.root / "backups" / f"{backup}.sqlite3", version=version)
         assert store.upgrade() is None
         with store.transaction(write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
             assert connection.execute("SELECT count(*) FROM runs").fetchone()[0] == 0
     finally:
         store.close()

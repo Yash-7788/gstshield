@@ -4,7 +4,7 @@
 
 Decision: 2026-10-03. Run the hackathon website backend on the local PC. No Render, cloud server, external database, cloud storage, Redis or hosted identity setup. A local backend process is still required for the website to call Python functionality.
 
-Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Phase 4 reconciliation, saved results and human review are complete and locally verified. Reports and phone routes remain future phases.
+Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Phase 4 reconciliation, saved results and human review are complete and locally verified. Phase 5 cases, proposals and private reports are complete and locally verified. Phone routes remain Phase 12.
 
 The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) defines the local architecture; the eight MDs now use this decision throughout. Work proceeds one phase at a time, with a review gate before the next phase.
 
@@ -87,7 +87,7 @@ Small mutation bodies are bounded by actual streamed bytes before JSON parsing. 
 
 ## Local storage decision
 
-Phase 2 keeps accounts, scopes and sessions in backend/data/gstshield.sqlite3. Phase 3 source bytes and preview rows are stored privately inside this database; future report artifacts are a separate feature. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
+Phase 2 keeps accounts, scopes and sessions in backend/data/gstshield.sqlite3. Phase 3 source bytes and preview rows are stored privately inside this database; Phase 5 report artifacts are also private SQLite BLOBs with immutable source snapshots. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
 
 Committed records and unexpired sessions survive normal backend restarts. Explicit transactions, parameterized SQL, STRICT tables, foreign keys, schema validation, an OS process lock and storage quotas protect the implemented local flow. Existing incompatible/corrupt files are refused and preserved. Local data/backups are not encrypted; Windows file access follows the local OS account permissions.
 
@@ -171,7 +171,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phases 5–13 remain pending, including reports, frontend integration and WhatsApp.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phases 6–13 remain pending, including focused security review, frontend integration and WhatsApp.
 
 ## Create local accounts and context
 
@@ -224,7 +224,7 @@ Restore validates/stages the backup, preserves the old database, clears sessions
 
 Existing unresolved journal/WAL/SHM files prevent restore; preserve them for operator recovery. Normal SQLite journaling handles interrupted transactions; do not delete a sidecar to bypass recovery. Unknown schema versions require a reviewed upgrade or supported backup, not deletion/recreation.
 
-This backup covers source BLOBs, import context, previews, run/results/candidates, review history, job state and access records together. Future generated reports are not implemented or covered by a separate-file manifest yet.
+This backup covers source BLOBs, import context, previews, run/results/candidates, review history, job state and access records together. Phase 5 cases/evidence, proposals/history, generated report BLOBs/snapshots and artifact jobs are included in this same SQLite backup.
 
 ## Phase 2 verification record
 
@@ -287,3 +287,41 @@ Defaults: 20 retained runs/workspace, 4,000,000 compared pairs and 10,000 candid
 ## Phase 4 verification
 
 Local Windows full Phases 1–4 suite: **198 passed, 1 skipped** in 423.21 seconds. The skip requires Windows symlink privilege; the actual Windows junction denial test passed. Final zero-gap tie correction then passed all **21 affected matching/golden-run/concurrency tests**, including two added tie cases. Frozen dependency sync, Ruff lint/format, syntax compilation and diff checks passed. The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records the exact coverage and initial 100/2,000-row worker measurements. Actual process restart plus backup/restore preserved reviewed results and source/policy snapshots while revoking restored access. These are local checks; remote GitHub CI is separate. No zero-defect guarantee or completed frontend/WhatsApp claim is made.
+
+
+## Phase 5 local evidence and reports
+
+The website-facing backend now supports scoped cases/evidence, immutable allocation drafts,
+reasoned approval, reconciliation/evidence PDFs, proposal CSV and rejected-row CSV. The actual
+wire contracts and facts are in [Contracts and Alignment](../md/08_CONTRACTS_AND_ALIGNMENT.md).
+Use the existing cookie/Origin/CSRF/UUID-idempotency flow. No frontend or WhatsApp adapter is
+created by this phase.
+
+Reports are generated offline in the same bounded child/queue as parsing and reconciliation.
+SQLite stores their bytes, source snapshots and hashes atomically; ordinary backup/restore
+preserves them. Downloads require membership, valid unexpired content and source freshness.
+Historical PDFs/error CSV require an explicit option; stale proposal CSV remains blocked.
+A proposal export never records a payment or executes a bank operation.
+
+Default limits and comments are in .env.example: 100 cases/workspace, 100 events/case,
+20 proposals/workspace, 40 artifact-history records/workspace, seven-day artifact expiry,
+5 MiB generated content, 8 MiB snapshot, 200 reconciliation detail rows and 100 PDF pages.
+Five queued/running imports/runs/artifacts combined are allowed per workspace. Reports show
+selected-row coverage and retain full-run totals. Cleanup is OWNER-only and clears expired
+artifact BLOBs while retaining history; it does not remove imports or free the history cap.
+Old backups retain earlier content. Unsupported font characters (including unsupported Indic
+scripts/emoji) fail visibly; CSV stays UTF-8. Font source/hash/license are in app/assets/.
+
+An existing schema 1/2/3 store requires the explicit offline `python -m app.manage storage-upgrade`;
+it validates and preserves the old schema before adding only missing tables. Fresh storage
+creates schema 4. Stop the backend before maintenance; never remove an old DB to bypass this
+check. Phase 6 will review the backend as a whole.
+
+
+Phase 5 verification: full local Windows Phases 1–5 suite **234 passed, 1 skipped** in
+508.73 seconds; the separate junction-denial test passed. The final PDF layout/time-display
+changes then passed all 24 affected report-rule/end-to-end checks. Generated PDFs were rendered
+and visually inspected. The 200-row PDF is 41 pages and 68,286 bytes, labeling selected coverage.
+Frozen sync, Ruff, compilation and diff checks passed; remote CI remains separate. Actual HTTP
+restart and backup/restore preserve report bytes, cases and proposals with restored access revoked.
+The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, coverage and limitations.

@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phase 4 adds reconciliation and human review and is complete and locally verified; Phases 5–13 remain pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phase 4 adds reconciliation and human review; Phase 5 adds evidence cases, proposal drafts and private reports. Both are complete and locally verified; Phases 6–13 remain pending.
 
 ## Start here
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phases 1–4 are complete and locally verified; Phases 5–13 are not started.
+The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phases 1–5 are complete and locally verified; Phases 6–13 are not started.
 
 1. Local backend foundation.
 2. Local storage and private access.

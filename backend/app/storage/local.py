@@ -14,9 +14,10 @@ from app.config import Settings
 from app.errors import StorageError
 from app.storage.import_schema import IMPORT_SCHEMA
 from app.storage.run_schema import RUN_SCHEMA
+from app.storage.workflow_schema import WORKFLOW_SCHEMA
 
 APPLICATION_ID = int.from_bytes(b"GSTS", "big")
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 BASE_SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT",
     """CREATE TABLE users (
@@ -48,7 +49,8 @@ BASE_SCHEMA = (
         start INTEGER NOT NULL, count INTEGER NOT NULL CHECK(count>0)) STRICT""",
 )
 VERSION2_SCHEMA = BASE_SCHEMA + IMPORT_SCHEMA
-SCHEMA = VERSION2_SCHEMA + RUN_SCHEMA
+VERSION3_SCHEMA = VERSION2_SCHEMA + RUN_SCHEMA
+SCHEMA = VERSION3_SCHEMA + WORKFLOW_SCHEMA
 
 
 def schema_digest(connection: sqlite3.Connection) -> str:
@@ -69,6 +71,7 @@ def expected_digest(statements=SCHEMA) -> str:
 EXPECTED_DIGEST = expected_digest()
 LEGACY_DIGEST = expected_digest(BASE_SCHEMA)
 VERSION2_DIGEST = expected_digest(VERSION2_SCHEMA)
+VERSION3_DIGEST = expected_digest(VERSION3_SCHEMA)
 
 
 def check_path(path: Path, root: Path) -> None:
@@ -159,7 +162,12 @@ class LocalStore:
         self, path: Path | None = None, *, legacy: bool = False, version: int | None = None
     ) -> None:
         selected = 1 if legacy else (version if version is not None else SCHEMA_VERSION)
-        fingerprints = {1: LEGACY_DIGEST, 2: VERSION2_DIGEST, 3: EXPECTED_DIGEST}
+        fingerprints = {
+            1: LEGACY_DIGEST,
+            2: VERSION2_DIGEST,
+            3: VERSION3_DIGEST,
+            4: EXPECTED_DIGEST,
+        }
         if selected not in fingerprints:
             raise StorageError("Storage schema version is unsupported.")
         try:
@@ -240,7 +248,7 @@ class LocalStore:
             ) from None
 
     def upgrade(self) -> str | None:
-        """Explicit offline v1/v2 upgrade: validate and preserve before adding tables."""
+        """Explicit offline v1/v2/v3 upgrade: validate and preserve before adding tables."""
         if not self.opened:
             raise StorageError("Private storage is not locked.")
         try:
@@ -263,7 +271,9 @@ class LocalStore:
         identifier = str(uuid4())
         self.copy_database(self.path, backup_root / f"{identifier}.sqlite3", version=version)
         with self.transaction() as connection:
-            for statement in (IMPORT_SCHEMA + RUN_SCHEMA) if version == 1 else RUN_SCHEMA:
+            additions = IMPORT_SCHEMA if version == 1 else ()
+            additions += RUN_SCHEMA if version < 3 else ()
+            for statement in additions + WORKFLOW_SCHEMA:
                 connection.execute(statement)
             connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
             connection.execute("UPDATE metadata SET value=? WHERE key='schema'", (EXPECTED_DIGEST,))

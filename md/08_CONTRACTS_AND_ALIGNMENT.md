@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -38,14 +38,14 @@ Invalid credentials are a generic 401 for unknown/inactive users or a wrong pass
 
 Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
 
-The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Reports, cases and WhatsApp remain later-phase contracts; the broad catalog does not imply those routes exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
+The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Phase 5 cases, proposals, report jobs and downloads are implemented. WhatsApp routes/capabilities remain later-phase contracts; those catalog entries do not imply they exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
 
 ## Shared enums
 
 | Name | Exact values |
 |---|---|
 | MemberRole | OWNER, REVIEWER, VIEWER |
-| Provenance | SYNTHETIC_DEMO, USER_PROVIDED, VERIFIED_SOURCE |
+| Provenance (implemented) | SYNTHETIC_DEMO, USER_PROVIDED; VERIFIED_SOURCE remains unavailable |
 | ImportKind | PURCHASE, PORTAL_2B |
 | ImportState | RECEIVED, PARSING, AWAITING_CONFIRMATION, READY, FAILED, SUPERSEDED |
 | JobState | QUEUED, RUNNING, SUCCEEDED, FAILED |
@@ -56,6 +56,7 @@ The imports and import jobs below are implemented in Phase 3. Runs/results/revie
 | CaseState | OPEN, EVIDENCE_REQUIRED, REVIEW_READY, CLOSED |
 | ProposalState | DRAFT, APPROVED, EXPORTED, STALE |
 | ArtifactKind | RECONCILIATION_PDF, EVIDENCE_PDF, PROPOSAL_CSV, ROW_ERRORS_CSV |
+| ArtifactState | PENDING, READY, FAILED, EXPIRED |
 | DeliveryState | QUEUED, SENDING, ACCEPTED, DELIVERED, READ, FAILED, UNKNOWN |
 | IrnState | NOT_PROVIDED, FORMAT_INVALID, FORMAT_ONLY, VERIFIED, VERIFICATION_FAILED, UNKNOWN |
 
@@ -102,7 +103,7 @@ Stable cursor order is `(created_at, id)` or `(source_row_number, id)` for run r
 
 Create imports, runs, reviews, cases, proposals and artifact requests accept `Idempotency-Key`, a UUID generated once per intended action. Persist scope `(workspace, actor, route, key)` and canonical request hash. Reuse with identical request returns the original operation; different payload returns 409. Concurrent reservations are protected by uniqueness. Operation references survive response loss.
 
-For upload hashing include bytes, declared context, mapping and adapter choice. A separate import content uniqueness key handles same file with a different request key. Mapping version changes legitimately produce a different operation. Phase 3 retains up to 1,000 operation keys per workspace until deliberate cleanup is implemented; it has no automatic seven-day expiry. Import identities remain persistent. Artifact retention is a later-phase decision.
+For upload hashing include bytes, declared context, mapping and adapter choice. A separate import content uniqueness key handles same file with a different request key. Mapping version changes legitimately produce a different operation. Phase 3 retains up to 1,000 operation keys per workspace until deliberate cleanup is implemented; it has no automatic seven-day expiry. Import identities remain persistent. Phase 5 artifact retention is seven days by default; expired content cleanup retains bounded immutable history.
 
 Mutating existing resources requires `expected_version`. Atomic update compares version and advances it only on success. A network failure does not tell the client whether the update committed; retry the same key or fetch the resource. GET can be retried; ambiguous Meta sends cannot be retried as if they were pure reads.
 
@@ -128,16 +129,19 @@ All workspace paths below are prefixed `/api/v1/workspaces/{workspace_id}`. Muta
 | GET /results/{result_id} | None | ResultDetail with candidates / 200 |
 | POST /results/{result_id}/review | ReviewCreate | ResultDetail / 200 |
 | GET /jobs/{job_id} | None | JobDetail / 200 |
-| GET /cases | kind/state/cursor/limit | Case[] / 200 |
+| GET /cases | UUID cursor / limit 1–20 | Case list with next_cursor / 200 |
 | POST /cases | CaseCreate | CaseDetail / 201 |
 | GET /cases/{case_id} | None | CaseDetail / 200 |
 | POST /cases/{case_id}/evidence | CaseEvidenceCreate | CaseDetail / 200 |
 | POST /cases/{case_id}/transition | CaseTransition | CaseDetail / 200 |
+| GET /proposals | UUID cursor / limit 1–20 | Proposal list with next_cursor / 200 |
+| GET /proposals/{proposal_id} | None | ProposalDetail / 200 |
 | POST /proposals | ProposalCreate | ProposalDetail / 201 |
 | POST /proposals/{proposal_id}/approve | expected_version, reason | ProposalDetail / 200 |
 | POST /artifacts | ArtifactCreate | ArtifactReceipt / 202 |
 | GET /artifacts/{artifact_id} | None | ArtifactDetail / 200 |
-| GET /artifacts/{artifact_id}/download | None | Private attachment stream / 200 |
+| GET /artifacts/{artifact_id}/download | historical=false default | Private attachment bytes / 200; expired 410, stale/not-ready 409 |
+| POST /artifacts/cleanup | {expired_only:true}; OWNER only | Expired-artifact cleanup receipt / 200 |
 | POST /whatsapp/link-code | registration_id, period | LinkCodeReceipt / 201 |
 | GET /whatsapp/link | None | Current own LinkDetail or null / 200 |
 | PATCH /whatsapp/link/context | registration_id, period | LinkDetail / 200 |
@@ -213,29 +217,53 @@ Review request:
 
 Use actual candidate `id` on responses as well as portal_document_id. Actions: ACCEPT_CANDIDATE or REJECT_MATCH. Reject requires reason and candidate_id=null. Accept requires eligible candidate and no conflicting portal assignment. Reviewer does not bypass amount/identity hard gates; insufficient evidence becomes a case for correction/new import.
 
-## Job contract
+## Implemented job contract
 
-JobDetail: id, kind, state, attempt, phase, processed_rows nullable, total_rows nullable, output_ref nullable, error nullable, created_at, started_at nullable, finished_at nullable. Phase is human-readable current work, not guaranteed percentage. Failed job has error.code/message/retryable; frontend can present recovery without leaking stack traces.
+JobData: id, workspace_id, import_id nullable, run_id nullable, artifact_id nullable, kind IMPORT/RUN/ARTIFACT, state QUEUED/RUNNING/SUCCEEDED/FAILED, error_code nullable, created_at, updated_at. Earlier job timestamp fields are ISO datetime strings. There is no attempt/percentage counter or public lease. Exactly the relevant resource ID identifies the private output. Interrupted running work fails with PROCESSING_INTERRUPTED; queued work resumes through one serial dispatcher.
 
-Completed output_ref identifies the run/import/artifact. Status is authorized by workspace just like the output; a guessed job ID is not public progress information. Phase 3 resumes QUEUED jobs, while interrupted RUNNING jobs become FAILED/PROCESSING_INTERRUPTED. Retrying requires an explicit new derived import; no attempt counter or automatic retry is exposed yet.
+## Implemented case contracts
 
-## Case and proposal contracts
+CaseCreate: registration_id, result_id, purchase_document_id, kind, amount (nonnegative decimal string), currency INR default, facts default {}. Source provenance is server-derived. Registration, result and stable document must agree. No client verification/provenance override is accepted.
 
-CaseCreate: registration_id, purchase_document_id, kind, amount, currency, facts, provenance determined from submitted evidence. Facts are a kind-specific validated schema. Rule37A fields include original_claim_period, original_claim_amount, reversal_period, reversal_amount, supplier_return_period and observation_refs. Nullable unknowns remain null; an unverified statement cannot become verified by a boolean.
+Facts are validated by kind; unknown optional values remain null:
 
-CaseEvidenceCreate: expected_version, event_kind, file_id nullable, facts, note. Require same-workspace evidence file. CaseTransition: expected_version, target_state, reason. REVIEW_READY requires the kind's required facts/evidence; CLOSED records human resolution, not filing/payment execution. Reopen uses an explicit authorized transition with reason.
+| Kind | Fields in addition to observation_refs UUID[] (max 20) |
+|---|---|
+| MSME_REVIEW | supplier_classification MICRO/SMALL/MEDIUM/OTHER/UNKNOWN; acceptance_date; agreed_credit_days integer 0–3650; amount_paid; payment_observed_on; dispute_note max 1,000 |
+| RULE37_REVIEW | original_claim_period; original_claim_amount; amount_paid; payment_observed_on; payment_due_date |
+| RULE37A_REVIEW | original_claim_period; original_claim_amount; reversal_period; reversal_amount; supplier_return_period; supplier_return_status FILED/NOT_FILED/UNKNOWN; filing_observed_on |
+| IRN_REVIEW | irn max 128; applicability APPLIES/DOES_NOT_APPLY/UNKNOWN |
+| NOTICE_REVIEW | notice_reference max 200; notice_date; response_due_date |
 
-ProposalCreate: run_id, selected_result_ids, allocations, expected_result_versions. Allocation values have document_id, amount, purpose (`SUPPLIER_PROPOSED` or `INTERNAL_RESERVE_ILLUSTRATIVE`). No client bank account is trusted. Initial exports omit real account details or use conspicuously synthetic approved fixture beneficiaries. Unknown balance facts block claims of an executable payable amount.
+Dates require ISO YYYY-MM-DD strings, periods require YYYY-MM. Amounts are exact decimal strings; booleans/numeric money are invalid. Amount paid cannot exceed the source gross; a recorded reversal cannot exceed a recorded original claim. Facts are observations, not computed legal outcomes.
 
-A proposal snapshot records currency, gross/payment observations, allocations and all referenced versions. Total must be nonnegative and within a fully evidenced recorded payable balance. Approval/export never updates amount_paid. A source change makes it STALE and requires a new reviewed proposal.
+CaseEvidence: expected_version, event_kind, reason (readable 1–1,000 characters), import_id nullable, facts_patch default {}. Event kinds: NOTE, DOCUMENT, PAYMENT_OBSERVATION, FILING_OBSERVATION, ACCEPTANCE_OBSERVATION, IRN_OBSERVATION. DOCUMENT requires an existing same-scope/registration import. No file path or arbitrary local upload reference is accepted. Facts patches merge and are revalidated; non-note events add a server-generated same-case observation reference. Source metadata is frozen in evidence_source.
 
-## Artifact and capability contracts
+CaseTransition: expected_version, state, reason. Legal edges: OPEN -> EVIDENCE_REQUIRED -> REVIEW_READY -> CLOSED; REVIEW_READY -> EVIDENCE_REQUIRED and CLOSED -> OPEN with an explicit reason. Ready requires kind-specific facts and matching observation snapshots. A generic note cannot replace payment/filing/acceptance/IRN evidence. Closed cases cannot be edited without reopening. Adding evidence to a ready case returns it to EVIDENCE_REQUIRED.
 
-ArtifactCreate: kind, one of run_id/case_id/proposal_id, expected_source_version where applicable. Backend validates exactly the required source for the chosen kind. Returns job_id/artifact_id; download remains unavailable until file storage and manifest commit succeed.
+CaseData: id, workspace_id, registration_id, result_id, purchase_document_id, kind, amount, currency, facts, provenance, state, version, created_at, updated_at, missing_facts, irn_observation and bounded timeline. Events retain actor, kind, note, full fact snapshot, source metadata, from/to state, version, request ID and UTC time. IRN output is NOT_PROVIDED/FORMAT_INVALID/FORMAT_ONLY; never VERIFIED.
 
-ArtifactDetail: id, kind, state (`PENDING/READY/FAILED`), source_ref, sha256 nullable, size_bytes nullable, provenance, created_at, expires_at nullable. Filename is sanitized. MIME is fixed by kind. The generated report includes display disclaimers from 07.
+## Implemented proposal contracts
 
-Capability route: GET `/downloads/{opaque_token}` outside /api/v1. Token is a secret, not a user ID. Redemption atomically checks expiry, revoked state, download budget and originating link's membership. Stream private bytes with no-store; return generic 404 on failure. Never redirect to a long-lived public object.
+ProposalCreate: run_id, expected_run_version, expected_result_versions dictionary result UUID -> positive integer (1–100 entries), balance_observations (1–100), allocations (1–200). There is no separate selected_result_ids field; dictionary keys select the results. Each balance observation has document_id, evidence_case_id and expected_case_version. Each allocation has document_id, amount and purpose SUPPLIER_PROPOSED/INTERNAL_RESERVE_ILLUSTRATIVE. No bank account, beneficiary or executable instruction field exists.
+
+All selected results must belong to the current completed run and be EXACT_MATCH/REVIEW_ACCEPTED. Credit notes require separate adjustment review. Each document needs a reviewed same-document MSME/Rule 37 case with current payment observation, amount_paid and payment_observed_on. All purposes combined must fit source gross minus recorded paid. Unknown/unreviewed balances fail. Negative/floating-point money is rejected.
+
+ProposalData: id, workspace_id, run_id, snapshot, snapshot_sha256, state, stored_state, version, created_at, updated_at, sources_current, timeline. Snapshot freezes run/result/case versions, invoice/gross/paid/balance observations, allocations, total_allocated, currency, provenance and PROPOSAL_ONLY instruction. Stored lifecycle is DRAFT -> APPROVED -> EXPORTED; effective STALE is computed when sources change. GET never mutates audit history. Approve requires expected_version and reason. Approval/export never modifies amount_paid. A changed draft needs a new proposal, not an amount edit in place.
+
+## Implemented artifact contracts; future phone capability
+
+ArtifactCreate: kind, source_id, expected_version, selected_result_ids default [] (reconciliation PDFs only; distinct UUIDs, max configured 200). Kind determines one source: reconciliation -> run, evidence -> case, proposal CSV -> approved/current proposal, row errors -> parsed import. Request source/version is checked under the same transaction that freezes the snapshot.
+
+ArtifactData: id, workspace_id, kind, source_id, source_version, snapshot_sha256, filename, mime_type, state PENDING/READY/FAILED/EXPIRED, sha256 nullable, size_bytes nullable, error_code nullable, expires_at, created_at, updated_at, manifest, provenance, sources_current and job_id. It never includes bytes, private paths or job leases. Workflow timestamps (case/proposal/artifact/events) are UTC Unix seconds. Values in manifests/snapshots are bounded JSON; clients must not convert unknown amounts to zero.
+
+POST returns 202 for a durable job. Poll GET /jobs/{job_id} or artifact detail. Identical active kind/snapshot requests reuse the same artifact; idempotency repeats return the original receipt. A new UUID can regenerate a FAILED artifact. Successful report bytes, status and job commit atomically in private SQLite. Proposal export uses the immutable proposal hash, so the APPROVED -> EXPORTED lifecycle increment does not make its own CSV stale.
+
+Downloads require a current session/member and READY, unexpired, hash/size-valid bytes. MIME and UUID filename are server-generated. A stale source returns 409 by default; historical=true allows an explicitly historical PDF/error CSV with X-GSTShield-Historical:true. Stale proposal CSV is always denied, including historical=true. Downloads set no-store, attachment and nosniff. Expired downloads return 410 and unfinished/failed artifacts return 409.
+
+OWNER-only POST /artifacts/cleanup accepts {expired_only:true} (default true), requires CSRF/Origin/UUID idempotency and returns {expired_artifacts,scope:EXPIRED_ARTIFACT_CONTENT_ONLY}. It clears only expired report BLOBs, retains metadata/history and cancels any pending lease. It does not delete raw imports, cases or arbitrary files; old backups retain previous bytes. History caps remain explicit after cleanup.
+
+Future Phase 12 capability route: GET /downloads/{opaque_token} is planned outside /api/v1, with revocation, expiry, membership and bounded redemption. It is not implemented by Phase 5; current browser downloads require cookie authentication.
 
 ## WhatsApp adapter alignment
 

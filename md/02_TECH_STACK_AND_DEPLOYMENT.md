@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -45,7 +45,7 @@ HTTPX2 matches the installed Starlette test client; do not reintroduce the depre
 
 - Phase 3 now uses standard-library CSV/JSON, openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32 and psutil 7.2.2. The exact graph is committed in uv.lock; no pandas, ORM or external queue was added.
 - Phase 4 installs RapidFuzz 3.14.6 (locked range >=3.14.6,<3.15) for suggestions. Integer paise and standard-library Decimal handle money; floating point is confined to similarity scores. Similarity never becomes automatic legal approval.
-- Phase 5: evaluate ReportLab for PDF generation with a bundled tested font. Do not install a browser renderer only to generate a small evidence report.
+- Phase 5 installs ReportLab 5.0.1 (locked >=5.0.1,<5.1), resolving Pillow 12.3.0 and charset-normalizer 3.5.2. Bundled Noto Sans has a checked SHA-256 and SIL font license. pypdf 6.19.0 and PyMuPDF 1.28.2 are development-only extraction/rendering tools. No browser renderer or hosted reporting service is used.
 - Phase 7: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
 - Phase 12: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
 
@@ -101,7 +101,7 @@ Backup commands copy the actual database and validate the result; Phase 3 source
 
 Restore preserves the previous database, validates/stages the chosen backup, removes restored sessions/request windows, disables restored accounts, and replaces the live database. Review memberships and reset the passwords of intended users before launch. This prevents a backup from silently reactivating old revoked credentials.
 
-An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator recovery rather than deleting evidence. Phase 3 source uploads are inside the database and need no second file manifest. Future report artifacts stored outside SQLite will require their own backup manifest; the current backup makes no claim about unimplemented artifacts.
+An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator recovery rather than deleting evidence. Phase 3 source uploads are inside the database and need no second file manifest. Phase 5 stores generated artifact bytes and immutable snapshots in SQLite, so the existing offline backup preserves reports together with cases, proposals and their job history. No separate report directory or manifest restore is required.
 
 ## Environment contract
 
@@ -219,6 +219,14 @@ The XML defense follows [openpyxl's security guidance](https://openpyxl.readthed
 
 ## Phase 4 runtime and schema alignment
 
-Fresh storage is schema v3. Offline `python -m app.manage storage-upgrade` validates exact v1/v2 fingerprints, preserves a compatible old-version backup and transactionally extends the schema. It does not rebuild or overwrite imported files. Normal startup refuses older schemas until this explicit upgrade runs. Current restore accepts v3 backups; v1/v2 preservation backups remain old-version recovery evidence and require offline recovery plus upgrade, rather than direct v3 restore. One dispatcher runs imports and reconciliation serially in disposable children, with the same 60-second deadline, 16 MiB output and sampled 256 MiB process-tree RSS bound. No second worker, DB service or cloud integration was introduced.
+Phase 4 introduced schema v3; active fresh storage is now schema v4. Offline `python -m app.manage storage-upgrade` validates exact v1/v2/v3 fingerprints, preserves a compatible old-version backup and adds only missing tables. It does not rebuild or overwrite imported files. Startup refuses older schemas until this explicit upgrade runs. Current restore accepts v4 backups; older preservation backups remain recovery evidence requiring compatible offline recovery plus upgrade. One dispatcher runs imports, reconciliation and reports serially in disposable children, with the same 60-second deadline, 16 MiB output and sampled 256 MiB process-tree RSS bound. No second worker, DB service or cloud integration was introduced.
 
 The installed similarity API was checked against [RapidFuzz ratio documentation](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html) on 2026-10-03. Use normalized Indel ratio with explicit invoice preprocessing; no token/subset scorer. Threshold comparisons floor scores to two decimal places, while the minimum score gap uses unrounded scores to avoid rounding up confidence. This is a server-versioned comparison policy, not a probability.
+
+## Phase 5 operational choices
+
+Artifact generation runs offline in the existing killable child, sharing the import/run admission limit, processing timeout, output bound and sampled process-tree RSS guard. Report snapshots are capped at 8 MiB, generated bytes at 5 MiB, PDF pages at 100 and reconciliation detail rows at 200. Base64 IPC must fit MAX_PARSED_IMPORT_BYTES; startup checks that relationship. SQLite owns both report bytes and metadata, so rollback, restart and offline backups retain one consistent authority.
+
+Schema 4 preserves v1/v2/v3 fingerprints. For an existing older store, stop the backend and run `uv run --frozen python -m app.manage storage-upgrade`; it validates and backs up the old store before adding only the missing tables. Fresh installations create schema 4 directly. No external database migration or provider account is involved.
+
+The font's glyph coverage is checked before rendering. Unsupported text produces FAILED / REPORT_UNSUPPORTED_TEXT, never a PDF with silently missing characters. Latin/Greek/Cyrillic and the rupee sign are covered; arbitrary Indic scripts or emoji are not promised. CSV remains UTF-8. Dependency source: [ReportLab on PyPI](https://pypi.org/project/reportlab/); font source/license/hash live in backend/app/assets/README.md.

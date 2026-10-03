@@ -109,6 +109,27 @@ class Settings(BaseSettings):
     max_queued_jobs_per_workspace: PositiveInt = 5
     max_imports_per_workspace: PositiveInt = 20
     max_runs_per_workspace: PositiveInt = 20
+    max_cases_per_workspace: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=200)] = (
+        100
+    )
+    max_case_events: Annotated[int, BeforeValidator(parse_integer), Field(ge=5, le=200)] = 100
+    max_proposals_per_workspace: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1, le=100)
+    ] = 20
+    max_artifacts_per_workspace: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1, le=100)
+    ] = 40
+    max_artifact_bytes: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1024, le=5242880)
+    ] = 5242880
+    max_report_snapshot_bytes: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1024, le=8388608)
+    ] = 8388608
+    artifact_ttl_seconds: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=60, le=2592000)
+    ] = 604800
+    max_report_rows: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=200)] = 200
+    max_report_pages: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=100)] = 100
     max_match_pairs: PositiveInt = 4000000
     max_match_candidates: PositiveInt = 10000
     max_parsed_import_bytes: PositiveInt = 16777216
@@ -153,6 +174,14 @@ class Settings(BaseSettings):
     read_requests_per_minute: PositiveInt = 60
     mutation_requests_per_minute: PositiveInt = 10
     import_requests_per_minute: PositiveInt = 3
+
+    @model_validator(mode="after")
+    def report_limits(self):
+        if (self.max_artifact_bytes + 2) // 3 * 4 + 65536 > self.max_parsed_import_bytes:
+            raise ValueError("MAX_PARSED_IMPORT_BYTES must accommodate encoded artifacts")
+        if self.max_report_snapshot_bytes > self.memory_state_max_bytes:
+            raise ValueError("Report snapshots exceed the configured state budget")
+        return self
 
     @field_validator("demo_mode", "whatsapp_enabled", mode="before")
     @classmethod

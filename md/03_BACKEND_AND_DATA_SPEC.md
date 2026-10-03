@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -38,7 +38,7 @@ frontend/                    # supplied website, preserve its framework
 md/                          # this eight-document pack
 ```
 
-Start with one Uvicorn worker. Phase 3 parsing uses one killable local child process with a monitoring thread; impose input bounds before launching work. PDF processing remains a Phase 5 decision. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during file-processing or Meta requests.
+Start with one Uvicorn worker. Phase 3 parsing uses one killable local child process with a monitoring thread; impose input bounds before launching work. Phase 5 PDF/CSV generation uses the same monitored child process and serial queue. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during file-processing or Meta requests.
 
 ## Persistence conventions
 
@@ -60,10 +60,12 @@ Every tenant-owned row carries `workspace_id`; child references use composite `(
 | `run_results` (implemented) | Scoped run/source row, canonical_json, status/version, reasons_json, assigned_portal_row nullable; unique run/purchase and run/assignment |
 | `run_candidates` (implemented) | Scoped run/result/portal row, score text, rank, eligible, differences/reasons JSON; unique result/portal |
 | `run_events` (implemented) | Scoped run/result, actor, action, reason, selected candidate, committed result version, request ID and timestamp; append-only via service |
-| `cases` | registration_id, purchase_document_id, kind, state, amount, claim_period, reversal_period, supplier_return_period, facts_json, version |
-| `case_events` | case_id, actor, event_kind, evidence_file_id nullable, sample flag, facts_json, created_at |
-| `proposals` | run_id, state, source_versions_json, allocations_json, total, created_by, approved_by nullable, version |
-| `artifacts` | run_id/case_id/proposal_id, kind, file_id, manifest_json, created_at |
+| `cases` | registration_id, result_id, purchase_document_id, kind, state, amount in paise, typed facts_json, provenance, version |
+| `case_events` | scoped case_id, actor_id, kind, import_id nullable, evidence_json with source hash/version, facts_json, provenance, transition states, case version, request/time |
+| `proposals` | scoped run_id, immutable snapshot_json with allocations/balances/source versions, snapshot_sha256, stored state, version; separate proposal_events audit |
+| `artifacts` | exactly one scoped run/case/proposal/import source, immutable snapshot_json and hash/manifest, private BLOB, MIME/filename, state/hash/size/expiry |
+| `artifact_jobs` | scoped artifact_id, kind ARTIFACT, state, private lease, safe error code, timestamps |
+| `workflow_operations` | scoped actor/route/UUID key, request digest and original committed response |
 | `jobs` / `run_jobs` (implemented) | IMPORT/RUN resource reference, workspace, state, safe error code and timestamps; run_jobs also has a private server lease |
 | Job coordination | OS data lock + one in-process dispatcher; no separate job_coordination table or lease renewal timer |
 | `wa_links` | user_id, workspace_id, registration_id, active_period, wa_id, active; unique active phone link for this app |
@@ -72,7 +74,7 @@ Every tenant-owned row carries `workspace_id`; child references use composite `(
 | `wa_outbox` | logical_key unique, destination link, body/artifact reference, state, provider_message_id nullable, attempts |
 | `download_capabilities` | token_hash, artifact_id, originating_link_id, expires_at, revoked_at |
 | `import_operations` / `run_operations` (implemented) | workspace/actor/route/key uniqueness, request hash and import reference or committed run/review response |
-| Audit history | Implemented import_events/run_events; later cases/reports extend this with their own scoped events |
+| Audit history | Implemented import_events, run_events, case_events and proposal_events; artifacts retain immutable source/hash/job history |
 
 For an assigned portal record enforce a partial unique index on `(run_id, assigned_portal_id)` where assigned_portal_id is not null. This prevents two purchase records claiming the same portal row. Candidate suggestions are not assignments. Tenant-scoped referenced rows must be validated even for JSON payloads; JSON is not a foreign-key substitute.
 
@@ -151,7 +153,7 @@ Proposal creation locks in current run/result versions, requested reviewed alloc
 
 The implemented dispatcher claims import/run work in a short SQLite BEGIN IMMEDIATE transaction. Run jobs receive a random lease token and every completion compares ownership; imports retain their Phase 3 state gate. SQLite has no row-lock or SKIP LOCKED API. The OS data lock permits one backend process, and the single dispatcher permits one global heavy task. Imports and runs share the five-pending-job workspace limit. There is no lease heartbeat or automatic three-attempt retry in the current implementation. On restart, QUEUED jobs resume; interrupted RUNNING jobs become FAILED/PROCESSING_INTERRUPTED. An explicit new run or derived import is required to retry. Do not create a second fallback worker against the same database.
 
-Long side effects are separated from transactional state. Reconciliation/PDF jobs can safely regenerate derived outputs with deterministic object keys and unique artifact records. A complete output requires successful file storage plus database record; a crash may leave an orphan file that cleanup can find by reservation/job ID.
+Long side effects are separated from transactional state. Reconciliation/PDF jobs can safely regenerate derived outputs with deterministic object keys and unique artifact records. A complete generated output is an atomic SQLite BLOB/status/job commit. Child scratch files are disposable parser UUID files and are removed on completion or restart. Interrupted RUNNING jobs fail visibly; queued jobs resume. There is no second authoritative report file to become orphaned.
 
 WhatsApp input is persisted after signature validation before returning HTTP 200. Duplicate event keys are acknowledged without duplicate jobs. Sending has a different risk: after a timeout Meta may already have accepted the message. Set `wa_outbox.state=UNKNOWN` and wait for status/operator review; never blindly resend an ambiguous accepted send. Store returned provider IDs and handle status callbacks independently from inbound commands.
 
@@ -217,9 +219,9 @@ Use application validation for rich errors and database constraints for conteste
 
 ## Index and query budget
 
-Current unique indexes cover scoped resources, run/source position, assignments and result/candidate ranks; run_jobs has a state/created_at/id queue index. Future case/report indexing is added with those features; there is no current next_attempt_at column. Foreign-key lookup indexes are intentional, not every possible field indexed by default.
+Current unique indexes cover scoped resources, run/source position, assignments and result/candidate ranks; run_jobs has a state/created_at/id queue index. Case event and artifact queue indexes are added in schema 4; there is no current next_attempt_at column. Foreign-key lookup indexes are intentional, not every possible field indexed by default.
 
-Never return all original source rows in every summary response. Load result detail on demand. Paginate audit/case timelines. Keep original JSON behind authorized detail access; redact unneeded supplier contacts from standard list results.
+Never return all original source rows in every summary response. Load result detail on demand. Paginate case/proposal lists; each case timeline is bounded by MAX_CASE_EVENTS (100 by default) and returned with authorized case detail. Keep original JSON behind authorized detail access; redact unneeded supplier contacts from standard list results.
 
 Start with one batch insertion strategy for canonical rows and one bounded read for the 2,000-row ceiling. Measure before adding streaming complexity. Connections belong to one operation and close in finally; there is no connection pool or shared cross-thread connection.
 
@@ -277,7 +279,7 @@ Job success means the preview was atomically persisted, not that an import was c
 
 ## Implemented Phase 4 persistence and decisions
 
-Current schema v3 adds runs, run_jobs, run_results, run_candidates, run_events and run_operations to the preserved Phase 3 tables. The earlier broad conceptual table catalog remains a design for later cases/reports; it is not the list of tables already created. Source records remain import_rows, addressed by import ID plus source row number. Public document IDs are deterministic UUIDv5(import UUID, row number); result/candidate UUIDs are derived within each run, preserving distinct purchase, portal, result and candidate identities.
+Phase 4 introduced schema v3, adding runs, run_jobs, run_results, run_candidates, run_events and run_operations to the preserved Phase 3 tables. Active schema v4 adds cases, case_events, proposals, proposal_events, artifacts, artifact_jobs and workflow_operations. WhatsApp/link/outbox tables remain planned; they are not created by Phase 5. Source records remain import_rows, addressed by import ID plus source row number. Public document IDs are deterministic UUIDv5(import UUID, row number); result/candidate UUIDs are derived within each run, preserving distinct purchase, portal, result and candidate identities.
 
 Each run has an immutable context revision and policy/source snapshot, plus a mutable version for result-summary updates. The saved policy includes adapter-independent amount tolerance, threshold/gap, explicit comparison implementation and resource limits. Source snapshots retain exact confirmed versions, hashes, adapters, accepted/rejected counts and provenance. Unknown total tax has separate summary counts; the monetary exposure fields contain only the known subtotal. Credit-note exposure is separate and is not netted against invoice/debit-note exposure.
 
@@ -286,3 +288,15 @@ Database foreign keys bind each result to its run and source pair, each candidat
 Exact identity reservations precede fuzzy candidate enumeration. Duplicate identity groups include rejected source rows with complete canonical identity, preventing an invalid copy from hiding a conflict. Purchase duplicates rejected by Phase 3 stay excluded from accepted purchase totals. A related rejected snapshot row becomes evidence incomplete when its invalid date prevents matching; it is not silently cleaned into a match. Every eligible shared portal edge makes touching purchase results ambiguous. Limits are explicit failures, never a truncated clean subset.
 
 Summary, results and job success commit atomically. Stale lease output is ignored. A source superseded during computation causes SOURCE_SUPERSEDED and no completed partial output. A failed newer run leaves older completed runs intact; successful replacements supersede lower context revisions. Reviews of a historical run or superseded source fail. Idempotency retries return the original committed representation without replaying the mutation; GET retrieves current state.
+
+## Phase 5 implemented service and consistency rules
+
+Cases bind registration, result and stable purchase document ID together. Facts are validated against one of five kind-specific contracts; decimal values are strings at the API boundary and paise in monetary comparisons. Observation references must belong to the same case. Evidence can attach an existing import from the same workspace/registration; its hash, adapter, version and provenance are frozen into the event. Events and fact/state/version updates commit together.
+
+Transitions are OPEN -> EVIDENCE_REQUIRED -> REVIEW_READY -> CLOSED; explicit CLOSED -> OPEN and REVIEW_READY -> EVIDENCE_REQUIRED are supported. Ready requires kind-specific non-unknown facts and appropriate observation kinds. An edited payment/classification/filing/IRN fact must still match its referenced observation snapshot. Adding evidence to a ready case demotes it for review; a closed case requires reopening. There is no automatic statutory deadline/reversal/eligibility decision.
+
+Proposal creation requires a current completed run, expected run/result versions, accepted results, and one reviewed same-document payment observation per result. Credit notes are excluded from allocations pending separate adjustment review. Gross minus recorded paid gives the balance; all allocation purposes combined must fit it. Snapshots cannot be edited. DRAFT -> APPROVED -> EXPORTED is persisted with audit events. STALE is computed from changed source/run/result/case versions; GET does not secretly mutate history. Approval remains review authority only.
+
+Reports freeze committed source facts in a capped JSON snapshot and hash it. Heavy generation happens outside DB transactions. Parent publication checks lease, expiry, source freshness, size, base64/hash and PDF envelope, then atomically commits BLOB/READY/job success and any proposal EXPORT event. A failure cannot expose a ready download. Identical active kind/snapshot requests reuse the artifact under the same serialized transaction; a failed artifact can be regenerated with a new request UUID. Idempotent retries replay the original receipt and current state is fetched separately.
+
+Default limits: cases 100/workspace, history 100 events/case, proposals 20/workspace, artifact history 40/workspace, workflow request history 1,000/workspace, 100 selected proposal results, 200 allocation entries, 20 observation references. Lists page at 20. Exceeding a cap fails explicitly; expired artifact content cleanup retains history and does not free the artifact-count cap.
