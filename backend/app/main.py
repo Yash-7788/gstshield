@@ -115,6 +115,26 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
 
     @application.exception_handler(StorageError)
     async def storage_error(request: Request, exc: StorageError) -> JSONResponse:
+        categories = {
+            "Private storage is unavailable.": "CAPACITY_SCAN",
+            "Private storage directory cannot be inspected.": "CAPACITY_DIRECTORY",
+            "Private storage quota reached; no changes were saved.": "QUOTA",
+            "Insufficient free disk space; no changes were saved.": "DISK_RESERVE",
+            "Private storage is not available.": "STORE_CLOSED",
+            "Private storage path is outside its allowed directory.": "PATH_SCOPE",
+            "Private storage must use ordinary local files and directories.": "PATH_TYPE",
+            "Private storage cannot contain linked paths.": "PATH_LINK",
+            "Private storage file count limit reached.": "FILE_LIMIT",
+            "Private storage operation failed; retry after checking local storage.": "TRANSACTION",
+        }
+        cause = exc.__context__
+        logger.warning(
+            "Storage request failure request_id=%s category=%s cause_type=%s code=%s",
+            request.state.request_id,
+            categories.get(str(exc), "INTERNAL"),
+            type(cause).__name__,
+            getattr(cause, "sqlite_errorcode", getattr(cause, "errno", None)),
+        )
         return JSONResponse(
             error_payload(
                 request.state.request_id,

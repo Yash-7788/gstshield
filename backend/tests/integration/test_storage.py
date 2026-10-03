@@ -298,3 +298,29 @@ def test_missing_live_database_still_fails_closed_without_recreation(store):
     with pytest.raises(StorageError), store.transaction() as connection:
         connection.execute("SELECT 1")
     assert not store.path.exists()
+
+
+def test_ordinary_transient_file_does_not_require_racy_final_path_resolution(store, monkeypatch):
+    from pathlib import Path
+
+    transient = store.root / "ordinary-transient.synthetic"
+    transient.write_bytes(b"bounded private bytes")
+    original = Path.resolve
+
+    def resolve(path, *args, **kwargs):
+        if path == transient:
+            pytest.fail("An ordinary lstat-checked file must not need final-path resolution")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    store.capacity()
+    assert store.ready()
+
+
+def test_existing_directory_traversal_is_still_rejected(store):
+    from app.storage.local import check_path
+
+    outside = store.root / ".." / "outside-private.synthetic"
+    outside.write_bytes(b"outside")
+    with pytest.raises(StorageError):
+        check_path(outside, store.root)

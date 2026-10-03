@@ -92,7 +92,9 @@ def check_path(path: Path, root: Path) -> None:
                 or not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode))
             ):
                 raise StorageError("Private storage must use ordinary local files and directories.")
-            if candidate.resolve() != candidate.absolute():
+            # lstat/reparse/type checks above already reject linked ordinary-file entries.
+            # Windows can misresolve a journal that disappears before GetFinalPathName runs.
+            if stat.S_ISDIR(info.st_mode) and candidate.resolve() != candidate.absolute():
                 raise StorageError("Private storage cannot contain linked paths.")
 
 
