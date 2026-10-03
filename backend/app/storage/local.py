@@ -12,10 +12,11 @@ from uuid import UUID, uuid4
 from app import config
 from app.config import Settings
 from app.errors import StorageError
+from app.storage.import_schema import IMPORT_SCHEMA
 
 APPLICATION_ID = int.from_bytes(b"GSTS", "big")
-SCHEMA_VERSION = 1
-SCHEMA = (
+SCHEMA_VERSION = 2
+BASE_SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT",
     """CREATE TABLE users (
         id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE,
@@ -45,6 +46,7 @@ SCHEMA = (
     """CREATE TABLE rate_windows (bucket TEXT PRIMARY KEY,
         start INTEGER NOT NULL, count INTEGER NOT NULL CHECK(count>0)) STRICT""",
 )
+SCHEMA = BASE_SCHEMA + IMPORT_SCHEMA
 
 
 def schema_digest(connection: sqlite3.Connection) -> str:
@@ -55,14 +57,15 @@ def schema_digest(connection: sqlite3.Connection) -> str:
     return hashlib.sha256(repr([tuple(row) for row in rows]).encode()).hexdigest()
 
 
-def expected_digest() -> str:
+def expected_digest(statements=SCHEMA) -> str:
     with closing(sqlite3.connect(":memory:")) as connection:
-        for statement in SCHEMA:
+        for statement in statements:
             connection.execute(statement)
         return schema_digest(connection)
 
 
 EXPECTED_DIGEST = expected_digest()
+LEGACY_DIGEST = expected_digest(BASE_SCHEMA)
 
 
 def check_path(path: Path, root: Path) -> None:
@@ -149,7 +152,7 @@ class LocalStore:
             raise
         return connection
 
-    def validate(self, path: Path | None = None) -> None:
+    def validate(self, path: Path | None = None, *, legacy: bool = False) -> None:
         try:
             check_path(path or self.path, config.BACKEND_DIR / "data")
             if (path or self.path).stat().st_size > self.settings.max_database_bytes:
@@ -157,8 +160,9 @@ class LocalStore:
             with closing(self.connect(path, readonly=True)) as connection:
                 if (
                     connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-                    or connection.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION
-                    or schema_digest(connection) != EXPECTED_DIGEST
+                    or connection.execute("PRAGMA user_version").fetchone()[0]
+                    != (1 if legacy else SCHEMA_VERSION)
+                    or schema_digest(connection) != (LEGACY_DIGEST if legacy else EXPECTED_DIGEST)
                     or [row[0] for row in connection.execute("PRAGMA quick_check")] != ["ok"]
                     or connection.execute("PRAGMA foreign_key_check").fetchone() is not None
                     or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
@@ -227,6 +231,37 @@ class LocalStore:
                 "Cannot initialize storage; preserve existing files and use offline recovery."
             ) from None
 
+    def upgrade(self) -> str | None:
+        """Explicit offline v1 upgrade: validate and preserve before adding tables."""
+        if not self.opened:
+            raise StorageError("Private storage is not locked.")
+        try:
+            with closing(self.connect(readonly=True)) as connection:
+                version = connection.execute("PRAGMA user_version").fetchone()[0]
+        except (sqlite3.Error, OSError):
+            raise StorageError(
+                "Cannot inspect old storage; preserve it for offline recovery."
+            ) from None
+        if version == SCHEMA_VERSION:
+            self.validate()
+            return None
+        self.validate(legacy=True)
+        backup_root = self.root / "backups"
+        check_path(backup_root, config.BACKEND_DIR / "data")
+        backup_root.mkdir(exist_ok=True, mode=0o700)
+        if len(list(backup_root.iterdir())) >= self.settings.max_local_backups:
+            raise StorageError("Backup count limit prevents preserving the old schema.")
+        self.capacity(self.path.stat().st_size + 131072)
+        identifier = str(uuid4())
+        self.copy_database(self.path, backup_root / f"{identifier}.sqlite3", legacy=True)
+        with self.transaction() as connection:
+            for statement in IMPORT_SCHEMA:
+                connection.execute(statement)
+            connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+            connection.execute("UPDATE metadata SET value=? WHERE key='schema'", (EXPECTED_DIGEST,))
+        self.validate()
+        return identifier
+
     @contextmanager
     def transaction(self, *, write: bool = True):
         if not self.opened:
@@ -289,7 +324,7 @@ class LocalStore:
         self.copy_database(self.path, destination)
         return identifier
 
-    def copy_database(self, source: Path, destination: Path) -> None:
+    def copy_database(self, source: Path, destination: Path, *, legacy: bool = False) -> None:
         descriptor = os.open(destination, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         os.close(descriptor)
         try:
@@ -298,7 +333,7 @@ class LocalStore:
                 closing(self.connect(destination)) as target,
             ):
                 origin.backup(target)
-            self.validate(destination)
+            self.validate(destination, legacy=legacy)
             with destination.open("r+b") as stream:
                 os.fsync(stream.fileno())
         except (StorageError, sqlite3.Error, OSError):

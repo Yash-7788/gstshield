@@ -1,6 +1,6 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
@@ -57,9 +57,9 @@ Readiness makes a local DB query; liveness remains independent. Failed storage r
 
 ## Upload and output safety
 
-Project bounds: 5 MB transmitted file, 2,000 rows, 50 columns, 10,000 characters per cell, JSON nesting 20, and XLSX decompressed content 50 MB / 1,000 ZIP entries. Reject archives violating bounds before openpyxl processing. Also cap actual parsed records and execution duration; metadata alone is not enough. One workspace import job/global heavy task initially.
+Project bounds: 5 MB transmitted file, 2,000 rows, 50 columns, 10,000 characters per cell, JSON nesting 20, and XLSX decompressed content 50 MB / 1,000 ZIP entries. Reject archives violating bounds before openpyxl processing. Also cap actual parsed records and execution duration; metadata alone is not enough. Five queued/running jobs per workspace, one parser process globally, one upload receiver globally and twenty retained imports per workspace.
 
-Allow CSV/XLSX/JSON only for structured imports. Reject `.xlsm`, `.xls`, arbitrary ZIP, executable formats and external URLs. Validate bytes and layout in addition to extension/MIME. Reject formulas in required spreadsheet cells; do not execute macros or follow external workbook links. A filename never becomes a filesystem path. Raw files are private and cannot be served as inline HTML.
+Allow CSV/XLSX/JSON only for structured imports. Reject `.xlsm`, `.xls`, arbitrary ZIP, executable formats and external URLs. Validate bytes and layout in addition to extension/MIME. Reject formulas anywhere in the workbook; do not execute macros or follow external workbook links. A filename never becomes a filesystem path. Raw files are private and cannot be served as inline HTML.
 
 Formula-safe CSV exports neutralize text cells beginning with `=`, `+`, `-`, `@`, tab or carriage return, including after leading whitespace normalization. Apply this to untrusted text, not already validated numeric columns. Preserve original text in the private source record and document export escaping. Quote CSV fields correctly; quoting alone does not disable spreadsheet formulas.
 
@@ -81,13 +81,13 @@ Future website downloads require the current browser session and current members
 
 Capability responses use `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, no analytics/third-party assets, and token-redacted application/proxy logs. Revoke on unlink. Signing a bucket URL alone does not support immediate membership-aware revocation, so the preferred capability endpoint authorizes then streams the private object.
 
-Browser sessions use a 256-bit random opaque cookie with HttpOnly, SameSite=Strict, Path=/api/v1 and an absolute expiry. SQLite retains only the token hash. Secure is false for the selected loopback HTTP listener; public HTTPS would require a reviewed secure-cookie configuration. The session endpoint recovers a per-session HMAC CSRF token for in-memory browser use. Private POST requires exact Origin and X-CSRF-Token. Neither the cookie nor credentials belong in browser localStorage. [OWASP session guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
+Browser sessions use a 256-bit random opaque cookie with HttpOnly, SameSite=Strict, Path=/api/v1 and an absolute expiry. SQLite retains only the token hash. Secure is false for the selected loopback HTTP listener; public HTTPS would require a reviewed secure-cookie configuration. The session endpoint recovers a per-session HMAC CSRF token for in-memory browser use. Private POST/PATCH requires exact Origin and X-CSRF-Token. Neither the cookie nor credentials belong in browser localStorage. [OWASP session guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 
 ## Limits, secrets and logging
 
 Exact-origin CORS; loopback HTTP for current execution; reachable HTTPS and its security review are deferred to the phone connectivity phase; no wildcard credentialed access. CORS is a browser policy, not API authorization. Current sessions use HttpOnly cookies; credentials and CSRF secrets never go in query strings. Validate environment configuration at startup. Missing signatures/secrets deny processing; a demo flag never disables authentication.
 
-Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, one active workspace job, five link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; current read/mutation and login windows are persisted in SQLite and survive restart. They are fixed windows, not a production distributed limiter.
+Initial limits: 60 read requests/minute/user, 10 mutations/minute/user, three imports/minute/workspace, five queued/running import jobs per workspace and one active parser globally, five planned link attempts/ten minutes/sender. Use database-backed contested quotas for linking/import creation; current read/mutation and login windows are persisted in SQLite and survive restart. They are fixed windows, not a production distributed limiter.
 
 Store provider tokens only in deployment/local secret stores. Logs include request/job IDs, error codes, durations and category counts; exclude source file contents, credentials, link codes, capability tokens, bank accounts and full phone identities. Audit events record actor/action/target without confidential payload dumps.
 
@@ -222,3 +222,14 @@ Include valid adjacent cases so safeguards do not simply break all functionality
 After the hackathon, review independent maker/checker payments, stronger session revocation requirements, formal retention/consent obligations, managed secrets rotation, operational alerting, penetration testing and provider/legal contracts. No deferred item permits bypassing the hackathon's mandatory tenant/document/callback protections.
 
 Keep this document updated when implementation changes a trust boundary. Later logical correctness notes record actual root causes and regressions; this security specification remains the intended control baseline.
+
+
+## Phase 3 enforced boundaries
+
+Upload authentication, CSRF and current workspace write role are checked before the larger multipart body is received. OWNER and REVIEWER can create/map/confirm; VIEWER can inspect authorized previews/jobs. Every resource lookup and write rechecks the current session/membership. Revoked membership, other-workspace IDs and inaccessible registrations return 404. Child foreign keys include workspace scope. Filename is bounded display text with paths/control characters refused; source bytes are stored inside SQLite rather than a static directory or shared temporary upload file.
+
+The body is counted from actual chunks, including when Content-Length is absent. Duplicate/invalid lengths and declared/actual mismatch are refused. The entire multipart envelope has a file limit plus 64 KiB overhead and a wall-clock deadline. One receiver bounds retained buffers; multipart accepts one file and a bounded number of fields. Repeated/unknown fields, ambiguous mapping headers and duplicate JSON mapping keys are refused. Extensions must match a supported explicit adapter; the parser checks actual bytes/layout. MIME labels are not trusted as evidence of safe content.
+
+The parser result is published in one transaction with its row counts, reasons, version and job state. SQL uses bound values, composite references and INTEGER monetary columns. A malformed file becomes a failed private job with a fixed reason code. Raw exceptions, SQL, filesystem paths, source files and session secrets are absent from HTTP errors and worker logs.
+
+The child has no network integration or URL-fetch code. XML/archive bounds, a real process timeout and a sampled combined RSS watchdog limit hostile parser work. This is not a kernel sandbox or a production Internet upload service. Original documents, database and backups remain unencrypted under the local OS account; use synthetic hackathon inputs. Successful backup/restore includes both source BLOB and preview rows and revokes restored access as in Phase 2.

@@ -169,7 +169,7 @@ def test_cors_preflight_advertises_session_operations_with_credentials(applicati
         )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == ORIGIN
-    assert response.headers["access-control-allow-methods"] == "GET, POST"
+    assert response.headers["access-control-allow-methods"] == "GET, POST, PATCH"
     assert response.headers["access-control-allow-credentials"] == "true"
     assert forbidden_method.status_code == 400
 

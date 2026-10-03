@@ -106,7 +106,11 @@ class Settings(BaseSettings):
     memory_state_max_bytes: PositiveInt = 67108864
     max_active_demo_sessions: PositiveInt = 20
     max_concurrent_processing_jobs: SingleWorker = 1
-    max_queued_jobs_per_session: PositiveInt = 5
+    max_queued_jobs_per_workspace: PositiveInt = 5
+    max_imports_per_workspace: PositiveInt = 20
+    max_parsed_import_bytes: PositiveInt = 16777216
+    max_parser_rss_bytes: PositiveInt = 268435456
+    max_upload_receive_seconds: PositiveInt = 20
 
     max_upload_bytes: PositiveInt = 5242880
     max_import_rows: PositiveInt = 2000

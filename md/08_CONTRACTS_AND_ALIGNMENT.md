@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -38,7 +38,7 @@ Invalid credentials are a generic 401 for unknown/inactive users or a wrong pass
 
 Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
 
-The broad catalog below covers later phases and is not a claim of implemented imports/jobs/reports/WhatsApp endpoints. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
+The imports and import jobs below are implemented in Phase 3. Runs, reports, cases and WhatsApp remain later-phase contracts; the broad catalog does not imply those routes exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
 
 ## Shared enums
 
@@ -47,7 +47,7 @@ The broad catalog below covers later phases and is not a claim of implemented im
 | MemberRole | OWNER, REVIEWER, VIEWER |
 | Provenance | SYNTHETIC_DEMO, USER_PROVIDED, VERIFIED_SOURCE |
 | ImportKind | PURCHASE, PORTAL_2B |
-| ImportState | RECEIVED, UPLOADING, PARSING, AWAITING_CONFIRMATION, READY, FAILED, SUPERSEDED |
+| ImportState | RECEIVED, PARSING, AWAITING_CONFIRMATION, READY, FAILED, SUPERSEDED |
 | JobState | QUEUED, RUNNING, SUCCEEDED, FAILED |
 | RunState | QUEUED, RUNNING, COMPLETED, FAILED, SUPERSEDED |
 | ResultStatus | EXACT_MATCH, FUZZY_SUGGESTION, AMOUNT_MISMATCH, MISSING_IN_SNAPSHOT, AMBIGUOUS, EVIDENCE_INCOMPLETE, REVIEW_ACCEPTED, REJECTED |
@@ -102,7 +102,7 @@ Stable cursor order is `(created_at, id)` or `(source_row_number, id)` for run r
 
 Create imports, runs, reviews, cases, proposals and artifact requests accept `Idempotency-Key`, a UUID generated once per intended action. Persist scope `(workspace, actor, route, key)` and canonical request hash. Reuse with identical request returns the original operation; different payload returns 409. Concurrent reservations are protected by uniqueness. Operation references survive response loss.
 
-For upload hashing include bytes, declared context, mapping and adapter choice. A separate import content uniqueness key handles same file with a different request key. Mapping version changes legitimately produce a different operation. Default idempotency retention is seven days for the synthetic demo; artifact/import identities remain beyond it until cleanup.
+For upload hashing include bytes, declared context, mapping and adapter choice. A separate import content uniqueness key handles same file with a different request key. Mapping version changes legitimately produce a different operation. Phase 3 retains up to 1,000 operation keys per workspace until deliberate cleanup is implemented; it has no automatic seven-day expiry. Import identities remain persistent. Artifact retention is a later-phase decision.
 
 Mutating existing resources requires `expected_version`. Atomic update compares version and advances it only on success. A network failure does not tell the client whether the update committed; retry the same key or fetch the resource. GET can be retried; ambiguous Meta sends cannot be retried as if they were pure reads.
 
@@ -117,6 +117,7 @@ All workspace paths below are prefixed `/api/v1/workspaces/{workspace_id}`. Muta
 | GET /api/v1/workspaces | Cursor/limit | Membership-authorized Workspace[] / 200 |
 | GET /registrations | Cursor/limit | Registration[] / 200 |
 | POST /imports | Multipart file + fields below | ImportReceipt / 202 |
+| GET /imports | registration_id/kind/period/cursor/limit | ImportDetail list with next_cursor / 200 |
 | GET /imports/{import_id} | None | ImportDetail / 200 |
 | GET /imports/{import_id}/rows | state/cursor/limit | PreviewRow[] / 200 |
 | PATCH /imports/{import_id}/mapping | MappingPatch | ImportReceipt / 202 |
@@ -150,7 +151,7 @@ Multipart fields: `file`, `kind`, `registration_id`, `period`, `adapter_version`
 
 `ImportReceipt`: id, workspace_id, registration_id, kind, period, state, job_id, version, file_sha256, adapter_version, provenance. ImportDetail adds accepted_rows, rejected_rows, duplicate_rows, errors, generated_at and selected-sheet/mapping information.
 
-`MappingPatch`: expected_version, sheet_name nullable, mapping dictionary from canonical field to source header. Mandatory fields cannot map to the same source column ambiguously. Patching an already READY import creates a new derived import rather than rewriting immutable data.
+`MappingPatch`: expected_version, sheet_name nullable, mapping dictionary from canonical field to source header. Mandatory fields cannot map to the same source column ambiguously. Every mapping patch creates/reuses a derived import; existing previews are immutable. A READY parent additionally becomes the explicit supersession target.
 
 `ImportConfirm`: expected_version, allow_rejected_rows default false, confirmed_supersession default false. A rejected-row import requires explicit acknowledgement. A superseding import requires confirmation and same workspace/registration/period/kind.
 
@@ -216,7 +217,7 @@ Use actual candidate `id` on responses as well as portal_document_id. Actions: A
 
 JobDetail: id, kind, state, attempt, phase, processed_rows nullable, total_rows nullable, output_ref nullable, error nullable, created_at, started_at nullable, finished_at nullable. Phase is human-readable current work, not guaranteed percentage. Failed job has error.code/message/retryable; frontend can present recovery without leaking stack traces.
 
-Completed output_ref identifies the run/import/artifact. Status is authorized by workspace just like the output; a guessed job ID is not public progress information. Restart may move expired RUNNING to QUEUED with increased attempt, preserving the logical operation ID.
+Completed output_ref identifies the run/import/artifact. Status is authorized by workspace just like the output; a guessed job ID is not public progress information. Phase 3 resumes QUEUED jobs, while interrupted RUNNING jobs become FAILED/PROCESSING_INTERRUPTED. Retrying requires an explicit new derived import; no attempt counter or automatic retry is exposed yet.
 
 ## Case and proposal contracts
 
@@ -262,3 +263,20 @@ Backward-compatible optional additions can stay v1. Renames, enum semantics, mon
 - [ ] New snapshot creates explicit supersession rather than overwriting history.
 - [ ] No proposal download is represented as payment execution.
 - [ ] Physical WhatsApp results equal the persisted website run.
+
+
+## Current Phase 3 website contract details
+
+All import routes are under `/api/v1/workspaces/{workspace_id}` and use the existing credentialed browser session. POST upload, PATCH mapping and POST confirmation require exact Origin, X-CSRF-Token and one lowercase UUID Idempotency-Key. Fields are named exactly as the catalog above. The actual Pydantic response models in backend/app/contracts/imports.py generate OpenAPI.
+
+POST `/imports` returns 202 with an ImportDetail-compatible receipt. State can advance before a duplicate retry response returns. Awaiting confirmation has state=AWAITING_CONFIRMATION; parser failure has state=FAILED with fixed errors. Provenance is USER_PROVIDED for CSV/XLSX and SYNTHETIC_DEMO for canonical-demo-v1. Neither is VERIFIED_SOURCE. Created/updated timestamps are UTC RFC3339, while source generated_at is a validated zoned source timestamp.
+
+GET `/imports/{id}/rows` accepts `state=ALL|ACCEPTED|REJECTED`, integer `cursor` (last row position, default 0), and `limit` 1..100. Its envelope data is `{rows: PreviewRow[], next_cursor: integer|null}`. Rows include row_number, original, canonical, errors, accepted and duplicate. Empty/pending previews return an empty rows array, and the detail/job state tells the website whether parsing is incomplete. No totals should be fabricated from that empty array.
+
+GET `/jobs/{id}` currently returns id, workspace_id, import_id, kind=IMPORT, state=QUEUED|RUNNING|SUCCEEDED|FAILED, error_code nullable, created_at and updated_at. The richer future job catalog's phase/attempt/output_ref fields are not currently implemented. Poll about once every two seconds with backoff to share the sixty-reads/minute session budget with other screens. Job SUCCEEDED indicates a checked preview; explicit import confirmation is still required.
+
+PATCH mapping uses expected_version, optional sheet_name and a complete canonical-field-to-header mapping dictionary. Money values in files use dot decimals without grouping and at most two decimal places; mapping is not an implicit currency/locale converter. Do not provide a sheet for non-XLSX or change the fixed demo JSON field mapping. Confirm uses expected_version, allow_rejected_rows=false and confirmed_supersession=false by default. Versions change when a parser starts, completes/fails, or an import confirms/supersedes; refresh before a new user action. An identical retry of the same confirmation key remains valid even after its version changed.
+
+Current additional errors include UPLOAD_BUSY/503, QUEUE_FULL/429, IMPORT_LIMIT/409, OPERATION_LIMIT/409, UPLOAD_TIMEOUT/408, INVALID_MULTIPART/400, IDEMPOTENCY_KEY_REQUIRED/400, PARTIAL_ACK_REQUIRED/409, SUPERSESSION_ACK_REQUIRED/409 and IMPORT_NOT_CONFIRMABLE/409. Retry-After is returned for transient admission limits and exposed by CORS alongside X-Request-ID. Mapping/unsupported content errors must stay visible to the user; do not label them as a successful import or an ITC decision.
+
+GET `/imports` returns `{imports: ImportDetail[], next_cursor: UUID|null}` with `limit` 1..100 (default 20), a last-seen UUID `cursor`, optional registration_id, kind and period filters. Results are consistently ordered by ID; this is pagination order, not a claim that a source is latest or authoritative. A browser refresh can recover durable import IDs through this list.

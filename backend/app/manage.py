@@ -43,6 +43,7 @@ def main() -> int:
     registration.add_argument("--gstin", required=True)
     registration.add_argument("--name", required=True)
     commands.add_parser("backup")
+    commands.add_parser("storage-upgrade")
     restore = commands.add_parser("restore")
     restore.add_argument("--backup-id", required=True)
     arguments = parser.parse_args()
@@ -56,6 +57,14 @@ def main() -> int:
                 f"Restored. Prior database preserved as {preserved}. "
                 "All restored accounts are disabled; reset intended users' passwords "
                 "and review memberships before launch."
+            )
+            return 0
+        if arguments.command == "storage-upgrade":
+            identifier = store.upgrade()
+            print(
+                "Storage upgraded; prior schema backup ID: " + identifier
+                if identifier
+                else "Storage schema is current."
             )
             return 0
         store.initialize()

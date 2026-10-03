@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -38,11 +38,11 @@ frontend/                    # supplied website, preserve its framework
 md/                          # this eight-document pack
 ```
 
-Start with one Uvicorn worker. Parsing/PDF creation use a bounded thread executor; impose input bounds before launching work. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during file-processing or Meta requests.
+Start with one Uvicorn worker. Phase 3 parsing uses one killable local child process with a monitoring thread; impose input bounds before launching work. PDF processing remains a Phase 5 decision. Database sessions belong to one operation, never shared across parallel tasks. Do not keep a transaction open during file-processing or Meta requests.
 
 ## Persistence conventions
 
-Application tables live in the private SQLite file, with STRICT types and foreign keys enabled on every connection. UUIDs are generated server-side. Phase 2 timestamps are integer Unix seconds exposed as UTC RFC3339 Z strings. Future monetary columns use INTEGER paise, checked for bounds; Python uses Decimal and JSON uses fixed two-decimal strings. Never use SQLite REAL for money. Future scores use bounded scaled integers or validated decimal text. Integer version supports optimistic concurrency.
+Application tables live in the private SQLite file, with STRICT types and foreign keys enabled on every connection. UUIDs are generated server-side. Phase 2 timestamps are integer Unix seconds exposed as UTC RFC3339 Z strings. Phase 3 monetary columns use INTEGER paise, checked for bounds; Python uses Decimal and JSON uses fixed two-decimal strings. Never use SQLite REAL for money. Future scores use bounded scaled integers or validated decimal text. Integer version supports optimistic concurrency.
 
 Every tenant-owned row carries `workspace_id`; child references use composite `(workspace_id, id)` foreign keys where appropriate to prevent cross-workspace references. Index each unique pair referenced by those keys. Authentication identity is the active local account resolved from an unexpired opaque session; membership comes from our database, not editable profile metadata.
 
@@ -51,9 +51,9 @@ Every tenant-owned row carries `workspace_id`; child references use composite `(
 | `workspaces` | id, name, created_at |
 | `memberships` | workspace_id, user_id, role (`OWNER/REVIEWER/VIEWER`), active; unique workspace/user |
 | `registrations` | workspace_id, gstin, display_name; unique workspace/GSTIN |
-| `files` | workspace_id, registration_id, kind, private object_key, original_name, size_bytes, sha256, provenance, uploaded_by, created_at; no public URL |
+| `import_files` (implemented) | workspace_id, registration_id, private content BLOB, original_name, size_bytes, sha256, uploaded_by, created_at; no public URL |
 | `imports` | file_id, kind, period, adapter_version, mapping_json, state, counters, generated_at, supersedes_import_id, version; unique workspace/registration/kind/period/file_hash/mapping_hash/adapter_version |
-| `source_rows` | import_id, row_number, original_json, canonical_json, validation_errors; unique import/row |
+| `import_rows` (implemented) | workspace_id/import_id/row_number, original_json, canonical_json, errors_json, accepted/duplicate flags and INTEGER monetary columns; unique scoped import/row |
 | `purchase_documents` | import_id, registration_id, source_row_number, voucher_id, canonical fields below; unique import/voucher_id |
 | `portal_documents` | import_id, registration_id, source_row_number, canonical fields; preserve duplicates for explicit detection |
 | `runs` | workspace/registration/period, purchase_import_id, portal_import_id, policy_version, state, summary_json, started_at, completed_at, superseded_by_run_id |
@@ -107,18 +107,18 @@ total_tax = igst + cgst + sgst + cess
 gross_total = taxable_value + total_tax + other_charges + round_off
 ```
 
-For invoice/debit-note rows, monetary magnitudes are nonnegative except signed `round_off`. Credit notes also store nonnegative magnitudes and an explicit document type; a signed ledger projection applies the direction later. This prevents negative payouts. Reject non-finite values, ambiguous localized decimals and unexpected precision. The fixed template accepts dot decimals without grouping; mapping preview may explicitly normalize a known export locale.
+For invoice/debit-note rows, monetary magnitudes are nonnegative except signed `round_off`. Credit notes also store nonnegative magnitudes and an explicit document type; a signed ledger projection applies the direction later. This prevents negative payouts. Reject non-finite values, ambiguous localized decimals and unexpected precision. The fixed template accepts dot decimals without grouping; the current mapping preview selects headers only and does not normalize export locales. Add an explicit adapter and tests before accepting localized amounts.
 
 ## Import lifecycle
 
 1. Authorize context and enforce body/row/archive limits. Compute SHA-256 from bytes.
-2. Reserve a file/import record in a short transaction with a generated private object key. Upload bytes outside that transaction. If the upload fails, record failure; do not claim durable import success.
-3. Persist the object reference and enqueue parse job in the next transaction. A cleanup/recovery sweep handles reservations left incomplete by a crash.
+2. Receive bounded bytes after authentication and role checks. A failed/incomplete reception creates no durable import.
+3. Atomically persist or reuse the private source BLOB, import identity, idempotency operation and QUEUED job. The source bytes are already bounded before this short transaction. A crash before commit cannot leave an orphan source/job reservation.
 4. Parse into staged source rows. Validate layout, recipient, period and canonical values. Detect duplicate voucher/invoice identities. Store accepted and rejected counts with row errors.
 5. Enter `AWAITING_CONFIRMATION`. A confirm action freezes mapping and accepted rows; `allow_rejected_rows=true` explicitly acknowledges partial import. No rejected record enters reconciliation.
 6. If superseding an existing portal snapshot, require an explicit matching-context parent ID and retain both files. A changed snapshot never edits completed historical results.
 
-CSV: UTF-8 or UTF-8 BOM first; provide an actionable unsupported-encoding error. XLSX: user-selected sheet; read-only; reject macro formats and formula cells in required fields; check decompressed ZIP size/entry count before parse. JSON: bounded size/nesting/record counts, strict adapter selection. No PDF OCR or arbitrary ZIP import in the first build.
+CSV: UTF-8 or UTF-8 BOM first; provide an actionable unsupported-encoding error. XLSX: user-selected sheet; read-only; reject macro formats and formula cells anywhere in the workbook; check decompressed ZIP size/entry count before parse. JSON: bounded size/nesting/record counts, strict adapter selection. No PDF OCR or arbitrary ZIP import in the first build.
 
 The synthetic canonical JSON adapter is `canonical-demo-v1`. It does not impersonate the official GSTR-2B format. The first official adapter is activated only after testing an authorized anonymized actual file and documenting supported sections in 07.
 
@@ -257,3 +257,20 @@ Processing cleanup must use reserved object keys and compare operation state bef
 - One reviewed SQLite schema upgrade path; initial startup only initializes an exclusively new file, and rejects unknown existing schemas.
 - Small orchestration functions with named transaction/side-effect steps.
 - Factual error states instead of catch-all empty success.
+
+
+## Implemented Phase 3 import behavior
+
+The current adapters are csv-v1 and xlsx-v1 for structured PURCHASE/PORTAL_2B tables and canonical-demo-v1 for explicitly synthetic portal JSON. This is our documented JSON format, not an official GSTR-2B exporter. GSTIN checks are structural only; they do not verify a registration, checksum, filing or legal credit entitlement.
+
+CSV is UTF-8 with optional BOM and an exact header row. XLSX is read-only with explicit sheet selection if more than one worksheet exists. Exact numeric XML text is preserved before openpyxl converts cells, so a monetary value is never accepted by silently rounding a binary float. ISO dates or midnight Excel date cells are supported. Files with formulas anywhere, workbook errors, macros/binary parts, external relationships, XML entities, archive traversal, duplicate archive entries or excessive expansion are refused. Other XLSX layouts need an explicit adapter.
+
+`row_number` is the one-based data-record position after the header. Blank data records remain rejected preview rows; skipping one must not shift later row identities. CSV multiline fields count as one data record. Original cell values remain private alongside validation reasons. Whitespace-only required identifiers are rejected. Exact component sums must agree with gross amounts when all components are known; supplied total_tax must agree with the component sum. Unknown components remain null with COMPONENTS_UNKNOWN. An older invoice date may belong to a later selected accounting period; date/month equality is deliberately not a gate.
+
+Missing mandatory mappings produce AWAITING_CONFIRMATION with global MAPPING_REQUIRED reasons and no accepted records. No import with global mapping errors or zero accepted rows can be confirmed. Duplicate purchase identities/voucher IDs reject all affected rows; duplicated portal identities remain individually visible and flagged for the future reconciler's ambiguity handling.
+
+Every mapping request creates or reuses a separate derived import, including when the original is awaiting confirmation or failed. The original preview stays immutable. A READY source maps to a new superseding preview; confirmation requires explicit supersession acknowledgement and a still-READY parent in exactly the same context. A normal partial import requires allow_rejected_rows=true. Confirmation changes state/version and appends its audit event in one transaction; stale versions conflict, and identical idempotent retries do not repeat the event.
+
+Import identity includes scope, registration, kind, period, byte hash, declared mapping/sheet hash, adapter, supersession parent and derivation parent. Stored display mapping can be auto-detected; the identity retains the declared input hash for repeatable upload deduplication. A repeated file reuses one private BLOB for the same registration/workspace. Filename does not define content identity. Idempotency additionally includes the submitted metadata and display filename, so a reused request key with changed input conflicts.
+
+Job success means the preview was atomically persisted, not that an import was confirmed. QUEUED jobs survive restart and resume. RUNNING jobs interrupted by shutdown/crash become visible FAILED/PROCESSING_INTERRUPTED; no partial preview or READY state is published. Recovery uses a new derived mapping import rather than silently retrying an unfinished parse. No source-download, matching, report or WhatsApp behavior is implemented in this phase.

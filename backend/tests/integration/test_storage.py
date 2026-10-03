@@ -52,7 +52,7 @@ def test_existing_unsafe_database_is_preserved(kind):
             store.initialize()
             connection = sqlite3.connect(store.path)
             if kind == "future":
-                connection.execute("PRAGMA user_version=2")
+                connection.execute("PRAGMA user_version=999")
             else:
                 connection.execute("CREATE TABLE unexpected (id INTEGER)")
             connection.close()

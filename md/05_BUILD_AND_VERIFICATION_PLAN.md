@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,13 +10,13 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **13 phases**. Phase 1 remains complete; Phase 2 is complete and locally verified; Phases 3–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **13 phases**. Phase 1 remains complete; Phase 2 is complete and locally verified; Phases 1–3 are complete and locally verified; Phases 4–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
 | 1 | Local runtime and HTTP foundation | Backend | Complete |
 | 2 | Local storage and private access | Backend | Complete |
-| 3 | File imports, checking and confirmation | Backend | Not started |
+| 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
 | 4 | GST reconciliation and human review | Backend | Not started |
 | 5 | Backend reports, cases and evidence workflow | Backend | Not started |
 | 6 | Backend security and failure review | Backend | Not started |
@@ -77,7 +77,7 @@ Review gate:
 4. Check outside-directory paths, unavailable/corrupt storage, exhausted quotas and failed startup without exposing private data.
 5. Record the chosen access/storage contracts for the frontend handoff; no private routes before these checks pass.
 
-### Phase 3 — File imports, checking and confirmation (not started)
+### Phase 3 — File imports, checking and confirmation (complete and locally verified)
 
 Owner: backend. Outcome: Turn supported documents into checked, reviewable inputs without treating unsupported or partial data as a successful import.
 
@@ -384,7 +384,7 @@ Implemented schema v1: metadata, users, workspaces, memberships, registrations, 
 | Process ownership | Second runtime or maintenance command cannot acquire the active data lock |
 | No leakage | Errors never contain password, session token, private filename or raw SQL |
 
-Phase 2 completed locally on 2026-10-03: 118 tests passed, one Windows symlink-privilege test skipped; the actual Windows junction test and process restart/offline backup/restore proof passed. Frozen dependency installation, lint/format, syntax and diff checks passed. The Windows backup flush defect found during review was fixed, as were same-host browser-cookie alignment and bounded validation/prompt failure paths. Local verification and remote CI remain separate evidence. Phase 3 starts only after a new user-directed increment.
+Phase 2 completed locally on 2026-10-03: 118 tests passed, one Windows symlink-privilege test skipped; the actual Windows junction test and process restart/offline backup/restore proof passed. Frozen dependency installation, lint/format, syntax and diff checks passed. The Windows backup flush defect found during review was fixed, as were same-host browser-cookie alignment and bounded validation/prompt failure paths. Local verification and remote CI remain separate evidence. Phase 3 was explicitly authorized in the following increment; its verification record is maintained below.
 
 ## Future regression set to carry through the phases
 
@@ -397,3 +397,28 @@ Frontend connection gates cover same-host cookies, session reload, selected-cont
 Phone gates cover raw signatures, configured assets, link expiry/single consumption, event replay, media bounds, unlink revocation, ambiguous send UNKNOWN and exact agreement with website summaries. Real phone proof remains required; an adapter emulator is development evidence only.
 
 Every later phase repeats affected earlier checks after edits. Test the enforcing layer with allowed adjacent cases, rather than asserting that a named helper exists. Performance work records measured time/memory and does not weaken exact matching, privacy or validation to achieve a faster number.
+
+
+## Phase 3 implementation and verification record
+
+Phase 3 uses direct edits to responsibility-named source modules. No phase-named code-edit helper scripts are part of the repository or the workflow. The new modules separate HTTP contracts/routes, exact canonical validation, bounded source adapters, application commands, import schema and the local dispatcher/disposable worker. Existing lifespan/configuration/HTTP boundaries and offline administration were connected rather than replaced.
+
+Verified intermediate evidence: 34 initial parser tests passed; endpoint flows passed for upload/preview, partial acknowledgement, mapping, supersession, scope/role protection and idempotency. The first integration run caught a test-only unclosed SQLite connection; it was corrected with explicit closing. Additional cases cover blank records, reported tax totals and unsafe XML entities.
+
+Resource verification found a Windows virtual-environment launcher spawning a second interpreter. The dispatcher now tracks combined process-tree RSS and stops all observed parser processes on timeout/memory failure. Real child-kill tests assert the observed PIDs no longer exist, not merely that an HTTP timeout was returned. Actual streamed upload counting, duplicate/invalid length headers, receive timeout, authorization-before-body-read, queue bounds and interrupted-job recovery are checked. Source/preview persistence is tested against actual backend process restart and offline backup/restore.
+
+Measured local Windows baseline (Python 3.13.16, complete upload-to-persisted-preview time, includes process startup; not a universal performance guarantee):
+
+| Adapter | Rows | Source bytes | Time (seconds) | Sampled combined child RSS (bytes) |
+|---|---:|---:|---:|---:|
+| CSV | 100 | 10,935 | 0.602 | 40,366,080 |
+| XLSX | 100 | 10,084 | 0.619 | 40,980,480 |
+| CSV | 2,000 | 221,935 | 0.877 | 48,648,192 |
+| XLSX | 2,000 | 101,303 | 2.697 | 51,294,208 |
+
+Inputs contain distinct synthetic vouchers/invoices and exact component amounts. Health requests are made during the parse and remain available. RSS samples cover the Windows launcher and actual parser; a sampled peak can miss between-sample spikes. Phase 10 will measure broader contention and whole-backend behavior. The full Phase 1–3 regression, frozen dependency, lint/format, syntax and Git checks are recorded after their final run.
+
+Final boundary review also rejects all duplicate purchase copies when one copy has an unrelated validation error. Parser task descriptors use generated private bounded files rather than a blocking stdin pipe, so interpreter startup remains inside the monitored timeout. Both descriptor and result files are cleaned up. Queued-job restart, simultaneous identical command reservations and shipped example parsing are covered by the final tests.
+
+
+Phase 3 completed locally on 2026-10-03. The full Phase 1–3 regression passed: 169 passed, one Windows symlink-privilege test skipped; the actual Windows junction test passed. A final reviewed retry identity fix was followed by all 77 affected import/parser/HTTP tests passing. Explicit unchanged-mapping recovery from an interrupted import now creates a derived job instead of returning the original failed import; source/context deduplication remains intact. Frozen dependency sync, Ruff lint/format, Python syntax compilation and final diff checks passed. The real-process proof connects Phase 1 health, Phase 2 sessions/scopes and Phase 3 upload/preview/confirmation across restart and offline source-inclusive backup/restore. Local verification does not claim GitHub CI has already run. Phase 4 remains unstarted.

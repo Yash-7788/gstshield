@@ -4,10 +4,14 @@ version = "0.0.1"
 description = "GSTShield local hackathon website backend"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "defusedxml>=0.7.1,<0.8",
     "fastapi>=0.142.2,<0.143",
+    "openpyxl>=3.1.5,<3.2",
+    "psutil>=7,<8",
     "pydantic>=2.13.5,<3",
     "pydantic-settings>=2.15,<3",
     "python-dotenv>=1.2.4,<2",
+    "python-multipart>=0.0.32,<0.1",
     "uvicorn>=0.54,<1",
 ]
 

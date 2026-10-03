@@ -4,7 +4,7 @@
 
 Decision: 2026-10-03. Run the hackathon website backend on the local PC. No Render, cloud server, external database, cloud storage, Redis or hosted identity setup. A local backend process is still required for the website to call Python functionality.
 
-Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phase 2 is complete. No uploads, reconciliation, reports or phone routes exist yet.
+Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Reconciliation, reports and phone routes remain future phases.
 
 The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) defines the local architecture; the eight MDs now use this decision throughout. Work proceeds one phase at a time, with a review gate before the next phase.
 
@@ -40,6 +40,13 @@ If port 8000 is occupied, set both `PORT` and `PUBLIC_API_URL` to the same new p
 | POST /api/v1/auth/logout | Origin/CSRF-protected session revocation and cookie deletion |
 | GET /api/v1/workspaces | Current account's active memberships only |
 | GET /api/v1/workspaces/{workspace_id}/registrations | Registrations within a currently permitted workspace |
+| POST /api/v1/workspaces/{workspace_id}/imports | Authenticated, bounded multipart upload and durable parse job |
+| GET /api/v1/workspaces/{workspace_id}/imports | Scoped paginated import history and context filters |
+| GET /api/v1/workspaces/{workspace_id}/imports/{id} | Private state/version/mapping/counters/errors |
+| GET /api/v1/workspaces/{workspace_id}/imports/{id}/rows | Paginated original/canonical rows and rejection reasons |
+| PATCH /api/v1/workspaces/{workspace_id}/imports/{id}/mapping | Version-checked derived mapping preview |
+| POST /api/v1/workspaces/{workspace_id}/imports/{id}/confirm | Explicit partial/supersession acknowledgement |
+| GET /api/v1/workspaces/{workspace_id}/jobs/{id} | Authorized parse job state |
 | GET /docs | Developer API documentation in local/test mode |
 | GET /openapi.json | Schema in local/test mode |
 
@@ -66,21 +73,21 @@ Implemented validation includes:
 
 Startup configuration failures print a sanitized message and exit with code 2. Never print the settings object/model_dump, raw validation errors or environment values.
 
-Storage, session, private request-rate and small streamed-body limits are enforced in Phase 2. Upload/parser/linking/download/provider limits remain validated reservations until their features are implemented. WHATSAPP_ENABLED must remain false: even complete provider configuration cannot activate an unfinished integration.
+Storage, session, private request-rate and small streamed-body limits are enforced in Phase 2. Phase 3 enforces upload/parser limits; linking/download/provider limits remain reservations until their features are implemented. WHATSAPP_ENABLED must remain false: even complete provider configuration cannot activate an unfinished integration.
 
 ## Current HTTP safeguards
 
-The launcher binds to loopback. The HTTP boundary rejects non-local Host values and duplicate Host/Origin headers. Requests carrying an unapproved Origin are rejected before routes run. CORS permits exact configured origins, GET/POST, Content-Type and X-CSRF-Token, with credentials enabled. The website/API must use the same HTTP hostname for SameSite=Strict cookies, such as localhost on ports 3000/8000.
+The launcher binds to loopback. The HTTP boundary rejects non-local Host values and duplicate Host/Origin headers. Requests carrying an unapproved Origin are rejected before routes run. CORS permits exact configured origins, GET/POST/PATCH, Content-Type, X-CSRF-Token and Idempotency-Key, with credentials enabled. The website/API must use the same HTTP hostname for SameSite=Strict cookies, such as localhost on ports 3000/8000.
 
 Security/no-store headers and request IDs cover successful and failed HTTP responses. Unexpected errors return a generic message; logging keeps the request ID and exception class rather than the private exception contents. The outer boundary prevents the framework's completed 500 response from causing Uvicorn to log the original exception again. Partially sent responses abort with a sanitized failure.
 
 Host/Origin controls complement the current session and membership checks; they do not grant access on their own. DEMO_MODE is a sample-data flag and never an authentication bypass.
 
-There are no upload routes yet. Small mutation bodies are bounded by actual streamed bytes before JSON parsing. Upload/parser/processing limits will be enforced at their own authenticated boundaries in Phase 3; the small-body bound is not a finished upload implementation.
+Small mutation bodies are bounded by actual streamed bytes before JSON parsing. Phase 3 upload routes authenticate and check workspace write permission before receiving their separately bounded multipart body. The default file limit is 5 MiB plus 64 KiB envelope overhead.
 
 ## Local storage decision
 
-Phase 2 keeps accounts, scopes and sessions in backend/data/gstshield.sqlite3. Source/artifact files are introduced and bounded in their feature phases. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
+Phase 2 keeps accounts, scopes and sessions in backend/data/gstshield.sqlite3. Phase 3 source bytes and preview rows are stored privately inside this database; future report artifacts are a separate feature. Browser localStorage may hold harmless UI preferences; it will not own financial records, access authority or reconciliation results.
 
 Committed records and unexpired sessions survive normal backend restarts. Explicit transactions, parameterized SQL, STRICT tables, foreign keys, schema validation, an OS process lock and storage quotas protect the implemented local flow. Existing incompatible/corrupt files are refused and preserved. Local data/backups are not encrypted; Windows file access follows the local OS account permissions.
 
@@ -92,7 +99,7 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 |---|---|---|
 | 1 | Local runtime, configuration and HTTP foundation | Complete |
 | 2 | Local SQLite/private files and private access | Complete |
-| 3 | Bounded imports, checking and confirmation | Not started |
+| 3 | Bounded imports, checking and confirmation | Complete |
 | 4 | Reconciliation and versioned human review | Not started |
 | 5 | Backend reports, cases and evidence workflow | Not started |
 | 6 | Backend security and failure review | Not started |
@@ -164,7 +171,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-No Phase 3–13 endpoint or result is represented as working. Phase 3 remains a separate user-directed increment after the current review gate.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phases 4–13 remain pending, including reconciliation, reports, frontend integration and WhatsApp.
 
 ## Create local accounts and context
 
@@ -217,10 +224,48 @@ Restore validates/stages the backup, preserves the old database, clears sessions
 
 Existing unresolved journal/WAL/SHM files prevent restore; preserve them for operator recovery. Normal SQLite journaling handles interrupted transactions; do not delete a sidecar to bypass recovery. Unknown schema versions require a reviewed upgrade or supported backup, not deletion/recreation.
 
-This backup covers the Phase 2 database. Phase 3 must extend the backup/restore contract when private source files exist. No report/source-file retention is claimed before those features are implemented.
+This backup covers the Phase 3 source BLOBs, import context, previews, job history and access records together. Future generated reports are not implemented or covered by a separate-file manifest yet.
 
 ## Phase 2 verification record
 
 Local Windows verification on 2026-10-03: **118 passed, 1 skipped** in the complete Phase 1 + Phase 2 suite. Frozen sync, Ruff lint/format, syntax compilation and diff checks passed. The skipped test requires Windows symlink privilege; the separate actual Windows junction denial test passed. Focused tests cover two identities, session/CSRF/role boundaries, persistent limits, actual process restart, offline backup/restore, preserved corrupt/foreign/future-schema files, SQL rollback and disk/database quotas. The real restart test exercises the same Phase 1 launcher and HTTP boundary with Phase 2 accounts/scoped reads.
 
 The Windows symlink creation check may skip when Developer Mode/privilege is unavailable; a separate Windows junction check exercises the reparse-point denial without that privilege. Linux CI exercises symlinks when available. Remote workflow results remain separate evidence.
+
+
+## Phase 3 local imports
+
+Use the existing local account and workspace registration. POST multipart `/api/v1/workspaces/{workspace_id}/imports` with `file`, `kind`, `registration_id`, `period`, `adapter_version`, and optional `sheet_name`, JSON `mapping`, `supersedes_import_id`. Mutations require Origin, the session's X-CSRF-Token and a unique UUID Idempotency-Key. Keep that same key when retrying the same intended action.
+
+Supported adapters:
+
+| Adapter | File | Meaning |
+|---|---|---|
+| csv-v1 | .csv | UTF-8 purchase/portal table with header row |
+| xlsx-v1 | .xlsx | Read-only worksheet, explicit selection if multiple sheets |
+| canonical-demo-v1 | .json | Our fixed, explicitly synthetic portal format |
+
+Example synthetic source files are in backend/examples/. They have structurally valid illustrative identifiers; they are not verified taxpayer data or an official GSTR-2B schema. Amounts use dot decimal strings and at most two decimal places. The parser preserves null components and rejects unsupported precision rather than rounding. Credit-note values are positive magnitudes with explicit CREDIT_NOTE type.
+
+GET `/imports` returns private, paginated import history and supports registration_id/kind/period filters. GET `/imports/{id}` shows state, version, mapping, counters and errors. GET `/imports/{id}/rows` returns the private original/canonical rows and rejection reasons with state/cursor/limit filters. GET `/jobs/{id}` shows truthful parse progress. Paths in this paragraph share the workspace prefix above.
+
+PATCH `/imports/{id}/mapping` supplies expected_version, sheet_name and a complete mapping. It creates/reuses a new derived preview rather than rewriting an existing import. POST `/imports/{id}/confirm` supplies expected_version and explicit allow_rejected_rows/confirmed_supersession acknowledgements where required. Parsing success alone never makes an import READY. No GST matching/credit eligibility decision happens in Phase 3.
+
+Runtime limits: one upload receiver, one parser process globally, five queued/running jobs per workspace, twenty imports per workspace, 1,000 remembered operations per workspace, 2,000 rows, fifty columns, 10,000 characters per cell, JSON depth twenty, 1,000 ZIP entries and 50 MiB actual XLSX expansion. Result output is limited to 16 MiB. Upload receive deadline is twenty seconds and parser deadline sixty seconds. Process-tree RSS is sampled against 256 MiB; this is not a hard OS allocation sandbox.
+
+QUEUED work survives restart and resumes. Interrupted RUNNING work becomes FAILED/PROCESSING_INTERRUPTED. Sources and persisted previews survive restart and backup/restore. Recovery never labels an unfinished parse as confirmed. Poll progress about once every two seconds with backoff; the default session read budget is sixty requests/minute.
+
+For a Phase 2 schema, stop the backend and run from backend/:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.manage storage-upgrade
+```
+
+The command preserves a validated v1 backup and transactionally adds the Phase 3 tables. Fresh installations create schema v2 directly. Preserve the old backup; current restore accepts v2 backups. Update an older dotenv key MAX_QUEUED_JOBS_PER_SESSION to MAX_QUEUED_JOBS_PER_WORKSPACE using the new template. There is no external database or hosted service.
+
+Locked Phase 3 additions: openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32, psutil 7.2.2 and openpyxl's et-xmlfile dependency. CSV/JSON/Decimal/SQLite/process handling use the Python standard library. No pandas, Redis, ORM or cloud SDK was added.
+
+
+## Phase 3 verification
+
+Local Windows verification on 2026-10-03: full Phase 1–3 regression 169 passed / one symlink-privilege skip; Windows junction protection passed. The final explicit-retry identity fix was verified by all 77 affected import/parser/HTTP tests. Frozen dependencies, Ruff lint/format, syntax compilation and diff checks passed. Actual-process restart and offline backup/restore preserve original upload bytes, source hashes, preview rows and confirmed state while retaining Phase 2's restored-access revocation. The build plan records measured 100/2,000-row CSV/XLSX baselines and watchdog limits. GitHub CI remains separate from this local evidence.

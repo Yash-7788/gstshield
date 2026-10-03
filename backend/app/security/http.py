@@ -1,6 +1,7 @@
 """Local HTTP boundary. CORS is not authentication for future private routes."""
 
 import logging
+import re
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -92,7 +93,11 @@ class LocalHTTPBoundary:
             )
             await response(scope, receive, send_with_headers)
             return
-        if scope["method"] in {"POST", "PUT", "PATCH"}:
+        private_upload = scope["method"] == "POST" and re.fullmatch(
+            r"/api/v1/workspaces/[0-9a-fA-F-]{36}/imports", scope.get("path", "")
+        )
+        # Upload route authenticates before receiving its separately bounded body.
+        if scope["method"] in {"POST", "PUT", "PATCH"} and not private_upload:
             lengths = [value for key, value in headers if key.lower() == b"content-length"]
             invalid_length = len(lengths) > 1 or bool(
                 lengths and (len(lengths[0]) > 20 or not lengths[0].isdigit())

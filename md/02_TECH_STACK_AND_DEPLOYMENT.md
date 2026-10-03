@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phase 2 is complete and locally verified; Phases 3–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -15,7 +15,7 @@ This decision replaces the earlier cloud plan throughout this planning pack. The
 | Supabase Storage / signed bucket URLs | Private local directory | Paths stay server generated; future file access goes through scoped backend routes |
 | Render / static cloud hosting | Backend and supplied website run locally | PC availability determines uptime; no cloud deployment is required |
 | SQLAlchemy, psycopg, Alembic | sqlite3 + explicit schema version | Fewer dependencies; later upgrades are reviewed, backed up and tested |
-| Redis / external worker | Future SQLite job records + one bounded local dispatcher | Only one backend process may hold the data lock |
+| Redis / external worker | SQLite job records + one bounded local dispatcher | Only one backend process may hold the data lock |
 | Browser localStorage as business storage | Backend SQLite as authority | Browser reloads and account changes cannot invent or lose financial truth |
 
 ## Installed runtime, not release candidates
@@ -42,7 +42,7 @@ HTTPX2 matches the installed Starlette test client; do not reintroduce the depre
 
 ## Dependencies reserved for future phases
 
-- Phase 3: standard-library CSV/JSON first; evaluate openpyxl and bounded XML handling for XLSX. Commit tested versions when the parser is implemented.
+- Phase 3 now uses standard-library CSV/JSON, openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32 and psutil 7.2.2. The exact graph is committed in uv.lock; no pandas, ORM or external queue was added.
 - Phase 4: Decimal for canonical monetary arithmetic; evaluate RapidFuzz for suggestions. Similarity never becomes automatic legal approval.
 - Phase 5: evaluate ReportLab for PDF generation with a bundled tested font. Do not install a browser renderer only to generate a small evidence report.
 - Phase 7: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
@@ -90,7 +90,7 @@ SQLite uses STRICT tables, foreign keys, DELETE journaling, FULL synchronization
 
 Data persists across backend restarts. Session expiry is absolute, normally 30 minutes, with no sliding refresh. A new login replaces the previous session for that account. Expiry is checked in the backend independently of the cookie lifetime.
 
-Backup commands copy the actual Phase 2 database and validate the result. Generated UUIDs identify backups. Backup count, total retained bytes, database page limits and free-disk reserve are enforced. Archive an old backup outside the private directory before filling the backup budget.
+Backup commands copy the actual database and validate the result; Phase 3 sources are private SQLite BLOBs, so source bytes, preview rows, context and job history are included atomically. Generated UUIDs identify backups. Backup count, total retained bytes, database page limits and free-disk reserve are enforced. Archive an old backup outside the private directory before filling the backup budget.
 
 ```powershell
 ..\.tooling\Scripts\uv.exe run --frozen python -m app.manage backup
@@ -100,13 +100,13 @@ Backup commands copy the actual Phase 2 database and validate the result. Genera
 
 Restore preserves the previous database, validates/stages the chosen backup, removes restored sessions/request windows, disables restored accounts, and replaces the live database. Review memberships and reset the passwords of intended users before launch. This prevents a backup from silently reactivating old revoked credentials.
 
-An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator recovery rather than deleting evidence. Future imports/artifacts will require extending the backup manifest to include private source files. A Phase 2 database backup does not claim to protect files that are not implemented yet.
+An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator recovery rather than deleting evidence. Phase 3 source uploads are inside the database and need no second file manifest. Future report artifacts stored outside SQLite will require their own backup manifest; the current backup makes no claim about unimplemented artifacts.
 
 ## Environment contract
 
 `backend/.env.example` is the complete recognized template. OS settings override dotenv values; unknown OS names are ignored, unknown/malformed/duplicate dotenv settings are refused. No secret values are printed in configuration failures.
 
-The table below is generated from the template for this planning update. Blank Meta values are deliberate: WhatsApp remains disabled. Parser, link and provider limits are reservations until those phases enforce their boundaries; storage, sessions, JSON body bounds and private request limits are enforced now.
+The table below is generated from the template for this planning update. Blank Meta values are deliberate: WhatsApp remains disabled. Storage, sessions, request limits and Phase 3 upload/parser boundaries are enforced. Linking, reports and provider limits remain reservations until their phases.
 
 | Variable | Example default |
 |---|---|
@@ -125,7 +125,11 @@ The table below is generated from the template for this planning update. Blank M
 | `MEMORY_STATE_MAX_BYTES` | `67108864` |
 | `MAX_ACTIVE_DEMO_SESSIONS` | `20` |
 | `MAX_CONCURRENT_PROCESSING_JOBS` | `1` |
-| `MAX_QUEUED_JOBS_PER_SESSION` | `5` |
+| `MAX_QUEUED_JOBS_PER_WORKSPACE` | `5` |
+| `MAX_IMPORTS_PER_WORKSPACE` | `20` |
+| `MAX_PARSED_IMPORT_BYTES` | `16777216` |
+| `MAX_PARSER_RSS_BYTES` | `268435456` |
+| `MAX_UPLOAD_RECEIVE_SECONDS` | `20` |
 | `MAX_UPLOAD_BYTES` | `5242880` |
 | `MAX_IMPORT_ROWS` | `2000` |
 | `MAX_IMPORT_COLUMNS` | `50` |
@@ -179,7 +183,7 @@ The table below is generated from the template for this planning update. Blank M
 - Private requests: sixty reads and ten mutations per session per minute, stored in SQLite across restart.
 - SQL lock waiting: bounded to two seconds; failure is a truthful storage error, never successful empty data.
 
-These bounds are hackathon choices. Phase 10 measures implemented workload behavior before increasing them. Future upload routes need their own authenticated streaming bounds and multipart overhead policy; the current small-body bound must not be increased globally to bypass import checks.
+These bounds are hackathon choices. Phase 10 measures implemented workload behavior before increasing them. Uploads have their own authenticated streaming boundary: 5 MiB file plus 64 KiB multipart envelope, one upload reception at a time and a 20-second receive deadline. Other mutation bodies remain 64 KiB. The dispatcher admits five queued/running jobs per workspace and runs one parser globally; twenty imports per workspace and 1,000 remembered operations per workspace bound history.
 
 ## Checks and evidence
 
@@ -198,3 +202,16 @@ The current project is a website, not a native phone app. Real WhatsApp is Phase
 ## Technical references
 
 Python documents SQLite connections, bound SQL and backup APIs in the [Python 3.13 sqlite3 reference](https://docs.python.org/3.13/library/sqlite3.html). STRICT table behavior is defined by [SQLite](https://www.sqlite.org/stricttables.html). Current access choices and their limits are explained in 06 and implemented in the backend; these references do not certify the entire app.
+
+
+## Phase 3 process and schema decision
+
+Imports run in one disposable local Python process, scheduled by one backend thread. The thread only claims work, monitors the child and publishes a short database transaction. Parsing never holds a write transaction. The child reads one bound source ID from readonly SQLite and receives only its server-built descriptor. A generated private descriptor file is limited to 64 KiB so feeding startup cannot block the watchdog. Its result is a generated private temporary file limited to 16 MiB; it is removed after publication, cancellation or restart cleanup.
+
+The watchdog checks a 60-second deadline and combined process-tree RSS against 256 MiB. RSS is sampled, so this is not a hard Windows kernel memory allocation limit. Windows virtual-environment launchers can spawn a second interpreter; both memory accounting and termination include that process tree. This is resource isolation, not a full operating-system security sandbox. Sources remain private to the OS user running the hackathon backend.
+
+Schema version 2 adds import_files, imports, import_rows, jobs, import_operations and import_events. Startup preserves and refuses an old schema rather than silently changing it. For a valid Phase 2 database, stop the backend and run `python -m app.manage storage-upgrade` from backend/. It validates the exact old schema, saves a generated backup, then adds the import tables in one transaction. The saved v1 backup remains preserved evidence; current restore accepts v2 backups. Recovering a v1 backup requires an offline copy and this reviewed upgrade before launch. Fresh installations initialize v2 directly.
+
+Rename the old unused `MAX_QUEUED_JOBS_PER_SESSION` dotenv entry to `MAX_QUEUED_JOBS_PER_WORKSPACE`. It now limits actual workspace jobs. Old dotenv keys are deliberately refused rather than silently ignored; the complete current template is above and in backend/.env.example.
+
+The XML defense follows [openpyxl's security guidance](https://openpyxl.readthedocs.io/en/stable/): defusedxml is installed, and archive/XML inspection runs before workbook parsing. [python-multipart](https://pypi.org/project/python-multipart/) handles the bounded multipart envelope. Process-tree RSS uses [psutil's process API](https://psutil.io/api/). Installed 7.x is pinned below 8 to avoid introducing the documented breaking 8.x API changes.

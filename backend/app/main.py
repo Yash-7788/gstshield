@@ -12,11 +12,14 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp
 
 from app.api.access import router
+from app.api.imports import router as import_router
 from app.config import ConfigurationError, Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
 from app.errors import APIError, StorageError
+from app.jobs.imports import ImportDispatcher
 from app.security.http import LocalHTTPBoundary
 from app.services.access import AccessService
+from app.services.imports import ImportService
 from app.storage.local import LocalStore
 
 logger = logging.getLogger("gstshield")
@@ -31,15 +34,22 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         store = LocalStore(settings)
+        dispatcher = None
         try:
             store.acquire()
             store.initialize()
             application.state.store = store
             application.state.access = AccessService(store)
+            application.state.imports = ImportService(application.state.access)
+            dispatcher = ImportDispatcher(application.state.imports)
+            dispatcher.start()
+            application.state.dispatcher = dispatcher
             application.state.ready = True
             yield
         finally:
             application.state.ready = False
+            if dispatcher is not None:
+                dispatcher.close()
             store.close()
 
     application = FastAPI(
@@ -53,6 +63,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     )
     application.state.ready = False
     application.include_router(router)
+    application.include_router(import_router)
 
     @application.exception_handler(APIError)
     async def application_error(request: Request, exc: APIError) -> JSONResponse:
@@ -165,7 +176,11 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         responses={503: {"model": ErrorResponse}},
     )
     def ready(request: Request) -> dict | JSONResponse:
-        if not application.state.ready or not application.state.store.ready():
+        if (
+            not application.state.ready
+            or not application.state.store.ready()
+            or not application.state.dispatcher.thread.is_alive()
+        ):
             return JSONResponse(
                 error_payload(
                     request.state.request_id,
@@ -183,9 +198,9 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             application,
             allow_origins=settings.cors_origins,
             allow_credentials=True,
-            allow_methods=["GET", "POST"],
-            allow_headers=["Content-Type", "X-CSRF-Token"],
-            expose_headers=["X-Request-ID"],
+            allow_methods=["GET", "POST", "PATCH"],
+            allow_headers=["Content-Type", "X-CSRF-Token", "Idempotency-Key"],
+            expose_headers=["X-Request-ID", "Retry-After"],
             max_age=600,
         ),
         settings.cors_origins,
