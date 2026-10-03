@@ -224,13 +224,84 @@ def pdf_bytes(snapshot, max_pages):
             group = story[start:]
             del story[start:]
             story.append(KeepTogether(group))
+        if snapshot.get("business_actions"):
+            paragraph("Business action history", "heading")
+            walk(snapshot["action_coverage"], "Action coverage")
+            walk(snapshot["business_actions"], "Actions")
     else:
         walk(
             {
                 key: value
                 for key, value in snapshot.items()
-                if key not in {"kind", "provenance", "source_version"}
+                if key
+                not in {
+                    "kind",
+                    "provenance",
+                    "source_version",
+                    "business_actions",
+                    "action_versions",
+                    "action_coverage",
+                    "automation_coverage",
+                }
             }
+        )
+    if "action_coverage" in snapshot:
+        paragraph("Business actions and follow-up history", "heading")
+        coverage = snapshot["action_coverage"]
+        paragraph(
+            f"Showing {coverage['shown']} of {coverage['total']} recorded actions. "
+            "Full audit snapshots remain in the private application."
+        )
+        automation = snapshot.get("automation_coverage", {})
+        paragraph(
+            f"Pending evidence checks: {automation.get('pending_sources', 'UNKNOWN')}. "
+            f"Automation error: {automation.get('error_code') or 'NONE RECORDED'}."
+        )
+        for action in snapshot.get("business_actions", []):
+            paragraph(action["kind"].replace("_", " ") + " | " + action["state"], "heading")
+            paragraph(
+                f"Action: {action['id']} | version: {action['version']} | "
+                f"Current evidence: {action['sources_current']}"
+            )
+            due = action["due_at"]
+            paragraph(
+                "Recorded review date: "
+                + (datetime.fromtimestamp(due, UTC).date().isoformat() if due else "NOT RECORDED")
+            )
+            paragraph("Assigned reviewer: " + (action["assigned_to"] or "NOT ASSIGNED"))
+            walk(action["outcome"], "Recorded outcome; external execution not verified")
+            for event in action["timeline"]:
+                when = datetime.fromtimestamp(event["created_at"], UTC).isoformat()
+                paragraph(f"{when} | {event['kind']} | {event['actor_kind']}")
+                paragraph(event["reason"])
+                details = event["snapshot"]
+                if event["kind"] == "EVIDENCE_CHANGED":
+                    previous, current = details["previous"], details["current"]
+                    paragraph(
+                        f"Comparison: {previous['status']} -> {current['status']}; "
+                        f"recorded GST: {current['recorded_tax'] or 'UNKNOWN'}. "
+                        "Renewed review required; this is not a filed return."
+                    )
+                elif event["kind"] in {"FOLLOWUP_DRAFT", "FOLLOWUP_ATTEMPT"}:
+                    walk(
+                        {
+                            k: details[k]
+                            for k in ("contact", "request", "delivery", "observed_on")
+                            if k in details
+                        },
+                        "Follow-up",
+                    )
+                elif event["kind"] in {
+                    "FILING_OBSERVATION",
+                    "NOTICE_SUBMISSION_OBSERVATION",
+                    "REVIEW_DECISION",
+                }:
+                    walk(details, "Dated user observation")
+                elif event["kind"] == "REVIEW_DUE":
+                    paragraph("Recorded review date reached. No message has been sent.")
+        paragraph(
+            "Review candidates and recorded outcomes do not guarantee legal eligibility, "
+            "government submission, payment execution or tax recovery."
         )
     stream = io.BytesIO()
     document = SimpleDocTemplate(

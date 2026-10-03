@@ -1,6 +1,6 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
@@ -261,4 +261,24 @@ Phase 6 first implements the local six-problem workflows. Phase 8 must provide a
 Phase 13 connects WhatsApp to these existing actions. A supplier draft requires deliberately provided recipient details and consent/verified-recipient checks before a real send. Keep prepared, attempted, provider-acknowledged, delivered, failed and uncertain states truthful; retries must not blindly duplicate an uncertain send. No working supplier-send UI is implied before that integration passes its real-phone gate. Phase 14 rehearses the six problem scenarios through the real website and enabled channel.
 
 
-Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 now has local business-action APIs, automatic deduplicated evidence-change and due-review tracking, private follow-up drafts/history, a review worksheet and separately evidenced user-recorded filing/submission observations. Browser presentation/connection remains 8–9 and conditional WhatsApp delivery remains 13. Automatic fetching, government filing and legal decision integrations are deferred; guaranteed recovery is not a software promise.
+
+
+## Phase 6 screen and channel handoff
+
+The backend operations now exist; website screens still require the supplied frontend and Phases 8–9. Use one credentialed API client against the live OpenAPI and the exact models in 08. Display recorded GST needing attention, missing facts, provenance, source freshness and the local processing status separately from legally recoverable money. A pending derivation/error cannot be displayed as an empty all-clear queue.
+
+| Website flow | Shared backend authority | Required UI behavior |
+|---|---|---|
+| Outstanding work / recorded dates | GET actions, state and due_only filters, UUID cursor | Bound pages to 20, show pending checks/errors and stale history |
+| Invoice correction / source changes | Existing run/result/import APIs plus action source/timeline | Keep retained purchase identity; display old/new evidence without automatic eligibility |
+| Owner and review date | POST action update | Submit expected version, explicit nullable fields, reason and idempotency key |
+| Supplier request | POST followups DRAFT | Display private draft and NOT_SENT; deliberate contact, no implicit sending |
+| Operator contact attempt | POST followups ATTEMPT_RECORDED | Require same action draft/contact/request plus observed date; show unverified user report |
+| Payment / reversal / IRN / notice evidence | Existing case/evidence API plus linked action | Preserve unknowns, matching evidence references and separate operational/legal states |
+| Review decision / recorded submission | POST outcomes, then explicit update CLOSED | Distinguish accepted review from dated user observation and external verification |
+| Reclaim review handoff | GET worksheet and private PDFs | Label not a filed return; downloading changes no payment/submission status |
+
+New writes require the same cookie, Origin/CSRF, live OWNER/REVIEWER role and UUID idempotency key as existing workflows. Handle 409 by fetching fresh state; replaying a receipt is not a fresh status read. An update is a complete command: omitted nullable assignment/date defaults clear them. Retain values deliberately when only changing state. VIEWER is read-only; frontend hiding is not backend authorization.
+
+Phase 13 must adapt to these same action IDs, drafts, versions and audit history. It must add recipient consent/linking, provider credentials, reachable callback, account/window/template/budget proof and a bounded outbox before sending. Phase 6 has no phone send endpoint and no delivery acknowledgement. Future provider events must remain separate from USER_REPORTED_ATTEMPT_UNVERIFIED and from invoice correction or legal recovery.

@@ -123,6 +123,49 @@ class ReportService(WorkflowService):
                 }
             )
             field = "import_id"
+        if kind in {"RECONCILIATION_PDF", "EVIDENCE_PDF"} and hasattr(self, "actions"):
+            if kind == "EVIDENCE_PDF":
+                query = (
+                    "SELECT * FROM business_actions WHERE workspace_id=? AND case_id=? ORDER BY id"
+                )
+                values = (workspace, identifier)
+            else:
+                query = (
+                    "SELECT * FROM business_actions WHERE workspace_id=? AND run_id=? ORDER BY id"
+                )
+                values = (workspace, identifier)
+            action_rows = connection.execute(query, values).fetchall()
+            common["action_versions"] = [[r["id"], r["version"]] for r in action_rows]
+            status = self.actions.status(connection, workspace)
+            common["automation_coverage"] = {
+                "pending_sources": status["pending_sources"],
+                "error_code": status["error_code"],
+                "label": "Pending or failed local derivation is not complete coverage",
+            }
+            common["action_coverage"] = {
+                "shown": min(len(action_rows), self.settings.max_report_rows),
+                "total": len(action_rows),
+                "label": "Recorded business actions; not executed filings",
+            }
+            common["business_actions"] = []
+            for action in action_rows[: self.settings.max_report_rows]:
+                details = self.actions.detail_row(connection, action)
+                common["business_actions"].append(
+                    {
+                        key: details[key]
+                        for key in (
+                            "id",
+                            "kind",
+                            "state",
+                            "version",
+                            "due_at",
+                            "assigned_to",
+                            "outcome",
+                            "sources_current",
+                            "timeline",
+                        )
+                    }
+                )
         if len(encode(common).encode()) > self.settings.max_report_snapshot_bytes:
             raise APIError(
                 413, "REPORT_SNAPSHOT_LIMIT", "Select fewer rows or use a smaller report."
@@ -132,6 +175,31 @@ class ReportService(WorkflowService):
     def current(self, connection, row):
         snapshot = json.loads(row["snapshot_json"])
         ws = row["workspace_id"]
+        if "action_versions" in snapshot:
+            field = "run_id" if row["run_id"] else "case_id"
+            identifier = row[field]
+            versions = [
+                [r[0], r[1]]
+                for r in connection.execute(
+                    f"SELECT id,version FROM business_actions WHERE workspace_id=? AND {field}=? "
+                    "ORDER BY id",
+                    (ws, identifier),
+                )
+            ]
+            if versions != snapshot["action_versions"]:
+                return False
+        for action in snapshot.get("business_actions", []):
+            observed = connection.execute(
+                "SELECT * FROM business_actions WHERE workspace_id=? AND id=?",
+                (ws, action["id"]),
+            ).fetchone()
+            if (
+                observed is None
+                or observed["version"] != action["version"]
+                or not self.actions.current(connection, observed)
+            ):
+                return False
+
         if row["run_id"]:
             run = self.runs.scoped(connection, ws, row["run_id"])
             return (
@@ -211,6 +279,8 @@ class ReportService(WorkflowService):
         return len(rows)
 
     def create(self, identity, workspace, payload, key, request_id):
+        if hasattr(self, "actions"):
+            self.actions.readable_refresh(identity, workspace)
         with self.store.transaction() as connection:
             self.authorize(connection, identity, workspace, mutation=True)
             cached = self.operation(connection, identity, workspace, "artifacts", key, payload)

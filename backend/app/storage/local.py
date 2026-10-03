@@ -12,12 +12,13 @@ from uuid import UUID, uuid4
 from app import config
 from app.config import Settings
 from app.errors import StorageError
+from app.storage.action_schema import ACTION_SCHEMA
 from app.storage.import_schema import IMPORT_SCHEMA
 from app.storage.run_schema import RUN_SCHEMA
 from app.storage.workflow_schema import WORKFLOW_SCHEMA
 
 APPLICATION_ID = int.from_bytes(b"GSTS", "big")
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 BASE_SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT",
     """CREATE TABLE users (
@@ -50,7 +51,8 @@ BASE_SCHEMA = (
 )
 VERSION2_SCHEMA = BASE_SCHEMA + IMPORT_SCHEMA
 VERSION3_SCHEMA = VERSION2_SCHEMA + RUN_SCHEMA
-SCHEMA = VERSION3_SCHEMA + WORKFLOW_SCHEMA
+VERSION4_SCHEMA = VERSION3_SCHEMA + WORKFLOW_SCHEMA
+SCHEMA = VERSION4_SCHEMA + ACTION_SCHEMA
 
 
 def schema_digest(connection: sqlite3.Connection) -> str:
@@ -72,6 +74,7 @@ EXPECTED_DIGEST = expected_digest()
 LEGACY_DIGEST = expected_digest(BASE_SCHEMA)
 VERSION2_DIGEST = expected_digest(VERSION2_SCHEMA)
 VERSION3_DIGEST = expected_digest(VERSION3_SCHEMA)
+VERSION4_DIGEST = expected_digest(VERSION4_SCHEMA)
 
 
 def check_path(path: Path, root: Path) -> None:
@@ -166,7 +169,8 @@ class LocalStore:
             1: LEGACY_DIGEST,
             2: VERSION2_DIGEST,
             3: VERSION3_DIGEST,
-            4: EXPECTED_DIGEST,
+            4: VERSION4_DIGEST,
+            5: EXPECTED_DIGEST,
         }
         if selected not in fingerprints:
             raise StorageError("Storage schema version is unsupported.")
@@ -248,7 +252,7 @@ class LocalStore:
             ) from None
 
     def upgrade(self) -> str | None:
-        """Explicit offline v1/v2/v3 upgrade: validate and preserve before adding tables."""
+        """Explicit offline v1/v2/v3/v4 upgrade: validate and preserve before adding tables."""
         if not self.opened:
             raise StorageError("Private storage is not locked.")
         try:
@@ -273,7 +277,8 @@ class LocalStore:
         with self.transaction() as connection:
             additions = IMPORT_SCHEMA if version == 1 else ()
             additions += RUN_SCHEMA if version < 3 else ()
-            for statement in additions + WORKFLOW_SCHEMA:
+            additions += WORKFLOW_SCHEMA if version < 4 else ()
+            for statement in additions + ACTION_SCHEMA:
                 connection.execute(statement)
             connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
             connection.execute("UPDATE metadata SET value=? WHERE key='schema'", (EXPECTED_DIGEST,))

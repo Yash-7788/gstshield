@@ -12,15 +12,18 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp
 
 from app.api.access import router
+from app.api.actions import router as action_router
 from app.api.imports import router as import_router
 from app.api.runs import router as run_router
 from app.api.workflows import router as workflow_router
 from app.config import ConfigurationError, Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
 from app.errors import APIError, StorageError
+from app.jobs.automation import ActionMonitor
 from app.jobs.imports import ImportDispatcher
 from app.security.http import LocalHTTPBoundary
 from app.services.access import AccessService
+from app.services.actions import ActionService
 from app.services.cases import CaseService
 from app.services.imports import ImportService
 from app.services.proposals import ProposalService
@@ -41,6 +44,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         store = LocalStore(settings)
         dispatcher = None
+        monitor = None
         try:
             store.acquire()
             store.initialize()
@@ -49,6 +53,9 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             application.state.imports = ImportService(application.state.access)
             application.state.runs = RunService(application.state.imports)
             application.state.cases = CaseService(application.state.runs)
+            application.state.actions = ActionService(
+                application.state.runs, application.state.cases
+            )
             application.state.proposals = ProposalService(
                 application.state.runs, application.state.cases
             )
@@ -58,15 +65,27 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             dispatcher = ImportDispatcher(
                 application.state.imports, application.state.runs, application.state.reports
             )
+            application.state.reports.actions = application.state.actions
             dispatcher.start()
             application.state.dispatcher = dispatcher
+            monitor = ActionMonitor(application.state.actions)
+            monitor.start()
+            application.state.action_monitor = monitor
             application.state.ready = True
             yield
         finally:
             application.state.ready = False
-            if dispatcher is not None:
-                dispatcher.close()
-            store.close()
+            try:
+                if monitor is not None:
+                    monitor.close()
+            finally:
+                try:
+                    if dispatcher is not None:
+                        dispatcher.close()
+                finally:
+                    # Preserve the process lock if a timed-out monitor can still access storage.
+                    if monitor is None or not monitor.thread.is_alive():
+                        store.close()
 
     application = FastAPI(
         title="GSTShield Local API",
@@ -82,6 +101,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     application.include_router(import_router)
     application.include_router(run_router)
     application.include_router(workflow_router)
+    application.include_router(action_router)
 
     @application.exception_handler(APIError)
     async def application_error(request: Request, exc: APIError) -> JSONResponse:
@@ -198,6 +218,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             not application.state.ready
             or not application.state.store.ready()
             or not application.state.dispatcher.thread.is_alive()
+            or not application.state.action_monitor.thread.is_alive()
         ):
             return JSONResponse(
                 error_payload(

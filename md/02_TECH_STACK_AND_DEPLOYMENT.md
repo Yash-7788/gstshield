@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -107,7 +107,7 @@ An unresolved journal/WAL/SHM sidecar blocks restore; retain it for operator rec
 
 `backend/.env.example` is the complete recognized template. OS settings override dotenv values; unknown OS names are ignored, unknown/malformed/duplicate dotenv settings are refused. No secret values are printed in configuration failures.
 
-The table below is generated from the template for this planning update. Blank Meta values are deliberate: WhatsApp remains disabled. Storage, sessions, request limits and Phase 3 upload/parser boundaries are enforced. Linking, reports and provider limits remain reservations until their phases.
+The table below is generated from the template for this planning update. Blank Meta values are deliberate: WhatsApp remains disabled. Storage, sessions, request limits and Phase 3 upload/parser boundaries are enforced. Report and action limits are implemented; linking/provider settings remain reservations until Phase 13.
 
 | Variable | Example default |
 |---|---|
@@ -144,6 +144,9 @@ The table below is generated from the template for this planning update. Blank M
 | `FUZZY_SUGGESTION_THRESHOLD` | `88.00` |
 | `FUZZY_MIN_SCORE_GAP` | `5.00` |
 | `MATCH_POLICY_VERSION` | `match-v1` |
+| `MAX_RUNS_PER_WORKSPACE` | `20` |
+| `MAX_MATCH_PAIRS` | `4000000` |
+| `MAX_MATCH_CANDIDATES` | `10000` |
 | `WHATSAPP_ENABLED` | `false` |
 | `META_GRAPH_VERSION` | `` |
 | `META_PHONE_NUMBER_ID` | `` |
@@ -172,6 +175,20 @@ The table below is generated from the template for this planning update. Blank M
 | `MAX_LOCAL_WORKSPACES` | `20` |
 | `MAX_REGISTRATIONS_PER_WORKSPACE` | `20` |
 | `MAX_API_BODY_BYTES` | `65536` |
+| `MAX_CASES_PER_WORKSPACE` | `100` |
+| `MAX_CASE_EVENTS` | `100` |
+| `MAX_PROPOSALS_PER_WORKSPACE` | `20` |
+| `MAX_ARTIFACTS_PER_WORKSPACE` | `40` |
+| `MAX_ARTIFACT_BYTES` | `5242880` |
+| `MAX_REPORT_SNAPSHOT_BYTES` | `8388608` |
+| `ARTIFACT_TTL_SECONDS` | `604800` |
+| `MAX_REPORT_ROWS` | `200` |
+| `MAX_REPORT_PAGES` | `100` |
+| `MAX_ACTIONS_PER_WORKSPACE` | `3000` |
+| `MAX_ACTION_EVENTS` | `100` |
+| `AUTOMATION_INTERVAL_SECONDS` | `5` |
+| `AUTOMATION_SOURCE_BATCH` | `8` |
+| `AUTOMATION_DUE_BATCH` | `50` |
 
 ## Enforced current resource policy
 
@@ -219,7 +236,7 @@ The XML defense follows [openpyxl's security guidance](https://openpyxl.readthed
 
 ## Phase 4 runtime and schema alignment
 
-Phase 4 introduced schema v3; active fresh storage is now schema v4. Offline `python -m app.manage storage-upgrade` validates exact v1/v2/v3 fingerprints, preserves a compatible old-version backup and adds only missing tables. It does not rebuild or overwrite imported files. Startup refuses older schemas until this explicit upgrade runs. Current restore accepts v4 backups; older preservation backups remain recovery evidence requiring compatible offline recovery plus upgrade. One dispatcher runs imports, reconciliation and reports serially in disposable children, with the same 60-second deadline, 16 MiB output and sampled 256 MiB process-tree RSS bound. No second worker, DB service or cloud integration was introduced.
+Phase 4 introduced schema v3; active fresh storage is now schema v5. Offline `python -m app.manage storage-upgrade` validates exact v1/v2/v3/v4 fingerprints, preserves a compatible old-version backup and adds only missing tables. It does not rebuild or overwrite imported files. Startup refuses older schemas until this explicit upgrade runs. Current restore accepts v5 backups; older preservation backups remain recovery evidence requiring compatible offline recovery plus upgrade. One dispatcher runs imports, reconciliation and reports serially in disposable children, with the same 60-second deadline, 16 MiB output and sampled 256 MiB process-tree RSS bound. No second worker, DB service or cloud integration was introduced.
 
 The installed similarity API was checked against [RapidFuzz ratio documentation](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html) on 2026-10-03. Use normalized Indel ratio with explicit invoice preprocessing; no token/subset scorer. Threshold comparisons floor scores to two decimal places, while the minimum score gap uses unrounded scores to avoid rounding up confidence. This is a server-versioned comparison policy, not a probability.
 
@@ -227,14 +244,23 @@ The installed similarity API was checked against [RapidFuzz ratio documentation]
 
 Artifact generation runs offline in the existing killable child, sharing the import/run admission limit, processing timeout, output bound and sampled process-tree RSS guard. Report snapshots are capped at 8 MiB, generated bytes at 5 MiB, PDF pages at 100 and reconciliation detail rows at 200. Base64 IPC must fit MAX_PARSED_IMPORT_BYTES; startup checks that relationship. SQLite owns both report bytes and metadata, so rollback, restart and offline backups retain one consistent authority.
 
-Schema 4 preserves v1/v2/v3 fingerprints. For an existing older store, stop the backend and run `uv run --frozen python -m app.manage storage-upgrade`; it validates and backs up the old store before adding only the missing tables. Fresh installations create schema 4 directly. No external database migration or provider account is involved.
+Schema 4 preserves v1/v2/v3 fingerprints. For an existing older store, stop the backend and run `uv run --frozen python -m app.manage storage-upgrade`; it validates and backs up the old store before adding only the missing tables. Phase 5 created schema 4; fresh installations now create schema 5 directly. No external database migration or provider account is involved.
 
 The font's glyph coverage is checked before rendering. Unsupported text produces FAILED / REPORT_UNSUPPORTED_TEXT, never a PDF with silently missing characters. Latin/Greek/Cyrillic and the rupee sign are covered; arbitrary Indic scripts or emoji are not promised. CSV remains UTF-8. Dependency source: [ReportLab on PyPI](https://pypi.org/project/reportlab/); font source/license/hash live in backend/app/assets/README.md.
 
 
 ## Phase 6 business workflow infrastructure boundary
 
-The newly scheduled business actions, recorded-date reminders and snapshot-change review use the existing local Python/SQLite architecture. Phase 6 requires bounded automatic due-review checks while the backend runs, startup catch-up and authenticated due queries; no hosted scheduler, government API, external database or messaging SDK is implicitly selected. Reminders are unavailable while the PC/backend is off, and restart must show overdue work without replaying external sends. Add dependencies or validated environment settings only if actual implementation needs them; align the lock and example in that phase. Current dependencies do not imply these business workflows already exist.
+The newly scheduled business actions, recorded-date reminders and snapshot-change review use the existing local Python/SQLite architecture. Phase 6 requires bounded automatic due-review checks while the backend runs, startup catch-up and authenticated due queries; no hosted scheduler, government API, external database or messaging SDK is implicitly selected. Reminders are unavailable while the PC/backend is off, and restart must show overdue work without replaying external sends. Add dependencies or validated environment settings only if actual implementation needs them; align the lock and example in that phase. The implemented monitor uses only the standard library; no new dependency was added.
 
 
-Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 must automatically derive deduplicated review tasks from committed runs, supported evidence changes and recorded due times; browser presentation is 8–9 and conditional WhatsApp delivery is 13. These operations are planned, not existing Phase 5 endpoints. Include the planned review worksheet and separately recorded actual filing/reclaim outcome; autonomous government submission and guaranteed recovery remain excluded by the corrected pack.
+Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 now has local business-action APIs, automatic deduplicated evidence-change and due-review tracking, private follow-up drafts/history, a review worksheet and separately evidenced user-recorded filing/submission observations. Browser presentation/connection remains 8–9 and conditional WhatsApp delivery remains 13. Automatic fetching, government filing and legal decision integrations are deferred; guaranteed recovery is not a software promise.
+
+
+## Phase 6 implemented local operating settings
+
+Schema 5 adds only the business-action layer; schema 1–4 fingerprints remain unchanged. An existing schema 1/2/3/4 database must be upgraded offline with `python -m app.manage storage-upgrade`. The command validates and preserves the previous version before its additive transaction. Fresh storage creates version 5; ordinary restore accepts version 5 backups. Earlier backups remain recovery evidence requiring compatible offline recovery and upgrade. Never delete a store to bypass this check.
+
+The `ActionMonitor` uses a standard-library thread alongside the existing disposable import/run/report worker; it never parses files or contacts a provider. Defaults are `AUTOMATION_INTERVAL_SECONDS=5`, `AUTOMATION_SOURCE_BATCH=8`, `AUTOMATION_DUE_BATCH=50`, `MAX_ACTIONS_PER_WORKSPACE=3000`, `MAX_ACTION_EVENTS=100`. Every setting has strict numeric bounds and appears in the example. One workspace is checked per tick with round-robin selection. At the maximum twenty workspaces, a scan round can take at least 100 seconds; a backlog needs further rounds. These are bounded checks, not instantaneous delivery guarantees. Authenticated action reads also request bounded catch-up.
+
+Per-source derivation commits or rolls back atomically. A failed source remains pending with a private error code, and rotates behind other pending sources. Stale/full-history due items do not block independent reminders. Due events are emitted once per recorded UTC review date; explicitly change the date to schedule another event. No event claims that a message was sent. The monitor cannot run while the PC/backend is off; startup catches up bounded work. Finite retained history is not silently deleted or reset to make quota errors disappear.

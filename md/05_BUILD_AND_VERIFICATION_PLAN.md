@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified. Phases 6–14 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–5 are complete and locally verified; Phases 6–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–5 are complete and locally verified; Phase 6 is in progress; Phases 7–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -19,7 +19,7 @@ The active plan now contains **14 phases**. Phases 1–5 are complete and locall
 | 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
 | 4 | GST reconciliation and human review | Backend | Complete and locally verified |
 | 5 | Backend reports, cases and evidence workflow | Backend | Complete |
-| 6 | Business workflows for all six original problems | Backend | Not started |
+| 6 | Business workflows for all six original problems | Backend | In progress; gate not yet passed |
 | 7 | Backend security and failure review | Backend | Not started |
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
 | 9 | Frontend and backend connection | Both | Not started |
@@ -180,9 +180,9 @@ Review gate:
 4. Open generated artifacts and check layout/readability as well as content; empty or corrupted output must not pass.
 5. Confirm the case/report/proposal foundation is complete; do not count manual case capture as completion of the original business workflows. Complete Phase 6 before the focused backend security review.
 
-### Phase 6 — Business workflow completion for the six original problems (not started)
+### Phase 6 — Business workflow completion for the six original problems (in progress)
 
-Owner: backend, with contract and future screen alignment. Outcome: Turn the existing import/reconciliation/case/report foundation into actionable tracking for every original business problem. This phase is next; it is planned work, not functionality already delivered by Phase 5.
+Owner: backend, with contract and future screen alignment. Outcome: Turn the existing import/reconciliation/case/report foundation into actionable tracking for every original business problem. This phase is in progress; its review gate has not yet passed. It is not functionality delivered by Phase 5.
 
 The roadmap was corrected on 2026-10-03 because its previous later phases covered security, screens, integration and performance without explicitly assigning the missing operational workflows. Phases 1–5 retain their completed status and verification evidence. The former Phases 6–13 become 7–14. Adding this phase does not authorize starting another phase before its predecessor's review gate passes.
 

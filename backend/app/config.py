@@ -113,6 +113,15 @@ class Settings(BaseSettings):
         100
     )
     max_case_events: Annotated[int, BeforeValidator(parse_integer), Field(ge=5, le=200)] = 100
+    max_actions_per_workspace: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1, le=10000)
+    ] = 3000
+    max_action_events: Annotated[int, BeforeValidator(parse_integer), Field(ge=5, le=200)] = 100
+    automation_interval_seconds: Annotated[
+        int, BeforeValidator(parse_integer), Field(ge=1, le=60)
+    ] = 5
+    automation_source_batch: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=20)] = 8
+    automation_due_batch: Annotated[int, BeforeValidator(parse_integer), Field(ge=1, le=200)] = 50
     max_proposals_per_workspace: Annotated[
         int, BeforeValidator(parse_integer), Field(ge=1, le=100)
     ] = 20
