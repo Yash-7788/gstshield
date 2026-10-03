@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -334,7 +334,7 @@ The implemented shared job response is id/workspace_id/kind/state/error_code/cre
 Useful actual errors: SOURCE_CONTEXT_INVALID, SOURCE_SUPERSEDED, STALE_VERSION, ASSIGNMENT_CONFLICT, CANDIDATE_INELIGIBLE, IDEMPOTENCY_CONFLICT, RUN_LIMIT and QUEUE_FULL. Worker failures include MATCH_PAIR_LIMIT, MATCH_CANDIDATE_LIMIT, PROCESSING_INTERRUPTED, PROCESSING_TIMEOUT and PARSED_RESULT_LIMIT. Explain a failed run using the scoped job code; source corrections/new run are explicit actions. Match scores are similarity, never legal approval.
 
 
-## Phase 6 implementation contract (in progress, not yet verified)
+## Phase 6 implementation contract (complete and locally verified)
 
 Selected implementation: schema 5 adds business actions, append-only action events, source-processing checkpoints and per-workspace automation status. Source/run/case schemas 1–4 remain immutable. A local monitor checks one workspace per configured interval; authenticated work-queue reads also request bounded catch-up. New actions derive from current completed runs and existing cases. Invoice identity is the retained purchase document UUID: automatic snapshot comparison requires the same purchase import, registration and period. A different purchase source is a separate identity and never silently closes old actions.
 
@@ -363,3 +363,6 @@ FILING_OBSERVATION applies only to an evidence-backed RULE37A_REVIEW candidate; 
 Timeline includes actor_kind SYSTEM/USER, nullable actor_id, kind, reason, action version, request_id, created_at and snapshot. A DRAFT event's id is the next attempt's draft_id. A meaningful evidence change keeps the action UUID and previous timeline but clears current outcome. Equivalent observation/source refresh retains it. A different purchase import creates a separate identity and cannot reuse the previous issue outcome.
 
 Relevant codes: ACTION_SOURCE_STALE, STALE_VERSION, IDEMPOTENCY_CONFLICT, ACTION_LIMIT, ACTION_HISTORY_LIMIT, INVALID_ASSIGNEE, ACTION_CLOSED, INVALID_DRAFT, DRAFT_CHANGED, OBSERVATION_DATE, OUTCOME_AMOUNT, OUTCOME_KIND, INVALID_EVIDENCE, DOCUMENT_EVIDENCE_REQUIRED, REVIEW_OUTCOME_REQUIRED, RECLAIM_EVIDENCE_REQUIRED and NOTICE_EVIDENCE_REQUIRED. Processing status may show STORAGE_UNAVAILABLE or AUTOMATION_FAILED. Refresh source/action state after conflicts; retain the original key/payload for uncertain retries. Generic HTTP errors still hide inputs and private paths.
+
+
+A future supplier-filing observation or future recorded claim/reversal period cannot produce a current reclaim-review candidate. Such facts stay retained for review with reclaim_conditions_require_evidence_review rather than being treated as observed recovery evidence. Recorded future review dates remain valid for scheduling; this guard is specific to claimed past observations, not statutory deadline calculation.

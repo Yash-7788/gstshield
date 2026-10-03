@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phase 4 adds reconciliation and human review; Phase 5 adds evidence cases, proposal drafts and private reports. Both are complete and locally verified; Phase 6 is in final verification and Phases 7–14 remain pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phase 4 adds reconciliation and human review; Phase 5 adds evidence cases, proposal drafts and private reports. Both are complete and locally verified; Phase 6 is complete and locally verified and Phases 7–14 remain pending.
 
 ## Start here
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–5 are complete and locally verified; Phase 6 is in final verification; Phases 7–14 are not started.
+The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–6 are complete and locally verified; Phases 7–14 are not started.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -66,9 +66,9 @@ gstshield/
   frontend/                   # reserved for the supplied website
 ```
 
-Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Phase 5 cases, proposals and private reports are implemented. Phase 6 business automation is implemented and in final verification; frontend wiring and WhatsApp remain future phases.
+Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Phase 5 cases, proposals and private reports are implemented. Phase 6 business automation is complete and locally verified; frontend wiring and WhatsApp remain future phases.
 
 
 ## Business workflow roadmap correction
 
-Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its final regression gate is pending; the current verification record is in 05. Frontend screens/connection remain Phases 8–9, real WhatsApp remains Phase 13 and combined acceptance remains Phase 14. Phases 7–14 are not started.
+Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. Frontend screens/connection remain Phases 8–9, real WhatsApp remains Phase 13 and combined acceptance remains Phase 14. Phases 7–14 are not started.

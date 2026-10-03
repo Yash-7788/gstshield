@@ -29,6 +29,7 @@ def case_review(case, invoice):
             notes.append("payment_balance_unknown")
     if kind == "RULE37A_REVIEW":
         claim, reversal = facts.get("original_claim_amount"), facts.get("reversal_amount")
+        observed_today = datetime.now(UTC).date().isoformat()
         tax_fields = ("cgst", "sgst", "igst", "cess")
         tax_complete = all(invoice.get(field) is not None for field in tax_fields)
         if not tax_complete:
@@ -45,6 +46,8 @@ def case_review(case, invoice):
             and money_paise(claim, "gross_total")
             <= sum(money_paise(invoice.get(field, "0.00"), "gross_total") for field in tax_fields)
             and facts.get("original_claim_period", "9999-99") <= facts.get("reversal_period", "")
+            and facts.get("reversal_period", "9999-99") <= observed_today[:7]
+            and (facts.get("filing_observed_on") or "9999-99-99") <= observed_today
             and facts.get("supplier_return_period", "9999-99")
             <= (facts.get("filing_observed_on") or "")[:7]
             and facts.get("supplier_return_status") == "FILED"

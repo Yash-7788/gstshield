@@ -47,6 +47,9 @@ def test_reclaim_is_conservative_exact_and_never_a_filing():
         {"reversal_period": "2024-03"},
         {"supplier_return_period": "2024-07"},
         {"filing_observed_on": None},
+        {"filing_observed_on": "2099-06-01"},
+        {"reversal_period": "2099-05"},
+        {"original_claim_period": "2099-04", "reversal_period": "2099-05"},
     ],
 )
 def test_absent_or_contradictory_reclaim_facts_do_not_become_candidates(patch):

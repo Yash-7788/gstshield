@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -264,3 +264,8 @@ Schema 5 adds only the business-action layer; schema 1–4 fingerprints remain u
 The `ActionMonitor` uses a standard-library thread alongside the existing disposable import/run/report worker; it never parses files or contacts a provider. Defaults are `AUTOMATION_INTERVAL_SECONDS=5`, `AUTOMATION_SOURCE_BATCH=8`, `AUTOMATION_DUE_BATCH=50`, `MAX_ACTIONS_PER_WORKSPACE=3000`, `MAX_ACTION_EVENTS=100`. Every setting has strict numeric bounds and appears in the example. One workspace is checked per tick with round-robin selection. At the maximum twenty workspaces, a scan round can take at least 100 seconds; a backlog needs further rounds. These are bounded checks, not instantaneous delivery guarantees. Authenticated action reads also request bounded catch-up.
 
 Per-source derivation commits or rolls back atomically. A failed source remains pending with a private error code, and rotates behind other pending sources. Stale/full-history due items do not block independent reminders. Due events are emitted once per recorded UTC review date; explicitly change the date to schedule another event. No event claims that a message was sent. The monitor cannot run while the PC/backend is off; startup catches up bounded work. Finite retained history is not silently deleted or reset to make quota errors disappear.
+
+
+## Verification cost and batch cadence
+
+Uninterrupted full Windows Phase 6 runs took roughly eleven to sixteen minutes; the final passing run took 951.44 seconds (15 minutes 51 seconds); machine sleep can inflate wall-clock reports dramatically. Use targeted phase checks plus lint/format/syntax while implementing, then one full regression after two or three related phases. Major shared storage/authentication/calculation changes or an uncontained regression warrant an earlier full run. See 05 for the recorded user decision. Do not describe an interrupted/failed run as passing evidence.

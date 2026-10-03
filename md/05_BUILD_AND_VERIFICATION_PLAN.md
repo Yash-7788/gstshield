@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–5 are complete and locally verified; Phase 6 is in final verification. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–6 are complete and locally verified. Phases 7–14 are not started. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–5 are complete and locally verified; Phase 6 is in progress; Phases 7–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–6 are complete and locally verified; Phases 7–14 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -19,7 +19,7 @@ The active plan now contains **14 phases**. Phases 1–5 are complete and locall
 | 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
 | 4 | GST reconciliation and human review | Backend | Complete and locally verified |
 | 5 | Backend reports, cases and evidence workflow | Backend | Complete |
-| 6 | Business workflows for all six original problems | Backend | In progress; gate not yet passed |
+| 6 | Business workflows for all six original problems | Backend | Complete and locally verified |
 | 7 | Backend security and failure review | Backend | Not started |
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
 | 9 | Frontend and backend connection | Both | Not started |
@@ -30,6 +30,13 @@ The active plan now contains **14 phases**. Phases 1–5 are complete and locall
 | 14 | Whole-application regression and hackathon rehearsal | Both | Not started |
 
 The sequence is a dependency order, not a ranking of importance. Security and responsiveness are part of feature implementation from the start; Phases 7, 10, 11 and 12 are focused reviews of working code. Do not postpone essential safeguards or fixable blocking behavior to those later reviews.
+
+### Verification cadence agreed during Phase 6
+
+Continue coding one coherent phase at a time, with targeted review before the next phase. The user requested faster future delivery rather than repeating the full suite for every phase. From now on, run lint/format/syntax plus affected correctness, security, edge-case and previous-phase integration checks after each phase; run one full regression suite after a batch of two or three related phases. Do not skip focused checks until the batch ends.
+
+Run full regression sooner for major shared storage/schema, authentication/session, core monetary/matching changes or a discovered regression whose scope is not contained. Run it once after final edits, rather than repeatedly during feature drafting. A failed full run requires diagnosis and a focused reproduction before another full attempt. Keep evidence explicit: passing targeted checks is not the same as a passing whole-suite gate. Phase 6 completed its full check under the original gate; subsequent phase batching uses this cadence. GitHub full-suite CI continues asynchronously on pushes; its remote results remain separate evidence and failures require diagnosis. Missing supplied frontend/provider prerequisites still prevent dependent implementation; batching does not authorize invented replacements.
+
 
 ## Capability status and remaining-work ledger
 
@@ -180,9 +187,9 @@ Review gate:
 4. Open generated artifacts and check layout/readability as well as content; empty or corrupted output must not pass.
 5. Confirm the case/report/proposal foundation is complete; do not count manual case capture as completion of the original business workflows. Complete Phase 6 before the focused backend security review.
 
-### Phase 6 — Business workflow completion for the six original problems (in progress)
+### Phase 6 — Business workflow completion for the six original problems (complete)
 
-Owner: backend, with contract and future screen alignment. Outcome: Turn the existing import/reconciliation/case/report foundation into actionable tracking for every original business problem. This phase is in progress; its review gate has not yet passed. It is not functionality delivered by Phase 5.
+Owner: backend, with contract and future screen alignment. Outcome: Turn the existing import/reconciliation/case/report foundation into actionable tracking for every original business problem. The local review gate passed; the full-suite and final focused checks are recorded below. It is not functionality delivered by Phase 5.
 
 The roadmap was corrected on 2026-10-03 because its previous later phases covered security, screens, integration and performance without explicitly assigning the missing operational workflows. Phases 1–5 retain their completed status and verification evidence. The former Phases 6–13 become 7–14. Adding this phase does not authorize starting another phase before its predecessor's review gate passes.
 
@@ -605,8 +612,13 @@ Responsibility modules: `storage/action_schema.py`, `contracts/actions.py`, `dom
 
 The six API scenarios cover missing INR 20,000 GST across later snapshots, unknown/partial payment review, supported reversal/reclaim observations, unverified IRN, notice preparation/submission observations and retained supplier follow-up history. Additional tests cover background processing without queue reads, event deduplication, actual HTTP restart and offline backup/restore, two accounts, forged draft IDs, role/revocation, stale sources, idempotency, competing versions, full history/action quotas and independent progress after a failed source. Pure rule/input checks cover absent/contradictory amounts/periods, credit notes, unclaimed credit, exact paise, future dates, invalid contacts/commands and duplicate references.
 
-Frozen sync, Ruff lint/format and syntax compilation passed. Forty-two new Phase 6 scenario/rule checks plus five targeted storage regressions are included. Repeated full checks exposed transient import/report polling failures; these failed runs are not completion evidence. Initial handling of disappearing scanned entries was insufficient: a three-thread reproduction found Windows final-path resolution could falsely label an ordinary short-lived journal file as linked. Existing lstat/type/reparse checks already reject file links, so final-path resolution is now restricted to directories, preserving intermediate-directory/traversal validation. Scans also tolerate vanished entries without recreating the primary database. The original stress reproduction failed twice before this correction; afterward 200 committed writes and 800 concurrent quota scans completed without errors, followed by SQLite integrity/fingerprint validation. All storage checks passed: 23 passed, 1 Windows-privilege skip, including file disappearance, ordinary-file resolution, missing-database refusal, traversal and actual junction denial. Private diagnostics retain only internal category, failure type and numeric code. The final full suite is running against this fixed code; replace pending status with its actual result before marking the phase complete.
+Frozen sync, Ruff lint/format and syntax compilation passed. Forty-five new Phase 6 scenario/rule checks plus five targeted storage regressions are included, with exact full-run versus final-focused evidence distinguished below. Repeated full checks exposed transient import/report polling failures; these failed runs are not completion evidence. Initial handling of disappearing scanned entries was insufficient: a three-thread reproduction found Windows final-path resolution could falsely label an ordinary short-lived journal file as linked. Existing lstat/type/reparse checks already reject file links, so final-path resolution is now restricted to directories, preserving intermediate-directory/traversal validation. Scans also tolerate vanished entries without recreating the primary database. The original stress reproduction failed twice before this correction; afterward 200 committed writes and 800 concurrent quota scans completed without errors, followed by SQLite integrity/fingerprint validation. All storage checks passed: 23 passed, 1 Windows-privilege skip, including file disappearance, ordinary-file resolution, missing-database refusal, traversal and actual junction denial. Private diagnostics retain only internal category, failure type and numeric code. The complete local Windows suite passed **281 tests, with 1 Windows symlink-privilege skip**, in **951.44 seconds (15 minutes 51 seconds)**. A final bounded date-validation refinement then rejected future filing observations and future claim/reversal periods from current reclaim review. All **32 affected rule/reclaim/incomplete-evidence checks passed** afterward (13 unrelated integration checks were deselected). The three added date cases were verified in that focused run; this is not a claim that an expanded full 284-test suite was rerun. Frozen sync checked 37 packages; Ruff lint/format and Python syntax compilation passed after the final edit. Actual junction denial remains covered by the passing full run.
 
 The updated notice/action PDF was rendered and inspected; the compact history retains user/system dates and unverified execution labels while full snapshots remain private. Old source/action versions and added actions invalidate historical reports. Worksheet/PDF generation does not close an action or perform a submission. No official GSTR-2B JSON fixture was supplied: supported CSV/XLSX tables and synthetic canonical JSON remain the explicit adapter inventory; a real unsupported layout is still pending an authorized sample.
 
-Future ownership remains Phase 7 whole-backend security/failure review, 8 supplied website screens, 9 connection, 10 frontend privacy/security, 11 backend measurement, 12 frontend usability, 13 conditional real WhatsApp and 14 combined rehearsal. Automatic authorized fetching, government filing and legal decision integrations are deferred separately; guaranteed recovery is not an implementation promise. Phase 6 completes local business workflow scope when its gate passes, not the entire shipped website/phone product.
+Future ownership remains Phase 7 whole-backend security/failure review, 8 supplied website screens, 9 connection, 10 frontend privacy/security, 11 backend measurement, 12 frontend usability, 13 conditional real WhatsApp and 14 combined rehearsal. Automatic authorized fetching, government filing and legal decision integrations are deferred separately; guaranteed recovery is not an implementation promise. Phase 6 is complete for the local backend business workflow scope. Website and phone delivery remain separate later gates.
+
+
+### Phase 6 final source size and CI allowance
+
+Measured physical Python source lines at completion: **8,287 application lines** in 50 files, **5,169 test lines** in 17 files, **13,456 total**. This includes comments and blank lines, excludes docs/configuration/dependencies/generated files and does not count a frontend that has not yet been supplied. The GitHub job allowance increases from 15 to 25 minutes because the passing local full suite alone took nearly 16 minutes; dependency setup and remote hardware variability need headroom. This changes the timeout, not test coverage. Remote CI results are separate from the local proof above.
