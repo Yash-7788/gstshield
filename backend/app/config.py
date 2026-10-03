@@ -108,6 +108,9 @@ class Settings(BaseSettings):
     max_concurrent_processing_jobs: SingleWorker = 1
     max_queued_jobs_per_workspace: PositiveInt = 5
     max_imports_per_workspace: PositiveInt = 20
+    max_runs_per_workspace: PositiveInt = 20
+    max_match_pairs: PositiveInt = 4000000
+    max_match_candidates: PositiveInt = 10000
     max_parsed_import_bytes: PositiveInt = 16777216
     max_parser_rss_bytes: PositiveInt = 268435456
     max_upload_receive_seconds: PositiveInt = 20

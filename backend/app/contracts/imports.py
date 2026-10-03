@@ -150,8 +150,9 @@ class PreviewResponse(BaseModel):
 class JobData(BaseModel):
     id: UUID
     workspace_id: UUID
-    import_id: UUID
-    kind: Literal["IMPORT"]
+    import_id: UUID | None = None
+    run_id: UUID | None = None
+    kind: Literal["IMPORT", "RUN"]
     state: Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED"]
     error_code: str | None
     created_at: datetime

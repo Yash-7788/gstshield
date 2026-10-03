@@ -125,6 +125,12 @@ class ImportService:
                 "SELECT * FROM jobs WHERE workspace_id=? AND id=?", (workspace, identifier)
             ).fetchone()
             if row is None:
+                row = connection.execute(
+                    "SELECT id,workspace_id,run_id,kind,state,error_code,created_at,updated_at "
+                    "FROM run_jobs WHERE workspace_id=? AND id=?",
+                    (workspace, identifier),
+                ).fetchone()
+            if row is None:
                 raise APIError(404, "NOT_FOUND", "Resource was not found.")
             return dict(row)
 
@@ -181,8 +187,12 @@ class ImportService:
             raise APIError(409, "IMPORT_LIMIT", "Workspace import limit reached.")
         if (
             connection.execute(
-                "SELECT count(*) FROM jobs WHERE workspace_id=? AND state IN ('QUEUED','RUNNING')",
-                (workspace,),
+                (
+                    "SELECT (SELECT count(*) FROM jobs WHERE workspace_id=? AND state IN "
+                    "('QUEUED','RUNNING')) + (SELECT count(*) FROM run_jobs WHERE "
+                    "workspace_id=? AND state IN ('QUEUED','RUNNING'))"
+                ),
+                (workspace, workspace),
             ).fetchone()[0]
             >= self.settings.max_queued_jobs_per_workspace
         ):
@@ -229,7 +239,8 @@ class ImportService:
                     409, "SUPERSESSION_INVALID", "Choose a ready import in the same context."
                 )
         connection.execute(
-            "INSERT INTO imports (id,workspace_id,registration_id,file_id,file_sha256,kind,period,"
+            "INSERT INTO imports "
+            "(id,workspace_id,registration_id,file_id,file_sha256,kind,period,"
             "adapter_version,sheet_name,mapping_json,mapping_hash,provenance,s"
             "tate,supersedes_import_id,"
             "derived_from_import_id,created_by,created_at,updated_at) VALUES "

@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -42,7 +42,7 @@ Start with one Uvicorn worker. Phase 3 parsing uses one killable local child pro
 
 ## Persistence conventions
 
-Application tables live in the private SQLite file, with STRICT types and foreign keys enabled on every connection. UUIDs are generated server-side. Phase 2 timestamps are integer Unix seconds exposed as UTC RFC3339 Z strings. Phase 3 monetary columns use INTEGER paise, checked for bounds; Python uses Decimal and JSON uses fixed two-decimal strings. Never use SQLite REAL for money. Future scores use bounded scaled integers or validated decimal text. Integer version supports optimistic concurrency.
+Application tables live in the private SQLite file, with STRICT types and foreign keys enabled on every connection. UUIDs are generated server-side. Phase 2 timestamps are integer Unix seconds exposed as UTC RFC3339 Z strings. Phase 3 monetary columns use INTEGER paise, checked for bounds; Python uses Decimal and JSON uses fixed two-decimal strings. Never use SQLite REAL for money. Phase 4 scores use validated fixed decimal text; financial values remain INTEGER paise. Integer version supports optimistic concurrency.
 
 Every tenant-owned row carries `workspace_id`; child references use composite `(workspace_id, id)` foreign keys where appropriate to prevent cross-workspace references. Index each unique pair referenced by those keys. Authentication identity is the active local account resolved from an unexpired opaque session; membership comes from our database, not editable profile metadata.
 
@@ -54,25 +54,25 @@ Every tenant-owned row carries `workspace_id`; child references use composite `(
 | `import_files` (implemented) | workspace_id, registration_id, private content BLOB, original_name, size_bytes, sha256, uploaded_by, created_at; no public URL |
 | `imports` | file_id, kind, period, adapter_version, mapping_json, state, counters, generated_at, supersedes_import_id, version; unique workspace/registration/kind/period/file_hash/mapping_hash/adapter_version |
 | `import_rows` (implemented) | workspace_id/import_id/row_number, original_json, canonical_json, errors_json, accepted/duplicate flags and INTEGER monetary columns; unique scoped import/row |
-| `purchase_documents` | import_id, registration_id, source_row_number, voucher_id, canonical fields below; unique import/voucher_id |
-| `portal_documents` | import_id, registration_id, source_row_number, canonical fields; preserve duplicates for explicit detection |
-| `runs` | workspace/registration/period, purchase_import_id, portal_import_id, policy_version, state, summary_json, started_at, completed_at, superseded_by_run_id |
-| `results` | run_id, purchase_document_id, status, assigned_portal_id nullable, explanations, version; unique run/purchase |
-| `candidates` | id, result_id, portal_document_id, score, rank, gates_json; unique result/portal |
-| `review_events` | result_id, actor, action, previous/new state, reason, created_at; append-only |
+| Purchase documents | Implemented as PURCHASE import_rows; public document UUID derives from import UUID + row position |
+| Portal documents | Implemented as PORTAL_2B import_rows; duplicate records are retained for explicit conflict detection |
+| `runs` (implemented) | workspace/registration/period, source pair, revision/version, state, policy_json, sources_json, summary_json nullable, superseded_by_run_id, timestamps |
+| `run_results` (implemented) | Scoped run/source row, canonical_json, status/version, reasons_json, assigned_portal_row nullable; unique run/purchase and run/assignment |
+| `run_candidates` (implemented) | Scoped run/result/portal row, score text, rank, eligible, differences/reasons JSON; unique result/portal |
+| `run_events` (implemented) | Scoped run/result, actor, action, reason, selected candidate, committed result version, request ID and timestamp; append-only via service |
 | `cases` | registration_id, purchase_document_id, kind, state, amount, claim_period, reversal_period, supplier_return_period, facts_json, version |
 | `case_events` | case_id, actor, event_kind, evidence_file_id nullable, sample flag, facts_json, created_at |
 | `proposals` | run_id, state, source_versions_json, allocations_json, total, created_by, approved_by nullable, version |
 | `artifacts` | run_id/case_id/proposal_id, kind, file_id, manifest_json, created_at |
-| `jobs` | kind, workspace_id, payload_json, state, lease_token, lease_until, attempts, error_code, next_attempt_at, timestamps |
-| `job_coordination` | singleton heavy-claim coordination row; lock only during lease inspection/claim, never during computation |
+| `jobs` / `run_jobs` (implemented) | IMPORT/RUN resource reference, workspace, state, safe error code and timestamps; run_jobs also has a private server lease |
+| Job coordination | OS data lock + one in-process dispatcher; no separate job_coordination table or lease renewal timer |
 | `wa_links` | user_id, workspace_id, registration_id, active_period, wa_id, active; unique active phone link for this app |
 | `link_codes` | user/workspace/context, code_hash, expires_at, consumed_at; unique hash |
 | `wa_events` | provider_event_key unique, event_kind, expected_sender_account, minimal_payload, state, received_at |
 | `wa_outbox` | logical_key unique, destination link, body/artifact reference, state, provider_message_id nullable, attempts |
 | `download_capabilities` | token_hash, artifact_id, originating_link_id, expires_at, revoked_at |
-| `idempotency_keys` | workspace, actor, route, key, request_hash, operation_id/response; unique workspace/actor/route/key |
-| `audit_events` | workspace, actor, action, target_type/id, request_id, safe metadata, created_at |
+| `import_operations` / `run_operations` (implemented) | workspace/actor/route/key uniqueness, request hash and import reference or committed run/review response |
+| Audit history | Implemented import_events/run_events; later cases/reports extend this with their own scoped events |
 
 For an assigned portal record enforce a partial unique index on `(run_id, assigned_portal_id)` where assigned_portal_id is not null. This prevents two purchase records claiming the same portal row. Candidate suggestions are not assignments. Tenant-scoped referenced rows must be validated even for JSON payloads; JSON is not a foreign-key substitute.
 
@@ -149,7 +149,7 @@ Proposal creation locks in current run/result versions, requested reviewed alloc
 
 ## Durable jobs and message ambiguity
 
-Future worker claims use a short SQLite BEGIN IMMEDIATE transaction and conditional state/version update, assign a random lease token and commit. SQLite has no row-lock or SKIP LOCKED API. The OS data lock permits one backend process. Inside its dispatcher, enforce one active heavy claim before accepting another; do not provision a second fallback server against this local database. Renew periodically; all completion writes compare token and lease ownership. Only one global heavy task and one workspace processing task run initially. On restart, expired jobs return to QUEUED up to three attempts; permanent parser/validation errors require user correction.
+The implemented dispatcher claims import/run work in a short SQLite BEGIN IMMEDIATE transaction. Run jobs receive a random lease token and every completion compares ownership; imports retain their Phase 3 state gate. SQLite has no row-lock or SKIP LOCKED API. The OS data lock permits one backend process, and the single dispatcher permits one global heavy task. Imports and runs share the five-pending-job workspace limit. There is no lease heartbeat or automatic three-attempt retry in the current implementation. On restart, QUEUED jobs resume; interrupted RUNNING jobs become FAILED/PROCESSING_INTERRUPTED. An explicit new run or derived import is required to retry. Do not create a second fallback worker against the same database.
 
 Long side effects are separated from transactional state. Reconciliation/PDF jobs can safely regenerate derived outputs with deterministic object keys and unique artifact records. A complete output requires successful file storage plus database record; a crash may leave an orphan file that cleanup can find by reservation/job ID.
 
@@ -170,9 +170,9 @@ Definition of foundation proof: real SQLite constraints reject duplicate assignm
 The service authorizes the member, validates both import IDs within the workspace, and reserves the idempotency key. In one transaction it confirms READY state/context, inserts the run and inserts its processing job. Commit before returning 202.
 
 - If an import is missing/inaccessible: return NOT_FOUND.
-- If not confirmed: return IMPORT_NOT_READY.
-- If contexts differ: return CONTEXT_MISMATCH.
-- If another workspace processing job is RUNNING: accept the next valid request as QUEUED. Only a configured queue-depth ceiling returns WORKSPACE_BUSY; initial ceiling is five pending heavy jobs per workspace.
+- If not confirmed or contexts differ: current RunCreate returns SOURCE_CONTEXT_INVALID.
+- If contexts differ: return SOURCE_CONTEXT_INVALID.
+- If another workspace processing job is RUNNING: accept the next valid request as QUEUED. Only the configured queue-depth ceiling returns QUEUE_FULL; initial ceiling is five queued/running import/run jobs per workspace. Current limit error is QUEUE_FULL with Retry-After.
 - If the commit fails: no successful receipt is returned.
 - If the response is lost: the same idempotency key retrieves the original run/job.
 
@@ -217,7 +217,7 @@ Use application validation for rich errors and database constraints for conteste
 
 ## Index and query budget
 
-Index workspace/context/state for import/run lists, run/source_row_number for results, result/rank for candidates, job state/next_attempt_at for claims, and case workspace/state for review queues. Foreign-key lookup indexes are intentional, not every possible field indexed by default.
+Current unique indexes cover scoped resources, run/source position, assignments and result/candidate ranks; run_jobs has a state/created_at/id queue index. Future case/report indexing is added with those features; there is no current next_attempt_at column. Foreign-key lookup indexes are intentional, not every possible field indexed by default.
 
 Never return all original source rows in every summary response. Load result detail on demand. Paginate audit/case timelines. Keep original JSON behind authorized detail access; redact unneeded supplier contacts from standard list results.
 
@@ -274,3 +274,15 @@ Every mapping request creates or reuses a separate derived import, including whe
 Import identity includes scope, registration, kind, period, byte hash, declared mapping/sheet hash, adapter, supersession parent and derivation parent. Stored display mapping can be auto-detected; the identity retains the declared input hash for repeatable upload deduplication. A repeated file reuses one private BLOB for the same registration/workspace. Filename does not define content identity. Idempotency additionally includes the submitted metadata and display filename, so a reused request key with changed input conflicts.
 
 Job success means the preview was atomically persisted, not that an import was confirmed. QUEUED jobs survive restart and resume. RUNNING jobs interrupted by shutdown/crash become visible FAILED/PROCESSING_INTERRUPTED; no partial preview or READY state is published. Recovery uses a new derived mapping import rather than silently retrying an unfinished parse. No source-download, matching, report or WhatsApp behavior is implemented in this phase.
+
+## Implemented Phase 4 persistence and decisions
+
+Current schema v3 adds runs, run_jobs, run_results, run_candidates, run_events and run_operations to the preserved Phase 3 tables. The earlier broad conceptual table catalog remains a design for later cases/reports; it is not the list of tables already created. Source records remain import_rows, addressed by import ID plus source row number. Public document IDs are deterministic UUIDv5(import UUID, row number); result/candidate UUIDs are derived within each run, preserving distinct purchase, portal, result and candidate identities.
+
+Each run has an immutable context revision and policy/source snapshot, plus a mutable version for result-summary updates. The saved policy includes adapter-independent amount tolerance, threshold/gap, explicit comparison implementation and resource limits. Source snapshots retain exact confirmed versions, hashes, adapters, accepted/rejected counts and provenance. Unknown total tax has separate summary counts; the monetary exposure fields contain only the known subtotal. Credit-note exposure is separate and is not netted against invoice/debit-note exposure.
+
+Database foreign keys bind each result to its run and source pair, each candidate to the same run/result/portal import, and review events to their result/candidate. Unique assigned portal row per run prevents double assignment. CHECK constraints prevent completed runs without summaries, accepted matches without assignments and RUNNING run jobs without a lease. Source rows are immutable after preview; a review rechecks live source state/version, row eligibility, identity/amount gates and assigned availability.
+
+Exact identity reservations precede fuzzy candidate enumeration. Duplicate identity groups include rejected source rows with complete canonical identity, preventing an invalid copy from hiding a conflict. Purchase duplicates rejected by Phase 3 stay excluded from accepted purchase totals. A related rejected snapshot row becomes evidence incomplete when its invalid date prevents matching; it is not silently cleaned into a match. Every eligible shared portal edge makes touching purchase results ambiguous. Limits are explicit failures, never a truncated clean subset.
+
+Summary, results and job success commit atomically. Stale lease output is ignored. A source superseded during computation causes SOURCE_SUPERSEDED and no completed partial output. A failed newer run leaves older completed runs intact; successful replacements supersede lower context revisions. Reviews of a historical run or superseded source fail. Idempotency retries return the original committed representation without replaying the mutation; GET retrieves current state.

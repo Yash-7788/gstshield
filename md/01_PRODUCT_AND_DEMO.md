@@ -1,6 +1,6 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Planning baseline: 2026-10-03. Status: implementation specification, not implemented functionality. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
@@ -232,3 +232,9 @@ If the hackathon requires an AI component, add explanation of already computed r
 - Can the presenters state exactly which integrations are live?
 - Can the application recover from a restart without losing the demonstration?
 - Is every claimed achievement backed by observable behavior?
+
+## Phase 4 demo capability
+
+The backend can now compare two explicitly confirmed imports, save a run, paginate classifications and show candidate explanations. A human can accept an eligible suggestion or reject a match with a recorded reason. Totals update with the committed decision. Demonstrate exact, suggested, amount mismatch, missing, ambiguous and incomplete-evidence rows; do not hide uncertainty or represent suggestions as accepted matches. Historical runs remain readable after reruns; a failed replacement does not wipe earlier findings.
+
+This is a backend capability. The supplied website is still pending its inspection/connection phases. Use documented local API examples or developer docs for backend testing; do not claim that website screens, PDF reports or physical WhatsApp flows are already delivered. No GST filing, bank action, official 2B verification or legal eligibility decision was added.

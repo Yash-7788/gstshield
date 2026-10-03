@@ -32,8 +32,9 @@ LIMIT_NAMES = (
 
 
 class ImportDispatcher:
-    def __init__(self, imports):
+    def __init__(self, imports, runs=None):
         self.imports = imports
+        self.runs = runs
         self.store = imports.store
         self.settings = imports.settings
         self.stop_event = threading.Event()
@@ -43,6 +44,8 @@ class ImportDispatcher:
     def start(self):
         with self.store.transaction() as connection:
             now = int(time.time())
+            if self.runs is not None:
+                self.runs.recover(connection, now)
             connection.execute(
                 "UPDATE imports SET state='FAILED',version=version+1,updated_at=?,"
                 "errors_json=? WHERE id IN (SELECT import_id FROM jobs WHERE state='RUNNING')",
@@ -75,24 +78,31 @@ class ImportDispatcher:
             raise StorageError("Local parser did not stop; preserve storage before restart.")
 
     def claim(self):
+        queue_sql = (
+            "SELECT kind,import_id AS target,created_at,id FROM jobs WHERE state='QUEUED' "
+            "UNION ALL SELECT kind,run_id AS target,created_at,id FROM run_jobs WHERE"
+            " state='QUEUED' "
+            "ORDER BY created_at,id LIMIT 1"
+        )
         with self.store.transaction(write=False) as connection:
-            if (
-                connection.execute("SELECT 1 FROM jobs WHERE state='QUEUED' LIMIT 1").fetchone()
-                is None
-            ):
+            if connection.execute(queue_sql).fetchone() is None:
                 return None
         with self.store.transaction() as connection:
-            row = connection.execute(
-                "SELECT i.*,r.gstin AS recipient_gstin FROM jobs j JOIN imports i "
-                "ON i.id=j.import_id "
-                "JOIN registrations r ON r.id=i.registration_id AND r.workspace_id=i.workspace_id "
-                "WHERE j.state='QUEUED' ORDER BY j.created_at,j.id LIMIT 1"
-            ).fetchone()
-            if row is None:
+            pending = connection.execute(queue_sql).fetchone()
+            if pending is None:
                 return None
+            if pending["kind"] == "RUN":
+                if self.runs is None:
+                    raise StorageError("Reconciliation dispatcher is unavailable.")
+                return self.runs.claim(connection, pending["target"])
+            row = connection.execute(
+                "SELECT i.*,r.gstin AS recipient_gstin FROM imports i JOIN registrations r "
+                "ON r.id=i.registration_id AND r.workspace_id=i.workspace_id WHERE i.id=?",
+                (pending["target"],),
+            ).fetchone()
             now = int(time.time())
             connection.execute(
-                "UPDATE jobs SET state='RUNNING',updated_at=? WHERE import_id=?", (now, row["id"])
+                "UPDATE jobs SET state='RUNNING',updated_at=? WHERE id=?", (now, pending["id"])
             )
             connection.execute(
                 "UPDATE imports SET state='PARSING',version=version+1,updated_at=? WHERE id=?",
@@ -103,17 +113,32 @@ class ImportDispatcher:
     def parse(self, row):
         self.store.capacity(self.settings.max_parsed_import_bytes + 131072)
         output = self.store.root / f"parser-{uuid4()}.json"
-        task = {
-            "database": str(self.store.path),
-            "file_id": row["file_id"],
-            "workspace_id": row["workspace_id"],
-            "descriptor": {
-                key: row[key]
-                for key in ("adapter_version", "kind", "period", "sheet_name", "recipient_gstin")
-            },
-            "limits": {key: getattr(self.settings, key) for key in LIMIT_NAMES},
-        }
-        task["descriptor"]["mapping"] = json.loads(row["mapping_json"])
+        module = "app.jobs.import_worker"
+        if row.get("job_kind") == "RUN":
+            module = "app.jobs.run_worker"
+            task = {
+                "database": str(self.store.path),
+                "run_id": row["id"],
+                "workspace_id": row["workspace_id"],
+            }
+        else:
+            task = {
+                "database": str(self.store.path),
+                "file_id": row["file_id"],
+                "workspace_id": row["workspace_id"],
+                "descriptor": {
+                    key: row[key]
+                    for key in (
+                        "adapter_version",
+                        "kind",
+                        "period",
+                        "sheet_name",
+                        "recipient_gstin",
+                    )
+                },
+                "limits": {key: getattr(self.settings, key) for key in LIMIT_NAMES},
+            }
+            task["descriptor"]["mapping"] = json.loads(row["mapping_json"])
         environment = {
             key: value
             for key, value in os.environ.items()
@@ -131,7 +156,7 @@ class ImportDispatcher:
                 descriptor_file.write(task_bytes)
             with output.open("xb") as stream:
                 child = subprocess.Popen(
-                    [sys.executable, "-m", "app.jobs.import_worker", str(input_path)],
+                    [sys.executable, "-m", module, str(input_path)],
                     cwd=Path(__file__).resolve().parents[2],
                     env=environment,
                     stdin=subprocess.DEVNULL,
@@ -198,6 +223,9 @@ class ImportDispatcher:
             raise StorageError("Parser processes could not be stopped.")
 
     def publish(self, row, outcome):
+        if row.get("job_kind") == "RUN":
+            self.runs.publish(row, outcome)
+            return
         now = int(time.time())
         with self.store.transaction() as connection:
             current = connection.execute(

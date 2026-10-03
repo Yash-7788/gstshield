@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Active implementation phase plan
 
@@ -10,14 +10,14 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **13 phases**. Phase 1 remains complete; Phase 2 is complete and locally verified; Phases 1–3 are complete and locally verified; Phases 4–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **13 phases**. Phases 1–4 are complete and locally verified; Phases 5–13 are not started. Frontend work uses the user's supplied website once it is available. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
 | 1 | Local runtime and HTTP foundation | Backend | Complete |
 | 2 | Local storage and private access | Backend | Complete |
 | 3 | File imports, checking and confirmation | Backend | Complete and locally verified |
-| 4 | GST reconciliation and human review | Backend | Not started |
+| 4 | GST reconciliation and human review | Backend | Complete and locally verified |
 | 5 | Backend reports, cases and evidence workflow | Backend | Not started |
 | 6 | Backend security and failure review | Backend | Not started |
 | 7 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
@@ -100,7 +100,7 @@ Review gate:
 4. Compare preview/confirmation counts with persisted rows, including errors and unknown tax components.
 5. Measure parsing time and memory for the demo and maximum supported input sizes; record the initial baseline for Phase 10.
 
-### Phase 4 — GST reconciliation and human review (not started)
+### Phase 4 — GST reconciliation and human review (complete and locally verified)
 
 Owner: backend. Outcome: Produce explainable matching results and exact totals, with an explicit human decision for suggestions and ambiguity.
 
@@ -422,3 +422,30 @@ Final boundary review also rejects all duplicate purchase copies when one copy h
 
 
 Phase 3 completed locally on 2026-10-03. The full Phase 1–3 regression passed: 169 passed, one Windows symlink-privilege test skipped; the actual Windows junction test passed. A final reviewed retry identity fix was followed by all 77 affected import/parser/HTTP tests passing. Explicit unchanged-mapping recovery from an interrupted import now creates a derived job instead of returning the original failed import; source/context deduplication remains intact. Frozen dependency sync, Ruff lint/format, Python syntax compilation and final diff checks passed. The real-process proof connects Phase 1 health, Phase 2 sessions/scopes and Phase 3 upload/preview/confirmation across restart and offline source-inclusive backup/restore. Local verification does not claim GitHub CI has already run. Phase 4 remains unstarted.
+
+## Phase 4 implementation decisions (2026-10-03)
+
+Use the existing single killable child dispatcher for imports and runs, with shared workspace queue admission. Add SQLite schema v3 with an explicit validated, backed-up offline v1/v2 upgrade. Preserve confirmed source IDs, hashes, adapters, provenance and server policy settings in every run. Financial arithmetic stays in integer paise. RapidFuzz ratio on an explicitly normalized comparison key produces suggestions requiring review; exact keys preserve separators, zeroes and year tokens. Compare all eligible candidate edges before classification, quarantine duplicates, bound total comparisons/candidates and fail explicitly rather than truncate ambiguous results. Review transactions recheck role, source freshness, expected version and unique assignment; commit result, summary, idempotency response and audit together. A replacement supersedes older completed runs only after its results commit. Interrupted running jobs fail visibly; queued jobs resume. Phase 5 remains untouched.
+
+## Phase 4 initial measured baseline
+
+Actual disposable reconciliation workers on this Windows PC, including run admission, child startup and database publication, with valid confirmed CSV source pairs:
+
+| Accepted purchase rows | Exact results | Run seconds | Sampled combined child-tree RSS bytes |
+|---|---|---|---|
+| 100 | 100 | 0.635 | 32,739,328 |
+| 2,000 | 2,000 | 1.584 | 50,720,768 |
+
+These are initial local observations for exact-match workloads, not universal latency guarantees or worst-case fuzzy workloads. Twenty-millisecond RSS sampling can miss short spikes. Ambiguous candidate workloads are bounded separately; exceeding pair/candidate limits fails instead of silently truncating the graph. Full Phase 1–4 regression is the final completion gate.
+
+## Phase 4 completion and verification record
+
+Local Windows verification on 2026-10-03: the complete Phases 1–4 regression suite passed **198 tests, with one Windows symlink-privilege skip**, in 423.21 seconds. The separate actual Windows junction-denial test passed. Final review then fixed equal top similarity scores when an operator configures the minimum score gap to zero; ties remain ambiguous. All **21 affected reconciliation/golden-run/concurrent-review tests** passed after that final change, including two new zero/default-gap regressions. The repository now contains 19 reconciliation unit cases and 12 run integration cases. This is not a claim that a new complete 200-test suite was rerun after the bounded final fix.
+
+Frozen installation checked the selected runtime; Ruff lint/format, syntax compilation and diff checks passed. Golden expected counts and amounts were prepared independently. Tests cover paise tolerance, component cancellation, unknown values, credit-note separation, rejected duplicate evidence, same-number other-year gates, score threshold/gap rounding, input permutations, exact reservation, candidate/pair exhaustion, actual child processing, shared queue/retention quotas, two-user scope isolation, VIEWER denial, CSRF, malformed reviews, stale versions and request keys.
+
+Concurrent tests prove one winner per contested portal row and per result version; rejected assignments release correctly. Late audit failure rolls result/summary/history/idempotency back together. SQLite tests reject invalid assignments, cross-source candidates, completed runs without summaries and running jobs without leases. Queued work resumes; interruptions fail truthfully; stale lease output is ignored; failed replacements retain earlier output. Source supersession blocks reviews and historical results remain readable.
+
+An actual local HTTP process run was reviewed, stopped, restarted, backed up and restored: result status/assignment/timeline, saved source/policy and job success remained consistent. Restored sessions/accounts stayed revoked until explicit operator recovery. Tests used isolated synthetic storage; no real backend/.env or backend/data was created. GitHub workflow results are separate evidence.
+
+Phase 4 was developed directly in responsibility-named modules: api/runs.py, contracts/runs.py, domain/reconciliation.py, services/runs.py, jobs/run_worker.py and storage/run_schema.py. Existing main/dispatcher/import-job/admission/storage hooks were extended and inspected against their previous versions. No phase/helper editing scripts are retained. All eight active MDs and the environment example now describe the implemented run/review contracts and local schema/queue decisions. Phase 5 remains not started.

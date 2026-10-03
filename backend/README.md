@@ -4,7 +4,7 @@
 
 Decision: 2026-10-03. Run the hackathon website backend on the local PC. No Render, cloud server, external database, cloud storage, Redis or hosted identity setup. A local backend process is still required for the website to call Python functionality.
 
-Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Reconciliation, reports and phone routes remain future phases.
+Phase 1 provides the HTTP/configuration foundation. Phase 2 adds local SQLite storage, operator provisioned accounts, revocable browser sessions and scoped workspace/registration reads. Phases 1–2 are complete. Phase 3 private uploads, previews, mapping, confirmation and import jobs are complete and locally verified. Phase 4 reconciliation, saved results and human review are complete and locally verified. Reports and phone routes remain future phases.
 
 The [phase plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) defines the local architecture; the eight MDs now use this decision throughout. Work proceeds one phase at a time, with a review gate before the next phase.
 
@@ -161,7 +161,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 |---|---|
 | app/api | Current access/workspace routes; future feature routes |
 | app/contracts | Shared HTTP/input/output contracts |
-| app/domain | Future exact-money and reconciliation rules |
+| app/domain | Exact canonical validation and reconciliation policy |
 | app/services | Local account/session access now; future shared feature use cases |
 | app/adapters | Future import/report/provider boundaries |
 | app/storage | Current SQLite, data locking, quota, backup/restore foundation |
@@ -171,7 +171,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phases 4–13 remain pending, including reconciliation, reports, frontend integration and WhatsApp.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phases 5–13 remain pending, including reports, frontend integration and WhatsApp.
 
 ## Create local accounts and context
 
@@ -224,7 +224,7 @@ Restore validates/stages the backup, preserves the old database, clears sessions
 
 Existing unresolved journal/WAL/SHM files prevent restore; preserve them for operator recovery. Normal SQLite journaling handles interrupted transactions; do not delete a sidecar to bypass recovery. Unknown schema versions require a reviewed upgrade or supported backup, not deletion/recreation.
 
-This backup covers the Phase 3 source BLOBs, import context, previews, job history and access records together. Future generated reports are not implemented or covered by a separate-file manifest yet.
+This backup covers source BLOBs, import context, previews, run/results/candidates, review history, job state and access records together. Future generated reports are not implemented or covered by a separate-file manifest yet.
 
 ## Phase 2 verification record
 
@@ -261,7 +261,7 @@ For a Phase 2 schema, stop the backend and run from backend/:
 .\.venv\Scripts\python.exe -m app.manage storage-upgrade
 ```
 
-The command preserves a validated v1 backup and transactionally adds the Phase 3 tables. Fresh installations create schema v2 directly. Preserve the old backup; current restore accepts v2 backups. Update an older dotenv key MAX_QUEUED_JOBS_PER_SESSION to MAX_QUEUED_JOBS_PER_WORKSPACE using the new template. There is no external database or hosted service.
+The command preserves a validated v1/v2 backup and transactionally adds the missing Phase 3/4 tables. Fresh installations create schema v3 directly. Preserve old-version backups as recovery evidence; current restore accepts v3 backups. Old-version recovery requires offline recovery plus storage-upgrade. Update an older dotenv key MAX_QUEUED_JOBS_PER_SESSION to MAX_QUEUED_JOBS_PER_WORKSPACE using the new template. There is no external database or hosted service.
 
 Locked Phase 3 additions: openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32, psutil 7.2.2 and openpyxl's et-xmlfile dependency. CSV/JSON/Decimal/SQLite/process handling use the Python standard library. No pandas, Redis, ORM or cloud SDK was added.
 
@@ -269,3 +269,21 @@ Locked Phase 3 additions: openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0
 ## Phase 3 verification
 
 Local Windows verification on 2026-10-03: full Phase 1–3 regression 169 passed / one symlink-privilege skip; Windows junction protection passed. The final explicit-retry identity fix was verified by all 77 affected import/parser/HTTP tests. Frozen dependencies, Ruff lint/format, syntax compilation and diff checks passed. Actual-process restart and offline backup/restore preserve original upload bytes, source hashes, preview rows and confirmed state while retaining Phase 2's restored-access revocation. The build plan records measured 100/2,000-row CSV/XLSX baselines and watchdog limits. GitHub CI remains separate from this local evidence.
+
+## Phase 4 reconciliation and human review
+
+Confirm one PURCHASE and one PORTAL_2B import for the same workspace/registration/period. POST `/api/v1/workspaces/{workspace_id}/runs` with JSON registration_id, period, purchase_import_id and portal_import_id. Use the existing cookie, configured Origin, X-CSRF-Token and a fresh UUID Idempotency-Key. The 202 response includes run_id/job_id; GET the run/job to poll present state. Idempotent retries return the originally committed response.
+
+GET `/runs` retrieves private paginated history. GET `/runs/{id}/results` pages source-row order with optional status filter; GET `/results/{id}` adds candidates and review history. These relative paths share the workspace prefix. Each result covers one accepted purchase row. Canonical identity/amounts remain nested under canonical. Scores and money are strings, unknown components remain null.
+
+POST `/results/{id}/review` with expected_version, action=ACCEPT_CANDIDATE or REJECT_MATCH, candidate_id (required for accept, null for reject) and a nonblank reason. Only OWNER/REVIEWER may write. The server checks current membership, run/source freshness, row evidence, expected version and unique assignment. Rejection releases an assignment; acceptance becomes REVIEW_ACCEPTED. Result, recomputed summary, audit and request history commit together.
+
+Exact matching uses recipient/supplier/document type/date and invoice number with only case/outer-whitespace normalization, then each amount field within the saved paise tolerance. Fuzzy keys remove explicit ASCII separators while preserving zeroes/year digits; RapidFuzz 3.14.6 ratio yields review suggestions. Threshold decisions floor scores to two decimals and gap decisions use unrounded scores. Shared/tied candidate conflicts stay ambiguous, duplicate identities are quarantined, and no candidate is automatically accepted because of a score.
+
+Runs save source versions/hashes/adapters/provenance and server policy. Unknown tax exposure is a separate count beside known subtotals; credit notes remain separate. A match is comparison against supplied evidence, not legal ITC eligibility or government verification. Synthetic portal provenance remains visible.
+
+Defaults: 20 retained runs/workspace, 4,000,000 compared pairs and 10,000 candidates/run, 2,000 input rows, one global import/run child, five queued/running jobs/workspace, 60-second processing deadline, 16 MiB result and sampled 256 MiB combined child-tree RSS. Exhaustion fails the whole run; no truncated subset is shown as complete. Sources/results/reviews/jobs are in the SQLite backup. QUEUED work resumes; RUNNING interruptions fail visibly. Explicit new runs retry failures; there is no automatic retry loop. A failed replacement keeps older completed output usable; a successful replacement marks older context revisions historical.
+
+## Phase 4 verification
+
+Local Windows full Phases 1–4 suite: **198 passed, 1 skipped** in 423.21 seconds. The skip requires Windows symlink privilege; the actual Windows junction denial test passed. Final zero-gap tie correction then passed all **21 affected matching/golden-run/concurrency tests**, including two added tie cases. Frozen dependency sync, Ruff lint/format, syntax compilation and diff checks passed. The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records the exact coverage and initial 100/2,000-row worker measurements. Actual process restart plus backup/restore preserved reviewed results and source/policy snapshots while revoking restored access. These are local checks; remote GitHub CI is separate. No zero-defect guarantee or completed frontend/WhatsApp claim is made.

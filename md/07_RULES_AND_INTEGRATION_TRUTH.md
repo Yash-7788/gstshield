@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -212,3 +212,11 @@ When a provider cannot support the chosen free path, record the exact blocker an
 - Does the hackathon require a separate AI component, and can it remain optional?
 
 These questions are implementation inputs, not an instruction to stop all work. Proceed with the bounded deterministic core while collecting the facts needed for larger claims.
+
+## Phase 4 capability truth
+
+Implemented comparisons use only the selected confirmed source imports and saved server policy. EXACT_MATCH means identity and each supported amount agree within tolerance against that snapshot. FUZZY_SUGGESTION still requires a human decision; REVIEW_ACCEPTED preserves that human distinction. Neither classification proves an invoice is genuine, a supplier filed/paid tax or ITC is legally available. There is no official GST/IRP lookup or filing integration in this phase.
+
+MISSING_IN_SNAPSHOT is limited to the chosen supplied snapshot, not permanent ITC loss. Rejected related snapshot evidence, unknown components, duplicate identities and contested candidates are retained as uncertainty. Known tax exposure is an exact recorded review subtotal, with explicit unknown-row counts. Credit-note magnitudes remain separate. No comparison total is a recoverable/denied ITC determination, payment instruction or debt calculation.
+
+USER_PROVIDED stays user-provided; canonical-demo-v1 stays SYNTHETIC_DEMO through the run and review. Accepting a candidate never promotes provenance to VERIFIED_SOURCE. Source hashes, adapters, context revisions and policy snapshots preserve reproducibility; they are not third-party certification.

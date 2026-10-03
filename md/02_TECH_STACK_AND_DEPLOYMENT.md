@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 ## Selected architecture
 
@@ -36,6 +36,7 @@ The committed `backend/uv.lock` records the full resolved graph and hashes. The 
 | pytest | 9.1.1, regression checks |
 | Ruff | 0.16.10, lint and formatting |
 | SQLite | 3.53.1 in this PC's selected interpreter; stdlib driver |
+| RapidFuzz | 3.14.6, invoice-number suggestions only |
 | Password/session/CSRF primitives | hashlib.scrypt, secrets, hmac from the standard library |
 
 HTTPX2 matches the installed Starlette test client; do not reintroduce the deprecated HTTPX dependency from the early candidate list. Do not silently refresh the lock during the demo. New dependencies belong to the phase that actually uses them.
@@ -43,7 +44,7 @@ HTTPX2 matches the installed Starlette test client; do not reintroduce the depre
 ## Dependencies reserved for future phases
 
 - Phase 3 now uses standard-library CSV/JSON, openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32 and psutil 7.2.2. The exact graph is committed in uv.lock; no pandas, ORM or external queue was added.
-- Phase 4: Decimal for canonical monetary arithmetic; evaluate RapidFuzz for suggestions. Similarity never becomes automatic legal approval.
+- Phase 4 installs RapidFuzz 3.14.6 (locked range >=3.14.6,<3.15) for suggestions. Integer paise and standard-library Decimal handle money; floating point is confined to similarity scores. Similarity never becomes automatic legal approval.
 - Phase 5: evaluate ReportLab for PDF generation with a bundled tested font. Do not install a browser renderer only to generate a small evidence report.
 - Phase 7: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
 - Phase 12: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
@@ -210,8 +211,14 @@ Imports run in one disposable local Python process, scheduled by one backend thr
 
 The watchdog checks a 60-second deadline and combined process-tree RSS against 256 MiB. RSS is sampled, so this is not a hard Windows kernel memory allocation limit. Windows virtual-environment launchers can spawn a second interpreter; both memory accounting and termination include that process tree. This is resource isolation, not a full operating-system security sandbox. Sources remain private to the OS user running the hackathon backend.
 
-Schema version 2 adds import_files, imports, import_rows, jobs, import_operations and import_events. Startup preserves and refuses an old schema rather than silently changing it. For a valid Phase 2 database, stop the backend and run `python -m app.manage storage-upgrade` from backend/. It validates the exact old schema, saves a generated backup, then adds the import tables in one transaction. The saved v1 backup remains preserved evidence; current restore accepts v2 backups. Recovering a v1 backup requires an offline copy and this reviewed upgrade before launch. Fresh installations initialize v2 directly.
+Schema version 2 adds import_files, imports, import_rows, jobs, import_operations and import_events. Startup preserves and refuses an old schema rather than silently changing it. For a valid Phase 2 database, stop the backend and run `python -m app.manage storage-upgrade` from backend/. It validates the exact old schema, saves a generated backup, then adds the import tables in one transaction. The preserved v1/v2 backups remain old-version recovery evidence. Phase 4 now initializes v3 and current restore accepts v3 backups. Recovering an older backup requires offline recovery plus the validated storage-upgrade command before launch.
 
 Rename the old unused `MAX_QUEUED_JOBS_PER_SESSION` dotenv entry to `MAX_QUEUED_JOBS_PER_WORKSPACE`. It now limits actual workspace jobs. Old dotenv keys are deliberately refused rather than silently ignored; the complete current template is above and in backend/.env.example.
 
 The XML defense follows [openpyxl's security guidance](https://openpyxl.readthedocs.io/en/stable/): defusedxml is installed, and archive/XML inspection runs before workbook parsing. [python-multipart](https://pypi.org/project/python-multipart/) handles the bounded multipart envelope. Process-tree RSS uses [psutil's process API](https://psutil.io/api/). Installed 7.x is pinned below 8 to avoid introducing the documented breaking 8.x API changes.
+
+## Phase 4 runtime and schema alignment
+
+Fresh storage is schema v3. Offline `python -m app.manage storage-upgrade` validates exact v1/v2 fingerprints, preserves a compatible old-version backup and transactionally extends the schema. It does not rebuild or overwrite imported files. Normal startup refuses older schemas until this explicit upgrade runs. Current restore accepts v3 backups; v1/v2 preservation backups remain old-version recovery evidence and require offline recovery plus upgrade, rather than direct v3 restore. One dispatcher runs imports and reconciliation serially in disposable children, with the same 60-second deadline, 16 MiB output and sampled 256 MiB process-tree RSS bound. No second worker, DB service or cloud integration was introduced.
+
+The installed similarity API was checked against [RapidFuzz ratio documentation](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html) on 2026-10-03. Use normalized Indel ratio with explicit invoice preprocessing; no token/subset scorer. Threshold comparisons floor scores to two decimal places, while the minimum score gap uses unrounded scores to avoid rounding up confidence. This is a server-versioned comparison policy, not a probability.

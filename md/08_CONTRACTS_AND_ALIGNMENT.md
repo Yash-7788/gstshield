@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -38,7 +38,7 @@ Invalid credentials are a generic 401 for unknown/inactive users or a wrong pass
 
 Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
 
-The imports and import jobs below are implemented in Phase 3. Runs, reports, cases and WhatsApp remain later-phase contracts; the broad catalog does not imply those routes exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
+The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Reports, cases and WhatsApp remain later-phase contracts; the broad catalog does not imply those routes exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
 
 ## Shared enums
 
@@ -280,3 +280,27 @@ PATCH mapping uses expected_version, optional sheet_name and a complete canonica
 Current additional errors include UPLOAD_BUSY/503, QUEUE_FULL/429, IMPORT_LIMIT/409, OPERATION_LIMIT/409, UPLOAD_TIMEOUT/408, INVALID_MULTIPART/400, IDEMPOTENCY_KEY_REQUIRED/400, PARTIAL_ACK_REQUIRED/409, SUPERSESSION_ACK_REQUIRED/409 and IMPORT_NOT_CONFIRMABLE/409. Retry-After is returned for transient admission limits and exposed by CORS alongside X-Request-ID. Mapping/unsupported content errors must stay visible to the user; do not label them as a successful import or an ITC decision.
 
 GET `/imports` returns `{imports: ImportDetail[], next_cursor: UUID|null}` with `limit` 1..100 (default 20), a last-seen UUID `cursor`, optional registration_id, kind and period filters. Results are consistently ordered by ID; this is pagination order, not a claim that a source is latest or authoritative. A browser refresh can recover durable import IDs through this list.
+
+## Current Phase 4 website contract
+
+Actual models are backend/app/contracts/runs.py and generate OpenAPI. All routes use `/api/v1/workspaces/{workspace_id}` and the existing private browser session. OWNER/REVIEWER may create runs and review results; VIEWER may read. Mutations require one configured Origin, X-CSRF-Token and UUID Idempotency-Key. Unexpected payload fields, boolean expected_version, blank/control-character reasons, accept-without-candidate and reject-with-candidate return 422. Inaccessible resources return 404.
+
+| Method / relative path | Current response |
+|---|---|
+| POST /runs | 202 RunResponse; saved run_id/id and job_id |
+| GET /runs | RunListResponse, UUID cursor, limit 1..100 |
+| GET /runs/{run_id} | RunResponse |
+| GET /runs/{run_id}/results | ResultListResponse, integer source-row cursor, limit 1..100, optional ResultStatus filter |
+| GET /results/{result_id} | ResultResponse with candidates and review_timeline |
+| POST /results/{result_id}/review | ResultResponse after atomic review |
+| GET /jobs/{job_id} | Shared JobResponse for IMPORT or RUN |
+
+RunData has id/run_id, workspace_id, registration_id, period, purchase_import_id, portal_import_id, revision, version, job_id, state, policy_version, policy, sources, sources_current, provenance, summary nullable, superseded_by_run_id nullable and UTC timestamps. `revision` orders context reruns; `version` increases for state/review changes. The receipt is saved before processing and has summary=null. Idempotent retries replay that committed receipt; poll GET for present progress. A failed run never supplies fabricated zero totals. Sources contain id/kind/sha256/version/adapter_version/provenance/generated_at/accepted_rows/rejected_rows.
+
+Summary includes every ResultStatus count plus accepted_purchase_rows, tax_exposure_review, credit_note_tax_review, unknown_tax_exposure_rows, unknown_credit_note_tax_rows and currency=INR. Monetary totals are fixed decimal strings for the known subtotal; unknown counters must be displayed with them. All classification counts sum to accepted_purchase_rows.
+
+ResultData contains id, workspace_id, run_id, purchase_document_id, source_row_number, status, version, canonical, assigned_portal_document_id nullable, provenance and reason_codes. Invoice identity/component amounts/total_tax are nested in `canonical` using the same names and money/null semantics as import previews. Detail adds candidates and review_timeline. Candidate has its own id, portal_document_id, original_invoice_number, invoice_date, score string, rank, hard_gates_passed, currently_available, amount_differences and reason_codes. Eligibility is saved matching evidence; availability may change after another result is reviewed. The server always rechecks both. Timeline includes actor_id/action/reason/candidate_id/result_version/created_at.
+
+The implemented shared job response is id/workspace_id/kind/state/error_code/created_at/updated_at with import_id nullable and run_id nullable. IMPORT has import_id; RUN has run_id. No attempt/percentage/output_ref/lease fields are exposed. The earlier richer job shape is reserved for a future contract change, not an existing response. Both kinds resume QUEUED jobs and fail interrupted RUNNING jobs on restart.
+
+Useful actual errors: SOURCE_CONTEXT_INVALID, SOURCE_SUPERSEDED, STALE_VERSION, ASSIGNMENT_CONFLICT, CANDIDATE_INELIGIBLE, IDEMPOTENCY_CONFLICT, RUN_LIMIT and QUEUE_FULL. Worker failures include MATCH_PAIR_LIMIT, MATCH_CANDIDATE_LIMIT, PROCESSING_INTERRUPTED, PROCESSING_TIMEOUT and PARSED_RESULT_LIMIT. Explain a failed run using the scoped job code; source corrections/new run are explicit actions. Match scores are similarity, never legal approval.

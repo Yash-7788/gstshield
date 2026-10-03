@@ -1,6 +1,6 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
@@ -234,3 +234,11 @@ Use signed synthetic webhook payloads to test byte/signature behavior locally. S
 Record deployed frontend/API origins, frontend build commit, backend build commit, selected Graph API version, callback path, date of physical-device rehearsal and redacted provider message IDs. Never record the access token/app secret.
 
 The integration is complete when an unaided presenter can move between website and phone without editing the database, invoking terminal scripts or replacing messages with fixtures. Any remaining missing provider capability is displayed as unavailable rather than silently synthesized.
+
+## Available Phase 4 backend handoff
+
+The site can eventually create runs from its chosen confirmed import IDs, poll scoped jobs/runs, paginate results, load candidate detail and submit explicit review actions through the contracts in 08. A reload recovers run history from GET /runs. Changing context must clear selected imports/results; retain run_id, workspace_id, registration_id and source IDs together rather than combining stale responses.
+
+Show a pending/failed run without invented totals. Render known tax subtotals with their unknown-row counts and separate credit-note exposure. Display provenance and source hashes/adapters on detail. Scores are formatted similarity strings, and candidate IDs differ from portal-document IDs. Disable a review if the run is historical or sources_current is false; refresh after STALE_VERSION/ASSIGNMENT_CONFLICT and rely on the server decision.
+
+Create/review retries reuse the same UUID key for the same intended command. Idempotency replays the original committed response, so GET current run/result afterward. A newly intended rerun gets a fresh key. Poll about every two seconds with backoff; rapid polling would exhaust the default 60 reads/minute. No WhatsApp webhook, link, send, report or frontend implementation was introduced in Phase 4.

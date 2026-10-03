@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phases 4–13 remain pending.
+Hackathon website application with WhatsApp integration. This repository contains research, implementation planning and the initial project structure. Phase 1 provides the local foundation; Phase 2 adds private SQLite/account access and is complete and locally verified. Phase 3 adds private imports and is complete and locally verified; Phase 4 adds reconciliation and human review and is complete and locally verified; Phases 5–13 remain pending.
 
 ## Start here
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phase 1 is complete; Phase 2 is complete; Phase 3 is complete and locally verified; Phases 4–13 are not started.
+The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phases 1–4 are complete and locally verified; Phases 5–13 are not started.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -65,4 +65,4 @@ gstshield/
   frontend/                   # reserved for the supplied website
 ```
 
-Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, frontend wiring and WhatsApp remain future phases.
+Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Reports/cases, frontend wiring and WhatsApp remain future phases.

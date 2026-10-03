@@ -13,6 +13,7 @@ from starlette.types import ASGIApp
 
 from app.api.access import router
 from app.api.imports import router as import_router
+from app.api.runs import router as run_router
 from app.config import ConfigurationError, Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
 from app.errors import APIError, StorageError
@@ -20,6 +21,7 @@ from app.jobs.imports import ImportDispatcher
 from app.security.http import LocalHTTPBoundary
 from app.services.access import AccessService
 from app.services.imports import ImportService
+from app.services.runs import RunService
 from app.storage.local import LocalStore
 
 logger = logging.getLogger("gstshield")
@@ -41,7 +43,8 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             application.state.store = store
             application.state.access = AccessService(store)
             application.state.imports = ImportService(application.state.access)
-            dispatcher = ImportDispatcher(application.state.imports)
+            application.state.runs = RunService(application.state.imports)
+            dispatcher = ImportDispatcher(application.state.imports, application.state.runs)
             dispatcher.start()
             application.state.dispatcher = dispatcher
             application.state.ready = True
@@ -64,6 +67,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     application.state.ready = False
     application.include_router(router)
     application.include_router(import_router)
+    application.include_router(run_router)
 
     @application.exception_handler(APIError)
     async def application_error(request: Request, exc: APIError) -> JSONResponse:

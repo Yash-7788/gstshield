@@ -1,6 +1,6 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–3 are complete and locally verified. Phases 4–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–4 are complete and locally verified. Phases 5–13 remain planned. The supplied frontend and real WhatsApp connection are still pending.
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
@@ -233,3 +233,15 @@ The body is counted from actual chunks, including when Content-Length is absent.
 The parser result is published in one transaction with its row counts, reasons, version and job state. SQL uses bound values, composite references and INTEGER monetary columns. A malformed file becomes a failed private job with a fixed reason code. Raw exceptions, SQL, filesystem paths, source files and session secrets are absent from HTTP errors and worker logs.
 
 The child has no network integration or URL-fetch code. XML/archive bounds, a real process timeout and a sampled combined RSS watchdog limit hostile parser work. This is not a kernel sandbox or a production Internet upload service. Original documents, database and backups remain unencrypted under the local OS account; use synthetic hackathon inputs. Successful backup/restore includes both source BLOB and preview rows and revokes restored access as in Phase 2.
+
+## Implemented Phase 4 protections
+
+Run/result/candidate/job reads enforce current session and workspace membership. Writes require OWNER/REVIEWER plus the existing Origin/CSRF protections and bounded JSON body. Guessed run/result/job IDs cannot expose another workspace's records. Client policy versions, scores, computed totals or states are not accepted as authority. Review reasons are bounded, nonblank and free of control characters; future frontend/report rendering still escapes text.
+
+Review uses one BEGIN IMMEDIATE transaction: reauthorize, check idempotency, verify current run/source versions, check result version, recheck candidate identity/amount evidence and enforce unique portal assignment. Commit the result, recalculated summary, audit event and replay record together. A simulated late audit failure proves the whole transaction rolls back, including the request history. Concurrent tests prove one winner per result version and per contested portal row.
+
+Schema v3 binds results/candidates/events to the same scoped run and source pair. Accepted matches require an assignment, completed runs require a summary, and RUNNING run jobs require a lease. Job completion compares the server lease. Historical/superseded sources block new reviews. A source changed while a run computes prevents successful publication.
+
+Imports and runs use one global disposable child and shared workspace queue admission. Pair/candidate/row/result-size/deadline and sampled process-tree RSS bounds fail explicitly. Private child descriptors/results are server generated and removed by the existing dispatcher. Interrupted jobs fail on restart; no automatic replay pretends they succeeded. Backup/restore retains run/review state while revoking restored access as in Phase 2.
+
+These are implemented-scope checks, not a claim of zero defects or a completed Phase 6/9 audit. The backend remains loopback-only and local files follow OS-account protection. No external storage, cloud worker, public upload URL, callback or frontend credential path was added.
