@@ -4,6 +4,10 @@
 
 Planning baseline: 2026-10-03. Status: implementation specification, not implemented functionality. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
+## Active whole-application phase scope
+
+The implementation sequence now has 13 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phase 1 remains complete and the remaining phases are not started. The original product capabilities and evidence boundaries below still apply.
+
 ## Read this pack
 
 | Document | Owns |

@@ -4,6 +4,10 @@
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
+## Active channel implementation phases
+
+Follow the expanded [13-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 7 inspects/finishes the supplied website, Phase 8 connects real backend operations, Phase 9 reviews browser security, Phase 11 measures smoothness, Phase 12 proves WhatsApp and Phase 13 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 6/10. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. The active private-access mechanism is selected locally in Phase 2; older Supabase/cloud setup paragraphs below are reference alternatives, not a selected dependency.
+
 ## Preserve and connect the supplied website
 
 The website has not yet been supplied. Do not choose a new frontend framework or redesign it based on the original report's Next.js 14 suggestion. On receipt, inspect its manifest, routing, build command, deployment requirements, existing authentication, fixture data and screens. Record actual framework/runtime/package versions in 02.

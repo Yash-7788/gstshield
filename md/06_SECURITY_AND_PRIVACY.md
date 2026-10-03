@@ -4,6 +4,10 @@
 
 Baseline 2026-10-03. Planned safeguards, not a completed audit. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
+## Active security phase ownership
+
+The [expanded plan](05_BUILD_AND_VERIFICATION_PLAN.md) gives backend security/failure review its own Phase 6 and frontend security/privacy its own Phase 9. Initial access, upload limits, SQL/file boundaries, safe rendering, private state and download authorization must be implemented in their feature phases first. Performance changes in Phases 10/11 repeat affected security checks; Phase 12 adds real callback/link protections and Phase 13 verifies combined regressions. The current local identity/storage decision comes from Phase 2; the JWT/JWKS/Supabase/managed-database-specific passages below are reference designs, not a requirement to provision an external service. These phases remain planned work.
+
 ## Threat model and scope
 
 Protect each workspace's documents/results, authentication sessions, linking codes, report capabilities and provider credentials. Likely mistakes/attacks: another logged-in user changes an object ID; an uploaded spreadsheet consumes unbounded memory; a forged callback triggers processing; a repeated event duplicates effects; a forwarded report link exposes private evidence; browser code leaks a privileged key; a bot trusts an unrelated supplier's claims.

@@ -85,14 +85,21 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 
 | Phase | Work | Status |
 |---|---|---|
-| 1 | Local runtime, configuration, HTTP/error foundation and review | Complete; local checks below |
+| 1 | Local runtime, configuration and HTTP foundation | Complete |
 | 2 | Local SQLite/private files and private access | Not started |
-| 3 | Bounded imports, mapping and confirmation | Not started |
-| 4 | Deterministic reconciliation and versioned review | Not started |
-| 5 | Reports and supplied website integration | Not started |
-| 6 | Optional real WhatsApp and final rehearsal | Not started |
+| 3 | Bounded imports, checking and confirmation | Not started |
+| 4 | Reconciliation and versioned human review | Not started |
+| 5 | Backend reports, cases and evidence workflow | Not started |
+| 6 | Backend security and failure review | Not started |
+| 7 | Supplied frontend inspection, cleanup and screens | Not started |
+| 8 | Real frontend/backend connection | Not started |
+| 9 | Frontend security and privacy review | Not started |
+| 10 | Backend performance and resource efficiency | Not started |
+| 11 | Frontend smoothness, speed and usability | Not started |
+| 12 | WhatsApp connection and channel review | Not started |
+| 13 | Whole-application regression and rehearsal | Not started |
 
-Every phase has correctness, security, edge-case and integration review gates in the build plan. The dependency order does not reduce attention to later work.
+The expanded plan has 13 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 6 and 10 provide focused backend security/failure and measured performance reviews. Frontend phases give the supplied website equal attention. The dependency order does not reduce attention to later work.
 
 Real WhatsApp needs Meta's API and an internet-reachable HTTPS callback. A purely offline/loopback backend cannot receive real phone callbacks. No tunnel or hosted service is provisioned. This decision belongs to the later integration phase.
 

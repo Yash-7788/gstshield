@@ -29,6 +29,26 @@ The original report is historical context, not the final implementation authorit
 
 Use branches and pull requests for implementation changes. Update shared contracts, schema, adapters and verification together. Keep credentials, private taxpayer documents and real financial data out of commits. Collaborator invitations are managed separately through GitHub access settings.
 
+## Full application phases
+
+The expanded plan has **13 phases** with separate backend, frontend, security, connection and performance work. Phase 1 is complete; Phases 2–13 are not started.
+
+1. Local backend foundation.
+2. Local storage and private access.
+3. File imports, checking and confirmation.
+4. Reconciliation and human review.
+5. Backend reports, cases and evidence workflow.
+6. Backend security and failure review.
+7. Supplied frontend inspection, cleanup and complete screens.
+8. Frontend/backend connection.
+9. Frontend security and privacy review.
+10. Backend performance and resource efficiency.
+11. Frontend smoothness, speed and usability.
+12. WhatsApp connection and channel review.
+13. Whole-application regression and hackathon rehearsal.
+
+The [build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) contains each phase's detailed tasks and review gates. The frontend starts from the supplied website once received. Basic security and responsiveness apply during feature work; focused review phases do not defer them.
+
 ## Active first-demo scope
 
 Run GSTShield on the local PC; no cloud server or external database. Phase 1 provides local HTTP/configuration. Phase 2 will store data in a local SQLite file. See [backend setup](backend/README.md) and the [phased implementation plan](md/05_BUILD_AND_VERIFICATION_PLAN.md). The older cloud and memory-only proposals are historical reference.
