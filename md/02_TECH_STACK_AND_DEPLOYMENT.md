@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
@@ -270,3 +270,7 @@ Per-source derivation commits or rolls back atomically. A failed source remains 
 ## Verification cost and batch cadence
 
 Uninterrupted full Windows Phase 6 runs took roughly eleven to sixteen minutes; the final passing run took 951.44 seconds (15 minutes 51 seconds); machine sleep can inflate wall-clock reports dramatically. Use targeted phase checks plus lint/format/syntax while implementing, then one full regression after two or three related phases. Major shared storage/authentication/calculation changes or an uncontained regression warrant an earlier full run. See 05 for the recorded user decision. Do not describe an interrupted/failed run as passing evidence.
+
+## Internal website stack added in Phase 8
+
+React/DOM 19.3.0, Vite 8.3.2, React plugin 6.1.1 and TypeScript 7.0.2 are pinned in frontend/package.json and pnpm-lock.yaml. Node 24.19.0 and pnpm 11.19.0 were used for the verified install/build. Playwright 1.63.0 and Prettier 3.9.9 are development tools. No UI framework, remote fonts, cloud API client or external database is required. `.env.example` contains optional public `VITE_API_BASE_URL`; browser and backend must use the same HTTP loopback hostname. Screens call the actual private API contracts. Official stack references: [React release](https://react.dev/blog/2026/09/09/react-19-3), [Vite runtime requirements](https://vite.dev/guide/). Published npm registry metadata/peer requirements were checked before pinning. Final frontend audit returned zero known advisories for 72 dependency entries on 2026-10-04; that is a time-bound database result.

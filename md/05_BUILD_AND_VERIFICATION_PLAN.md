@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–7 are complete and locally verified. Phases 8–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–7 are complete and locally verified; Phases 8–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–8 are complete and locally verified; Phases 9–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -21,7 +21,7 @@ The active plan now contains **14 phases**. Phases 1–7 are complete and locall
 | 5 | Backend reports, cases and evidence workflow | Backend | Complete |
 | 6 | Business workflows for all six original problems | Backend | Complete and locally verified |
 | 7 | Backend security and failure review | Backend | Complete and locally verified |
-| 8 | Frontend inspection, cleanup and complete screens | Frontend | Not started |
+| 8 | Frontend inspection, cleanup and complete screens | Frontend | Complete |
 | 9 | Frontend and backend connection | Both | Not started |
 | 10 | Frontend security and privacy review | Frontend | Not started |
 | 11 | Backend performance and resource efficiency | Backend | Not started |
@@ -262,7 +262,7 @@ Review gate:
 4. Rerun affected correctness/import/report regressions after security fixes.
 5. Record findings, fixes and remaining restrictions; passing this phase is evidence for the implemented backend scope.
 
-### Phase 8 — Frontend inspection, cleanup and complete screens (not started)
+### Phase 8 — Frontend inspection, cleanup and complete screens (complete — 2026-10-04)
 
 Owner: frontend. Outcome: Build the authorized internal application screens, ready for real backend connection. The user's landing page/design will be integrated later.
 
@@ -642,3 +642,13 @@ Fixed shutdown ownership in main: the OS data lock is released only after **both
 On 2026-10-03, the [OSV batch API](https://google.github.io/osv.dev/api/) returned **no known advisories** for all **38 registry package/version entries** in backend/uv.lock (including platform-specific/development entries). Only public package metadata was sent. No dependency changed without cause. This database check is time-bound and does not audit the operating system, native interpreter/SQLite implementation or unpublished vulnerabilities.
 
 Accepted limits: local/single-PC execution and OS-account trust; unencrypted private database/backups; finite histories, fixed-window budgets and one shared heavy worker; sampled child RSS rather than a kernel sandbox; PC-off reminders cannot run; body deadlines do not make the local HTTP listener a public Internet abuse defense; user observations do not certify external filing/IRN/legal facts. Browser security, measured backend performance, conditional physical WhatsApp and whole-product rehearsal retain Phases 10/11/13/14. No production security certification or zero-defect guarantee is made.
+
+## Phase 8 completion — 2026-10-04
+
+Created the authorized internal React website, with six navigation sections: sources; reconciliation; cases/evidence; persistent work queue and supplier follow-up history; evidence-backed payment drafts; private reports. No product mock fallback and no landing-page dependency. Login, workspace/registration/month selection, visible roles, bounded pagers, mapping into derived previews, confirmation, job states, exact financial strings, stale-history labels, explicit evidence support, review reasons and report expiry are represented. Shared API DTOs are generated from the actual backend OpenAPI. Credentials remain in HttpOnly cookies; CSRF is memory-only. Reads cancel/ignore obsolete scope replies and polling pauses in hidden tabs and stops on terminal jobs. Sign-out clears private screens immediately, including on backend unavailability, without pretending the server cookie was revoked.
+
+Client tests cover local-origin configuration, CSRF/cookie headers, stable retries after lost replies/500, explicit-conflict receipt renewal, double-submit deduplication, obsolete responses, invalid envelopes/401 and bounded report MIME/stream downloads. Six passed. Two Playwright screen tests passed using installed Chrome; all six sections, empty/error/viewer states, back navigation, keyboard focus, malformed hash recovery and 390px/1440px layouts were inspected. Screenshot review found no clipped navigation or page overflow. These two tests use explicit synthetic API fixtures and do not count as real backend journeys. Strict TypeScript compilation and Vite build passed; generated contracts are independently checked. Npm audit reported zero known advisories for the selected frontend lockfile before adding the formatter; rerun with final lock at the final gate.
+
+Verified minimal stack: React/DOM 19.3.0, Vite 8.3.2, React plugin 6.1.1, TypeScript 7.0.2, React types 19.3.0, Playwright 1.63.0, Prettier 3.9.9; exact versions and pnpm 11.19.0 lockfile. Node 24.19.0 used. All tooling is local; no cloud service or external database was introduced. The browser binary download timed out, so the verified installed Chrome channel is used. Final visual design remains deferred.
+
+Phase 9 connection gaps identified explicitly: add authorized saved-artifact listing so reports survive navigation/reload; apply registration/month filters in backend SQL before list pagination, including case/proposal joins to their originating runs; complete real six-scenario browser journeys and failure/restart checks. The existing report-by-ID/download paths remain visible and truthful while the listing is absent. Backend cases/proposals page size remains 20; the website follows it. No mocked screen success is recorded as connected functionality. Full backend regression remains scheduled after Phase 9 under the user's batch authorization.

@@ -18,3 +18,7 @@ backend/data/
 
 # Local code-intelligence/session activity is machine state, not application source.
 .infigraph/
+
+# Synthetic browser verification artifacts.
+frontend/test-results/
+frontend/playwright-report/
