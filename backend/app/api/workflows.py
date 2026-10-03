@@ -8,6 +8,7 @@ from app.api.access import authenticated, envelope, service
 from app.api.imports import request_key
 from app.contracts.workflows import (
     ArtifactCreate,
+    ArtifactListResponse,
     ArtifactResponse,
     CaseCreate,
     CaseEvidence,
@@ -50,13 +51,20 @@ def create_case(request: Request, workspace_id: UUID, payload: CaseCreate):
 def list_cases(
     request: Request,
     workspace_id: UUID,
+    registration_id: UUID | None = None,
+    period: str | None = Query(default=None, pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
     cursor: UUID | None = None,
     limit: int = Query(default=20, ge=1, le=20),
 ):
     return envelope(
         request,
         workflow(request, "cases").list_cases(
-            authenticated(request), str(workspace_id), str(cursor) if cursor else "", limit
+            authenticated(request),
+            str(workspace_id),
+            str(cursor) if cursor else "",
+            limit,
+            str(registration_id) if registration_id else None,
+            period,
         ),
     )
 
@@ -88,13 +96,20 @@ def create_proposal(request: Request, workspace_id: UUID, payload: ProposalCreat
 def list_proposals(
     request: Request,
     workspace_id: UUID,
+    registration_id: UUID | None = None,
+    period: str | None = Query(default=None, pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
     cursor: UUID | None = None,
     limit: int = Query(default=20, ge=1, le=20),
 ):
     return envelope(
         request,
         workflow(request, "proposals").list_proposals(
-            authenticated(request), str(workspace_id), str(cursor) if cursor else "", limit
+            authenticated(request),
+            str(workspace_id),
+            str(cursor) if cursor else "",
+            limit,
+            str(registration_id) if registration_id else None,
+            period,
         ),
     )
 
@@ -122,6 +137,28 @@ def create_artifact(request: Request, workspace_id: UUID, payload: ArtifactCreat
 @router.post("/artifacts/cleanup", response_model=CleanupResponse)
 def cleanup(request: Request, workspace_id: UUID, payload: CleanupCreate):
     return command(request, "reports", "cleanup", workspace_id, payload)
+
+
+@router.get("/artifacts", response_model=ArtifactListResponse)
+def list_artifacts(
+    request: Request,
+    workspace_id: UUID,
+    registration_id: UUID | None = None,
+    period: str | None = Query(default=None, pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
+    cursor: UUID | None = None,
+    limit: int = Query(default=20, ge=1, le=20),
+):
+    return envelope(
+        request,
+        workflow(request, "reports").list_artifacts(
+            authenticated(request),
+            str(workspace_id),
+            str(cursor) if cursor else "",
+            limit,
+            str(registration_id) if registration_id else None,
+            period,
+        ),
+    )
 
 
 @router.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)

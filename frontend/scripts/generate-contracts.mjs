@@ -16,14 +16,16 @@ for name in list(os.environ):
  if name.lower() in Settings.model_fields: del os.environ[name]
 Settings.model_config['env_file']=None
 from app.main import create_app
-print(json.dumps(create_app(Settings(app_env='test')).app.app.openapi()['components']['schemas'],sort_keys=True))`;
-const schemas = JSON.parse(
+from app.domain.imports import FIELDS
+print(json.dumps({'schemas':create_app(Settings(app_env='test')).app.app.openapi()['components']['schemas'],'import_fields':sorted(FIELDS)},sort_keys=True))`;
+const description = JSON.parse(
   execFileSync(python, ["-c", code], {
     cwd: backend,
     encoding: "utf8",
     windowsHide: true,
   }),
 );
+const schemas = description.schemas;
 function type(s) {
   if (s.$ref) return `Schemas[${JSON.stringify(s.$ref.split("/").at(-1))}]`;
   if (s.enum) return s.enum.map(JSON.stringify).join(" | ");
@@ -51,10 +53,11 @@ const output =
   Object.entries(schemas)
     .map(([k, v]) => `  ${JSON.stringify(k)}: ${type(v)};`)
     .join("\n") +
-  "\n}\n";
+  "\n}\n" +
+  `export const importFields = ${JSON.stringify(description.import_fields)} as const;\n`;
 const target = resolve(root, "src/contracts.ts");
 if (process.argv.includes("--check")) {
-  if (readFileSync(target, "utf8") !== output)
+  if (readFileSync(target, "utf8").replaceAll("\r\n", "\n") !== output)
     throw new Error(
       "Backend contract changed; run pnpm generate:api and review the diff.",
     );

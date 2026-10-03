@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -38,7 +38,7 @@ Invalid credentials are a generic 401 for unknown/inactive users or a wrong pass
 
 Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
 
-The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Phase 5 cases, proposals, report jobs and downloads are implemented. WhatsApp routes/capabilities remain later-phase contracts; those catalog entries do not imply they exist. Current typed response models generate OpenAPI; preserve these names when attaching the supplied website.
+The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Phase 5 cases, proposals, report jobs and downloads are implemented. WhatsApp routes/capabilities remain later-phase contracts; those catalog entries do not imply they exist. Current typed response models generate OpenAPI; the connected internal website generates its DTOs from these same models.
 
 ## Shared enums
 
@@ -371,3 +371,13 @@ A future supplier-filing observation or future recorded claim/reversal period ca
 ## Phase 7 request envelope errors
 
 All ordinary POST/PUT/PATCH bodies are bounded before JSON processing. REQUEST_TIMEOUT is a sanitized HTTP 408 with the normal error/meta envelope when the total receive deadline is exceeded. No completed command is claimed. BAD_REQUEST (400) covers actual/declaration byte mismatch or ambiguous Content-Type; PAYLOAD_TOO_LARGE remains 413. Duplicate/nested/escaped JSON keys, malformed JSON/encoding and NaN/Infinity constants produce VALIDATION_ERROR (422). These replies retain no-store, server request IDs and allowed-origin headers. Existing source/role/version/CSRF contracts are unchanged. The environment example includes MAX_API_RECEIVE_SECONDS=20; uploads retain their separate deadline and authorization order.
+
+## Connected website/list contract — Phase 9
+
+GET runs, cases, proposals, actions and artifacts accept optional UUID registration_id and YYYY-MM period, matching existing import-list validation. Filtering occurs in bound SQL before ordering/cursor/page limit; it must not be a browser-only filter after pagination. Cases join their original result/run; proposals their run. Artifact filters resolve all four source kinds without broadening workspace access. Nonexistent registration yields an empty scoped page; a foreign workspace remains opaque 404. Existing callers may omit both filters and retain prior workspace-wide behavior. Cursor remains UUID, limit remains <=100 for runs and <=20 for cases/proposals/actions/artifacts.
+
+GET /api/v1/workspaces/{workspace_id}/artifacts returns ArtifactListResponse: data.artifacts (existing ArtifactData metadata only) plus data.next_cursor. The response contains no BLOB, content, raw snapshot or server path. Expired/state/source-current labels follow the same detail semantics. Download still requires the private authenticated route and explicit historical opt-in for stale evidence PDF/row-error CSV; stale proposal CSV remains denied. No public link is introduced.
+
+frontend/scripts/generate-contracts.mjs derives 76 DTO schemas from actual OpenAPI and the canonical importFields from app.domain.imports.FIELDS. check:contracts detects unintended drift, normalizing checkout line endings. No handwritten backend enum/schema substitute and no downloaded API SDK is required. Case facts remain backend-validated dictionaries; website inputs match the five concrete backend fact models and each phase's conservative observation rules.
+
+HTTP failures stay error envelopes. Browser supplies cookies, in-memory X-CSRF-Token and UUID Idempotency-Key for mutations. It retains unchanged uncertain-write receipts for explicit retries and does not silently retry writes. Receipt memory is cleared on session reset; it is not a durable cross-refresh retry log. Read cancellation is separate from write uncertainty. Exact decimal amounts remain strings/BigInt formatting; unknown remains unknown. User preferences contain only identity-scoped selection IDs/month, are not access authority, and are cleared on sign-out/expiry. Error and stale-source labels never become false saved/sent/filed assertions.

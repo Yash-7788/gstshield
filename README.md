@@ -1,6 +1,6 @@
 # GSTShield
 
-Hackathon website with a local FastAPI backend and private SQLite storage. Phases 1–7 implement and verify the backend workflows/security; Phase 8 supplies the internal React workspace. Phase 9 will complete and verify the real website/backend journeys. WhatsApp remains Phase 13, and the separately supplied landing page/design comes later. See [frontend setup](frontend/README.md) and [backend setup](backend/README.md).
+Hackathon website with a local FastAPI backend and private SQLite storage. Phases 1–7 implement and verify the backend workflows/security; Phase 8 supplies the internal React workspace. Phase 9 connects and verifies the real website/backend journeys. WhatsApp remains Phase 13, and the separately supplied landing page/design comes later. See [frontend setup](frontend/README.md) and [backend setup](backend/README.md).
 
 ## Start here
 
@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–7 are complete and locally verified; Phases 8–14 are not started.
+The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–9 are complete and locally verified; full regression: 314 passed, 1 skipped. The verification record is in 05. Phases 10–14 remain ahead.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -48,7 +48,7 @@ The expanded plan has **14 phases** with separate backend, frontend, security, c
 13. WhatsApp connection and channel review.
 14. Whole-application regression and hackathon rehearsal.
 
-The [build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) contains each phase's detailed tasks and review gates. The frontend starts from the supplied website once received. Basic security and responsiveness apply during feature work; focused review phases do not defer them.
+The [build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) contains each phase's detailed tasks and review gates. The internal React website is implemented; the separately supplied landing page/design will be integrated later. Basic security and responsiveness apply during feature work; focused review phases do not defer them.
 
 ## Active first-demo scope
 
@@ -63,7 +63,7 @@ gstshield/
     tests/                    # unit, integration and synthetic fixtures
     pyproject.toml            # runtime and development dependencies
     .env.example
-  frontend/                   # reserved for the supplied website
+  frontend/                   # connected internal React website
 ```
 
 Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Phase 5 cases, proposals and private reports are implemented. Phase 6 business automation is complete and locally verified; frontend wiring and WhatsApp remain future phases.
@@ -71,4 +71,8 @@ Run instructions and phase status are in [backend/README.md](backend/README.md).
 
 ## Business workflow roadmap correction
 
-Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. Frontend screens/connection remain Phases 8–9, real WhatsApp remains Phase 13 and combined acceptance remains Phase 14. Phases 7–14 are not started.
+Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. The internal screens/connection are delivered by Phases 8–9. Real WhatsApp remains Phase 13, combined acceptance Phase 14, and focused security/performance Phases 10–12.
+
+## Website connection verification
+
+Phases 7–9 are complete: backend security checks, internal workspace screens and actual browser/API workflows. Full backend regression passed 314 tests (1 platform-privilege skip); eight browser tests, six API-client tests and the built-preview CSP upload/confirmation test passed. [Build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, evidence and remaining phases. Start the website from frontend with `pnpm dev` alongside the local backend. Landing-page design and real WhatsApp remain later work.

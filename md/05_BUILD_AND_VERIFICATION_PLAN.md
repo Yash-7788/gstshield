@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–8 are complete and locally verified; Phases 9–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–9 are complete and locally verified, including full post-Phase-9 regression. Phases 10–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -22,7 +22,7 @@ The active plan now contains **14 phases**. Phases 1–8 are complete and locall
 | 6 | Business workflows for all six original problems | Backend | Complete and locally verified |
 | 7 | Backend security and failure review | Backend | Complete and locally verified |
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Complete |
-| 9 | Frontend and backend connection | Both | Not started |
+| 9 | Frontend and backend connection | Both | Complete |
 | 10 | Frontend security and privacy review | Frontend | Not started |
 | 11 | Backend performance and resource efficiency | Backend | Not started |
 | 12 | Frontend smoothness, speed and usability | Frontend | Not started |
@@ -285,7 +285,7 @@ Review gate:
 4. Check that money/context/status labels align with backend meanings and unavailable actions cannot appear successful.
 5. Record the inspected stack and frontend environment example without publishing backend secrets.
 
-### Phase 9 — Frontend and backend connection (not started)
+### Phase 9 — Frontend and backend connection (complete — 2026-10-04)
 
 Owner: both. Outcome: Make each website action use the real local backend and display the same persisted truth.
 
@@ -652,3 +652,25 @@ Client tests cover local-origin configuration, CSRF/cookie headers, stable retri
 Verified minimal stack: React/DOM 19.3.0, Vite 8.3.2, React plugin 6.1.1, TypeScript 7.0.2, React types 19.3.0, Playwright 1.63.0, Prettier 3.9.9; exact versions and pnpm 11.19.0 lockfile. Node 24.19.0 used. All tooling is local; no cloud service or external database was introduced. The browser binary download timed out, so the verified installed Chrome channel is used. Final visual design remains deferred.
 
 Phase 9 connection gaps identified explicitly: add authorized saved-artifact listing so reports survive navigation/reload; apply registration/month filters in backend SQL before list pagination, including case/proposal joins to their originating runs; complete real six-scenario browser journeys and failure/restart checks. The existing report-by-ID/download paths remain visible and truthful while the listing is absent. Backend cases/proposals page size remains 20; the website follows it. No mocked screen success is recorded as connected functionality. Full backend regression remains scheduled after Phase 9 under the user's batch authorization.
+
+## Phase 9 connection verification — 2026-10-04
+
+All browser operations use the real local API. The six real Playwright journey tests passed in 1.7 minutes using an isolated temporary SQLite/backend and installed Chrome. The tests exercise the six original business problem categories across several persisted months: missing ₹20,000 supplier invoice → private draft → explicitly unverified contact attempt → newer confirmed 2B → reuse the original purchase import and action/history; MSME acceptance and payment observations → reviewed balance → proposal approval → private CSV; recorded prior credit claim/reversal and later supplier filing evidence → reclaim candidate → human review → explicitly unverified external observation; IRN format-only review; notice document support and evidence PDF; and ongoing queue/history/reminder/report access. Generated reports download through authenticated bounded endpoints and remain discoverable after browser refresh.
+
+Additional browser checks use actual role-scoped workspaces, month selection, delayed replies from the prior selection, sign-out when the backend is unavailable, a forced real backend process restart with the same private temporary storage, server session revocation, a contested result version (409), explicit reload/retry, updated recorded-tax summary and a reconciliation PDF. No API reply is replaced with a sample in the six real journeys. One delayed-response test holds and then forwards the actual server reply; one sign-out fault aborts the request deliberately. The two separate screen tests still use explicitly declared empty fixtures and are not business-integration proof.
+
+Connection fixes: backend list queries accept optional registration_id/period and apply them before UUID pagination. Cases derive accounting period through their originating result/run; proposals through their run; actions retain their own registration/month. The new GET artifacts list joins the actual originating import/run/case/proposal and returns only metadata, with live workspace authorization and page size <=20. It selects IDs then processes one snapshot at a time, without fetching report BLOBs. All other endpoint semantics and schema version 5 remain unchanged. The independent endpoint access inventory now covers 34 workspace operations (19 reads, 15 writes). Twelve targeted backend tests passed, including all four report source kinds, two registrations/two months, page size 1, opaque missing scope, invalid filters and the complete access matrix.
+
+Browser correctness fixes: source upload details no longer collapse when a delayed source list arrives; choosing a derived mapped preview selects its actual new ID; reviewer refresh also updates comparison summaries; stale reviews have an explicit reload path; evidence checkboxes show the recorded observation kind, avoiding blind UUID selection. Upload mapping fields are generated directly from the backend canonical field set, eliminating unsupported mapping options. A user-scoped sessionStorage preference stores only selected workspace/registration IDs and month for refresh; it holds no invoice, credentials or CSRF and is cleared on sign-out/expiry. Reads use scope-keyed state and abort old requests. Mutations use live expected versions and stable UUID receipts for interrupted unchanged explicit retries; double clicks share one in-flight request. Report downloads remain inside the body deadline/session cancellation boundary and validate MIME plus the 5 MiB byte cap. Visible work queues refresh every 10 seconds; pending job polling stops on terminal states and pauses while hidden. Preview's CSP includes the validated configured local API port.
+
+Added pinned website CI checks for frozen install, generated contract drift, formatting, unit tests, strict build and real isolated browser journeys. Linux CI is a temporary test runner, not Ubuntu hosting or a change to the Windows local deployment. Backend retains its existing Windows/Linux regression job. The combined eight-browser-test suite passed in 1.7 minutes. A separate built-preview smoke test passed in 18.5 seconds, proving actual sign-in/upload/parse/confirm/sign-out under CSP with the configured API port. Client unit tests passed (6), frozen install, 76-schema/canonical-field drift checks, strict build and formatting passed, and npm audit returned zero known advisories for the locked 72 entries. Full backend regression passed: 314 passed, 1 skipped in 699.66 seconds (11 minutes 39 seconds). The skip needs Windows symlink privilege; the junction check passes. Frozen uv sync checked 37 packages, Ruff lint/format checked 71 files, Python compileall and Git whitespace checks passed. Phase 9 is complete for this scope. Landing-page design, broader frontend security/performance, measured backend performance, real WhatsApp and the final rehearsal remain Phases 10–14 as previously planned. No government fetch/submission, bank transfer, guaranteed recovery or legal/IRN certification was introduced.
+
+## Post-Phase-9 final verification and source size — 2026-10-04
+
+Full backend: **314 passed, 1 skipped, 699.66 seconds**. Combined browser: **8 passed, 1.7 minutes** (six real journeys plus two explicit screen fixtures). Built CSP preview: **1 passed, 18.5 seconds**. API-client tests: **6 passed**. Frozen dependency install/sync, generated 76-schema and canonical mapping-field alignment, strict TypeScript/Vite build, Ruff/Python compilation, frontend formatting and Git whitespace checks passed. Frontend audit: zero known advisories, 72 locked dependency entries. Build JS was approximately 282.65 kB / 83.56 kB gzip; this is a build size, not a latency benchmark or performance certification.
+
+Application physical source lines: backend/app Python plus frontend/src TS/TSX/CSS, including blanks/comments and the generated DTO file. Tests include backend/tests, frontend/tests and the isolated test-server harness; the generator is development tooling. Documentation, lockfiles, vendor code, virtual environments, binaries/build outputs and repository configuration are excluded from these source counts. Exact final counts are recorded below. More lines are not a quality metric; the browser/backend contracts and passing journeys are the evidence.
+
+Phases 7, 8 and 9 are complete. Phases 10 frontend security/privacy, 11 backend measurement, 12 frontend efficiency, 13 conditional physical WhatsApp and 14 whole-product rehearsal remain pending. User landing page/design is still separate later work. These passing gates do not promise zero defects, production certification or guaranteed tax recovery.
+
+Final physical source counts: **12,743 application lines excluding tests; 6,947 test/support lines; 19,690 including tests.** Generated DTOs are 80 of the application lines. Generator/build configuration remains outside those counts.

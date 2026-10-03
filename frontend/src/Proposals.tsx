@@ -47,7 +47,10 @@ function Builder({
 
   const cases = useResource<Schemas["CaseListData"]>(
     c.api,
-    path(c, `cases?limit=20${caseCursor ? `&cursor=${caseCursor}` : ""}`),
+    path(
+      c,
+      `cases?limit=20&registration_id=${c.registration.id}&period=${c.period}${caseCursor ? `&cursor=${caseCursor}` : ""}`,
+    ),
   );
 
   return (
@@ -82,7 +85,7 @@ function Builder({
             return;
           }
           if (
-            lines.length >= 100 ||
+            lines.length >= 200 ||
             lines.some(
               (l) => l.result.id === result.id && l.purpose === v.purpose,
             )
@@ -90,7 +93,7 @@ function Builder({
             void action.run(() =>
               Promise.reject(
                 new Error(
-                  "This allocation already exists or the 100-allocation limit was reached.",
+                  "This allocation already exists or the 200-allocation limit was reached.",
                 ),
               ),
             );
@@ -263,12 +266,18 @@ export default function Proposals({ c }: { c: Context }) {
 
   const list = useResource<Schemas["ProposalListData"]>(
     c.api,
-    path(c, `proposals?limit=20${cursor ? `&cursor=${cursor}` : ""}`),
+    path(
+      c,
+      `proposals?limit=20&registration_id=${c.registration.id}&period=${c.period}${cursor ? `&cursor=${cursor}` : ""}`,
+    ),
   );
 
   const runs = useResource<Schemas["RunListData"]>(
     c.api,
-    path(c, "runs?limit=100"),
+    path(
+      c,
+      `runs?limit=100&registration_id=${c.registration.id}&period=${c.period}`,
+    ),
   );
   const run = runs.data?.runs.find((x) => x.id === runId);
 
@@ -372,6 +381,9 @@ export default function Proposals({ c }: { c: Context }) {
       {item && (
         <article>
           <h2>Payment proposal</h2>
+          <button className="secondary" onClick={detail.reload}>
+            Refresh proposal
+          </button>
           <Badge value={item.state} />
           <Notice>
             This draft has not transferred money. CSV export is available in

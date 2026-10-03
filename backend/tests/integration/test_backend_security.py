@@ -110,6 +110,7 @@ def test_all_workspace_route_families_enforce_identity_scope_and_live_role(accou
             "/cases/{id}",
             "/proposals",
             "/proposals/{id}",
+            "/artifacts",
             "/artifacts/{id}",
             "/artifacts/{id}/download",
             "/actions",

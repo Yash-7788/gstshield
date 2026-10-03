@@ -18,11 +18,6 @@ import {
 
 import type { Context } from "./shared";
 
-type ArtifactList = {
-  artifacts: Schemas["ArtifactData"][];
-  next_cursor: string | null;
-};
-
 export default function Reports({ c }: { c: Context }) {
   const [cursor, setCursor] = useState("");
   const [id, setId] = useState("");
@@ -31,9 +26,12 @@ export default function Reports({ c }: { c: Context }) {
   const [historical, setHistorical] = useState(false);
   const action = useCommand();
 
-  const list = useResource<ArtifactList>(
+  const list = useResource<Schemas["ArtifactListData"]>(
     c.api,
-    path(c, `artifacts?limit=20${cursor ? `&cursor=${cursor}` : ""}`),
+    path(
+      c,
+      `artifacts?limit=20&registration_id=${c.registration.id}&period=${c.period}${cursor ? `&cursor=${cursor}` : ""}`,
+    ),
   );
 
   const endpoint =
@@ -57,7 +55,7 @@ export default function Reports({ c }: { c: Context }) {
     c.api,
     path(
       c,
-      `${endpoint}?limit=20${sourceCursor ? `&cursor=${sourceCursor}` : ""}`,
+      `${endpoint}?registration_id=${c.registration.id}&period=${c.period}&limit=20${sourceCursor ? `&cursor=${sourceCursor}` : ""}`,
     ),
   );
 
@@ -244,6 +242,9 @@ export default function Reports({ c }: { c: Context }) {
         <article>
           <h2>{item.kind.replaceAll("_", " ")}</h2>
           <Badge value={item.state} />
+          <button className="secondary" onClick={detail.reload}>
+            Refresh report status
+          </button>
           <Badge value={item.provenance} />
           <Facts
             values={{

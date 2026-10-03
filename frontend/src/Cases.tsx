@@ -391,12 +391,18 @@ export default function Cases({ c }: { c: Context }) {
 
   const list = useResource<Schemas["CaseListData"]>(
     c.api,
-    path(c, `cases?limit=20${cursor ? `&cursor=${cursor}` : ""}`),
+    path(
+      c,
+      `cases?limit=20&registration_id=${c.registration.id}&period=${c.period}${cursor ? `&cursor=${cursor}` : ""}`,
+    ),
   );
 
   const runs = useResource<Schemas["RunListData"]>(
     c.api,
-    path(c, "runs?limit=100"),
+    path(
+      c,
+      `runs?limit=100&registration_id=${c.registration.id}&period=${c.period}`,
+    ),
   );
 
   const results = useResource<Schemas["ResultListData"]>(

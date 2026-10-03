@@ -441,15 +441,38 @@ class ActionService(WorkflowService):
             self.authorize(connection, identity, workspace)
         self.refresh(workspace)
 
-    def list_actions(self, identity, workspace, cursor, limit, state=None, due_only=False):
+    def list_actions(
+        self,
+        identity,
+        workspace,
+        cursor,
+        limit,
+        state=None,
+        due_only=False,
+        registration=None,
+        period=None,
+    ):
         self.readable_refresh(identity, workspace)
         with self.store.transaction(write=False) as connection:
             self.authorize(connection, identity, workspace)
             rows = connection.execute(
                 "SELECT * FROM business_actions WHERE workspace_id=? AND id>? "
                 "AND (? IS NULL OR state=?) AND (?=0 OR (state!='CLOSED' AND due_at<=?)) "
+                "AND (? IS NULL OR registration_id=?) AND (? IS NULL OR period=?) "
                 "ORDER BY id LIMIT ?",
-                (workspace, cursor, state, state, int(due_only), int(time.time()), limit + 1),
+                (
+                    workspace,
+                    cursor,
+                    state,
+                    state,
+                    int(due_only),
+                    int(time.time()),
+                    registration,
+                    registration,
+                    period,
+                    period,
+                    limit + 1,
+                ),
             ).fetchall()
             return {
                 "actions": [self.detail_row(connection, row) for row in rows[:limit]],

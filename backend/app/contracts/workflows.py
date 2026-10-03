@@ -257,3 +257,13 @@ class CleanupData(StrictModel):
 class CleanupResponse(StrictModel):
     data: CleanupData
     meta: Meta
+
+
+class ArtifactListData(StrictModel):
+    artifacts: list[ArtifactData]
+    next_cursor: UUID | None
+
+
+class ArtifactListResponse(StrictModel):
+    data: ArtifactListData
+    meta: Meta

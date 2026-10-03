@@ -16,7 +16,8 @@
     "test": "node --test tests/client.test.mjs",
     "test:browser": "playwright test",
     "format": "prettier --write src scripts tests *.mjs *.json index.html",
-    "check:format": "prettier --check src scripts tests *.mjs *.json index.html"
+    "check:format": "prettier --check src scripts tests *.mjs *.json index.html",
+    "test:preview": "node --env-file=tests/preview.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "react": "19.3.0",

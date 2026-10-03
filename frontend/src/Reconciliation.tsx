@@ -139,9 +139,12 @@ export function Results({
       {item && (
         <article>
           <h3>Review invoice {text(item.canonical.invoice_number)}</h3>
+          <button className="secondary" onClick={detail.reload}>
+            Reload result before retrying
+          </button>
           <Facts values={item.canonical} />
           <Notice>
-            {item.reason_codes.join(" Â· ") ||
+            {item.reason_codes.join(" · ") ||
               "No discrepancy reasons recorded."}{" "}
             A match is not a legal credit approval.
           </Notice>
@@ -201,7 +204,7 @@ export function Results({
                     .filter((x) => x.hard_gates_passed && x.currently_available)
                     .map((x) => (
                       <option key={x.id} value={x.id}>
-                        {x.original_invoice_number} Â· similarity {x.score}
+                        {x.original_invoice_number} · similarity {x.score}
                       </option>
                     ))}
                 </select>
@@ -234,7 +237,10 @@ export default function Reconciliation({ c }: { c: Context }) {
 
   const runs = useResource<Schemas["RunListData"]>(
     c.api,
-    path(c, `runs?limit=20${cursor ? `&cursor=${cursor}` : ""}`),
+    path(
+      c,
+      `runs?limit=20&registration_id=${c.registration.id}&period=${c.period}${cursor ? `&cursor=${cursor}` : ""}`,
+    ),
   );
 
   const detail = useResource<Schemas["RunData"]>(
@@ -281,7 +287,7 @@ export default function Reconciliation({ c }: { c: Context }) {
                   .filter((i) => i.kind === "PURCHASE")
                   .map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.id.slice(0, 8)} Â· {i.accepted_rows} rows
+                      {i.id.slice(0, 8)} · {i.accepted_rows} rows
                     </option>
                   ))}
               </select>
@@ -294,7 +300,7 @@ export default function Reconciliation({ c }: { c: Context }) {
                   .filter((i) => i.kind === "PORTAL_2B")
                   .map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.id.slice(0, 8)} Â· {i.accepted_rows} rows
+                      {i.id.slice(0, 8)} · {i.accepted_rows} rows
                     </option>
                   ))}
               </select>
@@ -341,7 +347,7 @@ export default function Reconciliation({ c }: { c: Context }) {
                   .map((r) => (
                     <tr key={r.id}>
                       <td>
-                        Revision {r.revision} Â· {r.id.slice(0, 8)}
+                        Revision {r.revision} · {r.id.slice(0, 8)}
                       </td>
                       <td>
                         <Badge value={r.state} /> <Badge value={r.provenance} />

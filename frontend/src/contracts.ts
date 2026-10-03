@@ -9,6 +9,8 @@ export interface Schemas {
   "Allocation": { "amount": string; "document_id": string; "purpose": "SUPPLIER_PROPOSED" | "INTERNAL_RESERVE_ILLUSTRATIVE"; };
   "ArtifactCreate": { "expected_version": number; "kind": "RECONCILIATION_PDF" | "EVIDENCE_PDF" | "PROPOSAL_CSV" | "ROW_ERRORS_CSV"; "selected_result_ids"?: Array<string>; "source_id": string; };
   "ArtifactData": { "created_at": number; "error_code": string | null; "expires_at": number; "filename": string; "id": string; "job_id": string; "kind": "RECONCILIATION_PDF" | "EVIDENCE_PDF" | "PROPOSAL_CSV" | "ROW_ERRORS_CSV"; "manifest": Record<string, unknown>; "mime_type": string; "provenance": "USER_PROVIDED" | "SYNTHETIC_DEMO"; "sha256": string | null; "size_bytes": number | null; "snapshot_sha256": string; "source_id": string; "source_version": number; "sources_current": boolean; "state": "PENDING" | "READY" | "FAILED" | "EXPIRED"; "updated_at": number; "workspace_id": string; };
+  "ArtifactListData": { "artifacts": Array<Schemas["ArtifactData"]>; "next_cursor": string | null; };
+  "ArtifactListResponse": { "data": Schemas["ArtifactListData"]; "meta": Schemas["Meta"]; };
   "ArtifactResponse": { "data": Schemas["ArtifactData"]; "meta": Schemas["Meta"]; };
   "AutomationData": { "channel_delivery"?: "NOT_IMPLEMENTED"; "checked_at": number | null; "error_code": string | null; "interval_seconds": number; "pending_sources": number; };
   "BalanceObservation": { "document_id": string; "evidence_case_id": string; "expected_case_version": number; };
@@ -75,3 +77,4 @@ export interface Schemas {
   "WorkspaceData": { "created_at": string; "id": string; "name": string; "role": "OWNER" | "REVIEWER" | "VIEWER"; "version": number; };
   "WorkspaceResponse": { "data": Array<Schemas["WorkspaceData"]>; "meta": Schemas["Meta"]; };
 }
+export const importFields = ["cess","cgst","document_type","gross_total","igst","invoice_date","invoice_number","irn","other_charges","period","recipient_gstin","round_off","sgst","supplier_gstin","supplier_name","taxable_value","total_tax","voucher_id"] as const;

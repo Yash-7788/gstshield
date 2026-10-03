@@ -23,7 +23,7 @@ if (!(Test-Path -LiteralPath '.env')) {
 
 The ignored `.tooling/` directory contains this PC's isolated uv installation. Teammates install [uv](https://docs.astral.sh/uv/getting-started/installation/) and use `uv sync --frozen` / `uv run --frozen python -m app` from `backend/`. Python 3.13.16 is selected by `.python-version`; uv can obtain that runtime. Do not use the PC's unrelated Python 3.14 interpreter for this project.
 
-Open [liveness](http://127.0.0.1:8000/health/live), [readiness](http://127.0.0.1:8000/health/ready) or [local API docs](http://127.0.0.1:8000/docs). Stop the process with Ctrl+C. The supplied frontend is not present yet; the configured website origin defaults to localhost:3000.
+Open [liveness](http://127.0.0.1:8000/health/live), [readiness](http://127.0.0.1:8000/health/ready) or [local API docs](http://127.0.0.1:8000/docs). Stop the process with Ctrl+C. Start the internal website with the frontend README instructions; the configured website origin defaults to localhost:3000. Keep browser and API on the same hostname.
 
 Use the supported launcher rather than an independent Uvicorn command that overrides HOST/PORT/workers or enables access logs. It reads the checked configuration and deliberately uses one worker, no reload, no proxy-header trust and no URL access logging.
 
@@ -112,7 +112,7 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 | 13 | WhatsApp connection and channel review | Not started |
 | 14 | Whole-application regression and hackathon rehearsal | Not started |
 
-The expanded plan has 14 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 7 and 11 provide focused backend security/failure and measured performance reviews. Frontend phases give the supplied website equal attention. The dependency order does not reduce attention to later work.
+The expanded plan has 14 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 7 and 11 provide focused backend security/failure and measured performance reviews. Frontend phases give the internal website equal attention; the separately supplied landing page/design is later work. The dependency order does not reduce attention to later work.
 
 Real WhatsApp needs Meta's API and an internet-reachable HTTPS callback. A purely offline/loopback backend cannot receive real phone callbacks. No tunnel or hosted service is provisioned. This decision belongs to the later integration phase.
 
@@ -172,7 +172,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phase 6 is complete and locally verified; Phases 7–14 remain pending, including focused security review, frontend integration and WhatsApp.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phase 6 is complete and locally verified; Phase 7 security checks and Phases 8–9 internal website integration are implemented/verified; Phases 10–14 remain ahead.
 
 ## Create local accounts and context
 
@@ -202,7 +202,7 @@ Offline administration has the local operator's filesystem authority. It is not 
 
 ## Website access contract
 
-The supplied frontend is pending. The implemented API flow is POST /api/v1/auth/login with JSON username/password and Origin, GET /api/v1/auth/session after reload, then workspace/registration reads. Use credentials:include in the browser client. The HttpOnly cookie is never copied to JavaScript storage.
+The internal website uses this implemented API flow: POST /api/v1/auth/login with JSON username/password and Origin, GET /api/v1/auth/session after reload, then workspace/registration reads. Use credentials:include in the browser client. The HttpOnly cookie is never copied to JavaScript storage.
 
 Session JSON carries user_id, username, expires_at and csrf_token. Hold CSRF in memory and attach X-CSRF-Token plus the configured Origin to logout and later private mutations. A 401 requires sign-in; a 429/503 follows Retry-After with a bounded retry policy. Current lists are finite from provisioned scope limits; future financial lists paginate.
 
@@ -330,7 +330,7 @@ The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, coverag
 
 ## Business workflow roadmap correction
 
-Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. Frontend screens/connection remain Phases 8–9, real WhatsApp remains Phase 13 and combined acceptance remains Phase 14. Phases 7–14 are not started.
+Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. The internal website is implemented and connected through Phases 8–9; real WhatsApp remains Phase 13 and combined acceptance Phase 14. Phases 10–14 remain ahead.
 
 
 ## Phase 6 local work queue and monitor
@@ -349,3 +349,7 @@ No new dependency, hosted server, external database, government integration or W
 ## Phase 7 backend security/failure review
 
 Complete locally: 230 affected tests passed, one Windows privilege skip, plus frozen dependencies, lint/format/syntax and whitespace checks. Ordinary bodies now have a 20-second total receive deadline, strict framing/JSON ambiguity checks and safe errors. Shutdown retains storage ownership until both background threads stop. All 33 workspace operations have an access scenario. See 05/06 for findings, dated dependency advisory evidence and accepted local limits. Phases 8–9 now build/connect the internal website; the landing page is supplied later. Full regression follows Phase 9.
+
+## Phase 9 local website handoff
+
+The internal website uses the existing opaque session/CSRF protocol and all business services. Lists now support optional registration/month filters before pagination; GET artifacts exposes bounded authorized metadata without BLOBs. Schema remains version 5; no storage migration is required. Full regression passed 314 tests, 1 Windows symlink-privilege skip in 11:39. The real browser suite and built-preview check also pass; see frontend/README and 05.

@@ -353,6 +353,38 @@ class ReportService(WorkflowService):
         self.imports.wakeup.set()
         return response
 
+    def list_artifacts(self, identity, workspace, cursor, limit, registration=None, period=None):
+        with self.store.transaction(write=False) as connection:
+            self.authorize(connection, identity, workspace)
+            # Select IDs first, then one snapshot at a time. Never load report BLOBs for lists.
+            rows = connection.execute(
+                "SELECT a.id FROM artifacts a "
+                "LEFT JOIN imports i ON i.workspace_id=a.workspace_id AND i.id=a.import_id "
+                "LEFT JOIN cases c ON c.workspace_id=a.workspace_id AND c.id=a.case_id "
+                "LEFT JOIN run_results rr ON rr.workspace_id=c.workspace_id AND rr.id=c.result_id "
+                "LEFT JOIN proposals p ON p.workspace_id=a.workspace_id AND p.id=a.proposal_id "
+                "LEFT JOIN runs r ON r.workspace_id=a.workspace_id "
+                "AND r.id=coalesce(a.run_id,rr.run_id,p.run_id) "
+                "WHERE a.workspace_id=? AND a.id>? "
+                "AND (? IS NULL OR coalesce(i.registration_id,r.registration_id)=?) "
+                "AND (? IS NULL OR coalesce(i.period,r.period)=?) ORDER BY a.id LIMIT ?",
+                (workspace, cursor, registration, registration, period, period, limit + 1),
+            ).fetchall()
+            metadata = []
+            for row in rows[:limit]:
+                artifact = connection.execute(
+                    "SELECT id,workspace_id,kind,run_id,case_id,proposal_id,import_id,"
+                    "snapshot_json,snapshot_sha256,filename,mime_type,state,sha256,size_bytes,"
+                    "error_code,expires_at,created_at,updated_at FROM artifacts "
+                    "WHERE workspace_id=? AND id=?",
+                    (workspace, row["id"]),
+                ).fetchone()
+                metadata.append(self.detail_row(connection, artifact))
+            return {
+                "artifacts": metadata,
+                "next_cursor": rows[limit - 1]["id"] if len(rows) > limit else None,
+            }
+
     def detail(self, identity, workspace, identifier):
         with self.store.transaction(write=False) as connection:
             self.authorize(connection, identity, workspace)

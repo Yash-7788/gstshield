@@ -1,6 +1,6 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
@@ -8,9 +8,9 @@ Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_A
 
 Follow the expanded [14-phase plan](05_BUILD_AND_VERIFICATION_PLAN.md): Phase 8 builds the authorized internal website, Phase 9 connects real backend operations, Phase 10 reviews browser security, Phase 12 measures smoothness, Phase 13 proves WhatsApp and Phase 14 rehearses both channels. Backend reports are Phase 5; backend security/performance are Phases 7/11. Safe rendering, scoped state and bounded requests apply when functionality is introduced, not only in later review phases. Phase 2 selects local accounts, HTTP-only browser cookies and CSRF-protected mutations. No hosted auth SDK is needed.
 
-## Preserve and connect the supplied website
+## Internal application and later landing-page integration
 
-The website has not yet been supplied. Do not choose a new frontend framework or redesign it based on the original report's Next.js 14 suggestion. On receipt, inspect its manifest, routing, build command, deployment requirements, existing authentication, fixture data and screens. Record actual framework/runtime/package versions in 02.
+The user authorized a new internal application while reserving the separately supplied landing page/design for later. The connected React/Vite/TypeScript workspace and exact pinned versions are recorded in 02. When the landing page arrives, inspect its actual files and routing before integration; preserve compatible design assets. The original Next.js 14 suggestion does not override the implemented stack.
 
 Build one API client around the actual framework. Generate TypeScript types from the backend OpenAPI document after contracts stabilize. Keep monetary values as strings; use decimal-aware display or server-formatted values. A JavaScript Number must not become the source of financial calculation.
 
@@ -35,7 +35,7 @@ Local accounts are provisioned with the offline operator command. POST /api/v1/a
 
 Use the same HTTP hostname for website and API: localhost:3000 and localhost:8000 by default. Different ports are permitted; mixing localhost and 127.0.0.1 breaks the intended SameSite cookie flow. CORS allows exact configured origins and credentials; it never grants membership by itself.
 
-Implemented backend operations are login, session recovery, logout, workspace list and registration list. The broader feature table is a phased contract plan, not a list of working routes. The supplied frontend is not present and no browser UI wiring has been claimed complete.
+Phases 1–9 now implement the local import/run/review/case/proposal/action/report operations and connected website listed in the completion map below. WhatsApp catalog entries remain future contracts. Current OpenAPI and the recorded real browser tests define delivered routes, not earlier planning tables alone.
 
 On initial load, recover the session once. If authenticated, load workspaces and only then registrations for the selected permitted workspace. A 404 on a scope picker should remove the stale selection and refetch allowed context. A 429/503 follows Retry-After without an unbounded retry loop. Failed sign-in does not expose which usernames exist.
 
@@ -266,7 +266,7 @@ Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND
 
 ## Phase 6 screen and channel handoff
 
-The backend operations now exist; website screens still require the supplied frontend and Phases 8–9. Use one credentialed API client against the live OpenAPI and the exact models in 08. Display recorded GST needing attention, missing facts, provenance, source freshness and the local processing status separately from legally recoverable money. A pending derivation/error cannot be displayed as an empty all-clear queue.
+The backend operations and connected internal website now exist through Phases 8–9; the separately supplied landing page/design remains later work. Use one credentialed API client against the live OpenAPI and the exact models in 08. Display recorded GST needing attention, missing facts, provenance, source freshness and the local processing status separately from legally recoverable money. A pending derivation/error cannot be displayed as an empty all-clear queue.
 
 | Website flow | Shared backend authority | Required UI behavior |
 |---|---|---|
@@ -282,3 +282,21 @@ The backend operations now exist; website screens still require the supplied fro
 New writes require the same cookie, Origin/CSRF, live OWNER/REVIEWER role and UUID idempotency key as existing workflows. Handle 409 by fetching fresh state; replaying a receipt is not a fresh status read. An update is a complete command: omitted nullable assignment/date defaults clear them. Retain values deliberately when only changing state. VIEWER is read-only; frontend hiding is not backend authorization.
 
 Phase 13 must adapt to these same action IDs, drafts, versions and audit history. It must add recipient consent/linking, provider credentials, reachable callback, account/window/template/budget proof and a bounded outbox before sending. Phase 6 has no phone send endpoint and no delivery acknowledgement. Future provider events must remain separate from USER_REPORTED_ATTEMPT_UNVERIFIED and from invoice correction or legal recovery.
+
+## Internal website completed in Phases 8–9
+
+The new frontend is a React/Vite/TypeScript internal application. The user's separately supplied landing page/design is still later work. There is no product mock fallback. All six sections use shared private backend sessions and workspace/registration/month context:
+
+| Website section | Real operations and persisted truth |
+|---|---|
+| Private access/context | Login/session/logout, live permitted workspaces/registrations, role label, selected accounting month, safe refresh preference |
+| Sources | Scoped paged sources, bounded multipart upload, live job/preview/errors, derived column mapping/sheet choice, explicit partial-row and replacement confirmation |
+| Reconciliation | Confirmed purchase/2B pair, durable processing, current/historical run, paged/filterable results, eligible candidate/rejection review, reload conflict and refreshed exact GST totals |
+| Cases/evidence | Five case kinds, typed fact inputs/unknowns, supported dated observations and confirmed sources, support selection, guarded reasoned transitions and evidence history |
+| Work queue | Scoped state/due pages, automation-pending/error coverage, current source/facts, private NOT_SENT supplier drafts, user-reported attempts, reviewer assignment/date/state, recorded outcomes and not-filed worksheet |
+| Payment drafts | Paged accepted invoices/reviewed cases, up to 200 allocations from at most 100 selected invoices, current versions and recorded balances, reasoned approval, stale labels; no payment execution |
+| Reports | Discover retained private metadata after navigation/refresh, source-versioned PDF/CSV generation, progress/error/expiry, bounded authenticated download, explicit historical evidence opt-in and owner-only expired-content cleanup |
+
+The full six business journeys use actual HTTP/cookies/private storage in browser tests. Separate empty-screen mocks are test fixtures only. Active jobs poll while visible and stop at terminal state; queue checks refresh every 10 seconds while visible, leaving the local backend monitor authoritative for reminders. Restart tests retain the original private SQLite file and recorded history. Website .env.example contains only the public API origin; secrets stay in the backend/private operator setup.
+
+Real WhatsApp delivery is still Phase 13. Draft saving and operator-reported attempts do not send messages. This site does not fetch government data, file returns, transfer payments, guarantee recovery or certify evidence/legal entitlement.

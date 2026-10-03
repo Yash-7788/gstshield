@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -84,7 +84,7 @@ Do not say: “We guarantee no ITC loss,” “this account is legal escrow,” 
 
 ## Unresolved evidence register
 
-Before implementation expands claims: inspect supplied frontend; obtain a permitted portal file; maintain the tested locked backend combination; verify PC disk/availability budgets; provision and test Meta assets; reconcile detailed messaging pricing; validate any bank format; obtain professional review for current-year statutory calculations. The build can proceed with clearly bounded synthetic adapters while these are resolved.
+Before implementation expands claims: inspect the later supplied landing page/design; obtain a permitted portal file; maintain the tested locked backend combination; verify PC disk/availability budgets; provision and test Meta assets; reconcile detailed messaging pricing; validate any bank format; obtain professional review for current-year statutory calculations. The build can proceed with clearly bounded synthetic adapters while these are resolved.
 
 ## Evidence ledger for this planning pass
 

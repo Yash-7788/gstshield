@@ -247,12 +247,14 @@ class RunService:
             self.authorize(connection, identity, workspace)
             return self.detail_row(connection, self.scoped(connection, workspace, identifier))
 
-    def list_runs(self, identity, workspace, cursor, limit):
+    def list_runs(self, identity, workspace, cursor, limit, registration=None, period=None):
         with self.store.transaction(write=False) as connection:
             self.authorize(connection, identity, workspace)
             rows = connection.execute(
-                "SELECT * FROM runs WHERE workspace_id=? AND id>? ORDER BY id LIMIT ?",
-                (workspace, cursor or "", limit + 1),
+                "SELECT * FROM runs WHERE workspace_id=? AND id>? "
+                "AND (? IS NULL OR registration_id=?) AND (? IS NULL OR period=?) "
+                "ORDER BY id LIMIT ?",
+                (workspace, cursor or "", registration, registration, period, period, limit + 1),
             ).fetchall()
             return {
                 "runs": [self.detail_row(connection, row) for row in rows[:limit]],

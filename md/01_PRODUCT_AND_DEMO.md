@@ -1,12 +1,12 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Planning baseline: 2026-10-03. Status: Phases 1–6 implemented and locally verified; later capabilities remain specifications until their gates pass. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
 ## Active whole-application phase scope
 
-The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, supplied frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–7 are complete; Phases 8–14 are not started. The original product capabilities and evidence boundaries below still apply.
+The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, internal frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–9 are implemented and locally verified; Phases 10–14 remain ahead. The original product capabilities and evidence boundaries below still apply.
 
 ## Read this pack
 
@@ -107,7 +107,7 @@ Definition of done: a clean checkout can be installed using committed locks; loc
 
 ## Decisions awaiting evidence
 
-The supplied frontend framework, real portal sample layout, Meta account/test-number availability, Meta account entitlements remain external inputs; installed backend dependency proof is recorded in 02. These do not prevent implementing the deterministic core, but they prevent claims that the complete connected integration is already verified.
+The separately supplied landing page/design, real portal sample layout and Meta account/test-number entitlements remain external inputs; the internal website/backend stack and dependency proof are recorded in 02. These do not prevent implementing the deterministic core, but they prevent claims that the complete connected integration is already verified.
 
 ## Feature-level product requirements
 
@@ -239,7 +239,7 @@ If the hackathon requires an AI component, add explanation of already computed r
 
 The backend can now compare two explicitly confirmed imports, save a run, paginate classifications and show candidate explanations. A human can accept an eligible suggestion or reject a match with a recorded reason. Totals update with the committed decision. Demonstrate exact, suggested, amount mismatch, missing, ambiguous and incomplete-evidence rows; do not hide uncertainty or represent suggestions as accepted matches. Historical runs remain readable after reruns; a failed replacement does not wipe earlier findings.
 
-This is a backend capability. The supplied website is still pending its inspection/connection phases. Use documented local API examples or developer docs for backend testing; do not claim that website screens, PDF reports or physical WhatsApp flows are already delivered. No GST filing, bank action, official 2B verification or legal eligibility decision was added.
+This is a backend capability. The Phase 3 milestone predates the website; Phases 8–9 now supply the connected internal interface. Use documented local API examples or developer docs for backend testing; the current delivered website/PDF scope is recorded in Phases 8–9/05; physical WhatsApp remains pending. No GST filing, bank action, official 2B verification or legal eligibility decision was added.
 
 ## Implemented Phase 5 demo path
 
@@ -252,7 +252,7 @@ Reports label source provenance and uncertainty. A reconciliation report include
 
 The original six problems remain the product target: missing/wrong supplier invoices, MSME/payment risk, forgotten reversal/reclaim review, e-invoice evidence, notice readiness and manual reconciliation/follow-up. Phases 1–5 deliver the local import, matching, review, case and report foundation. Manual case capture alone does not complete these operational workflows.
 
-Phase 6 implements persisted business actions, supplier follow-up drafts/history, cross-snapshot changes, reversal/reclaim review triggers, recorded-date reminders and notice/e-invoice evidence tasks. The detailed six-scenario acceptance matrix is in [05](05_BUILD_AND_VERIFICATION_PLAN.md#phase-6--business-workflow-completion-for-the-six-original-problems-complete). Phases 8–9 expose and connect them through the supplied website; Phase 13 connects real WhatsApp, and Phase 14 demonstrates all six scenarios together. The local backend code is implemented; final verification is recorded in 05. The website and phone interfaces have later acceptance gates. Evidence-backed review outcomes are distinct from actual legal eligibility, filed returns, executed payments and successful tax recovery.
+Phase 6 implements persisted business actions, supplier follow-up drafts/history, cross-snapshot changes, reversal/reclaim review triggers, recorded-date reminders and notice/e-invoice evidence tasks. The detailed six-scenario acceptance matrix is in [05](05_BUILD_AND_VERIFICATION_PLAN.md#phase-6--business-workflow-completion-for-the-six-original-problems-complete). Phases 8–9 now expose and connect them through the internal website; Phase 13 connects real WhatsApp, and Phase 14 demonstrates all six scenarios together. The local backend code is implemented; final verification is recorded in 05. The website has passed real browser journeys; phone delivery and whole-product rehearsal retain their later gates. Evidence-backed review outcomes are distinct from actual legal eligibility, filed returns, executed payments and successful tax recovery.
 
 
 ## Why use this application rather than a one-off AI analysis?

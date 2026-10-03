@@ -9,6 +9,7 @@ import {
   History,
   LoadState,
   Notice,
+  label,
   date,
   money,
   path,
@@ -36,6 +37,10 @@ function ActionDetail({
     path(c, `actions/${id}`),
   );
   const row = detail.data;
+  const evidenceCase = useResource<Schemas["CaseData"]>(
+    c.api,
+    row?.case_id ? path(c, `cases/${row.case_id}`) : null,
+  );
   const action = useCommand();
   const [worksheet, setWorksheet] = useState<Record<string, unknown> | null>(
     null,
@@ -368,6 +373,7 @@ function ActionDetail({
                           </label>
                           <fieldset>
                             <legend>Selected case evidence</legend>
+                            <LoadState {...evidenceCase} empty={false} />
                             {Array.isArray(row.source.evidence_event_ids) &&
                               row.source.evidence_event_ids.map((ref) => (
                                 <label className="check" key={String(ref)}>
@@ -376,7 +382,14 @@ function ActionDetail({
                                     type="checkbox"
                                     value={String(ref)}
                                   />
-                                  {String(ref)}
+                                  {label(
+                                    String(
+                                      evidenceCase.data?.timeline.find(
+                                        (e) => e.id === ref,
+                                      )?.kind || "Recorded evidence",
+                                    ),
+                                  )}{" "}
+                                  · {String(ref).slice(0, 8)}
                                 </label>
                               ))}
                           </fieldset>
@@ -437,8 +450,9 @@ export default function Actions({ c }: { c: Context }) {
     c.api,
     path(
       c,
-      `actions?limit=20&due_only=${due}${state ? `&state=${state}` : ""}${cursor ? `&cursor=${cursor}` : ""}`,
+      `actions?limit=20&registration_id=${c.registration.id}&period=${c.period}&due_only=${due}${state ? `&state=${state}` : ""}${cursor ? `&cursor=${cursor}` : ""}`,
     ),
+    10000,
   );
 
   return (

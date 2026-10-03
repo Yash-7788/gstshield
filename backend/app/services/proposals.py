@@ -220,12 +220,16 @@ class ProposalService(WorkflowService):
                 connection, self.scoped(connection, "proposals", workspace, identifier)
             )
 
-    def list_proposals(self, identity, workspace, cursor, limit):
+    def list_proposals(self, identity, workspace, cursor, limit, registration=None, period=None):
         with self.store.transaction(write=False) as connection:
             self.authorize(connection, identity, workspace)
             rows = connection.execute(
-                "SELECT * FROM proposals WHERE workspace_id=? AND id>? ORDER BY id LIMIT ?",
-                (workspace, cursor, limit + 1),
+                "SELECT p.* FROM proposals p JOIN runs r "
+                "ON r.workspace_id=p.workspace_id AND r.id=p.run_id "
+                "WHERE p.workspace_id=? AND p.id>? "
+                "AND (? IS NULL OR r.registration_id=?) AND (? IS NULL OR r.period=?) "
+                "ORDER BY p.id LIMIT ?",
+                (workspace, cursor, registration, registration, period, period, limit + 1),
             ).fetchall()
             return {
                 "proposals": [self.detail_row(connection, row) for row in rows[:limit]],

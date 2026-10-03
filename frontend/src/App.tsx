@@ -100,6 +100,30 @@ function Login({
   );
 }
 
+function rememberedSelection(userId: string) {
+  try {
+    const value = JSON.parse(
+      sessionStorage.getItem("gstshield_selection") || "null",
+    );
+    if (
+      value?.user_id === userId &&
+      typeof value.workspace_id === "string" &&
+      typeof value.registration_id === "string" &&
+      typeof value.period === "string" &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(value.period)
+    )
+      return value as {
+        workspace_id: string;
+        registration_id: string;
+        period: string;
+      };
+  } catch {}
+  return {
+    workspace_id: "",
+    registration_id: "",
+    period: new Date().toISOString().slice(0, 7),
+  };
+}
 function Workspace({
   api,
   user,
@@ -114,7 +138,8 @@ function Workspace({
     "/api/v1/workspaces",
   );
 
-  const [workspaceId, setWorkspace] = useState("");
+  const [remembered] = useState(() => rememberedSelection(user.user_id));
+  const [workspaceId, setWorkspace] = useState(remembered.workspace_id);
   const selected =
     workspaces.data?.find((w) => w.id === workspaceId) || workspaces.data?.[0];
 
@@ -123,12 +148,14 @@ function Workspace({
     selected ? `/api/v1/workspaces/${selected.id}/registrations` : null,
   );
 
-  const [registrationId, setRegistration] = useState("");
+  const [registrationId, setRegistration] = useState(
+    remembered.registration_id,
+  );
   const registration =
     registrations.data?.find((r) => r.id === registrationId) ||
     registrations.data?.[0];
 
-  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
+  const [period, setPeriod] = useState(remembered.period);
 
   const [section, setSection] = useState(sectionFromHash);
 
@@ -148,6 +175,18 @@ function Workspace({
       ? { api, user, workspace: selected, registration, period }
       : null;
 
+  useEffect(() => {
+    if (context)
+      sessionStorage.setItem(
+        "gstshield_selection",
+        JSON.stringify({
+          user_id: user.user_id,
+          workspace_id: context.workspace.id,
+          registration_id: context.registration.id,
+          period,
+        }),
+      );
+  }, [user.user_id, selected?.id, registration?.id, period]);
   const key = `${user.user_id}:${selected?.id}:${registration?.id}:${period}:${section}`;
 
   return (
@@ -285,6 +324,7 @@ export default function App() {
   if (api)
     api.onExpired = () => {
       api.reset();
+      sessionStorage.removeItem("gstshield_selection");
       setSession(null);
       setMessage("Your access has expired or been revoked. Sign in again.");
     };
@@ -322,6 +362,7 @@ export default function App() {
     const timer = setTimeout(
       () => {
         api.reset();
+        sessionStorage.removeItem("gstshield_selection");
         setSession(null);
         setMessage("Your session expired. Sign in again.");
       },
@@ -347,6 +388,7 @@ export default function App() {
 
   const logout = () => {
     sessionStorage.setItem("gstshield_signed_out", "1");
+    sessionStorage.removeItem("gstshield_selection");
     setSession(null);
     const signout = new ApiClient(api.base);
     signout.csrf = api.csrf;

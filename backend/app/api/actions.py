@@ -23,6 +23,8 @@ router = APIRouter(prefix="/api/v1/workspaces/{workspace_id}", tags=["Business a
 def actions(
     request: Request,
     workspace_id: UUID,
+    registration_id: UUID | None = None,
+    period: str | None = Query(default=None, pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
     cursor: UUID | None = None,
     limit: int = Query(default=20, ge=1, le=20),
     state: ActionState | None = None,
@@ -37,6 +39,8 @@ def actions(
             limit,
             state,
             due_only,
+            str(registration_id) if registration_id else None,
+            period,
         ),
     )
 

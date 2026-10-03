@@ -2,7 +2,10 @@ import { existsSync } from "node:fs";
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
-  testMatch: "*.spec.mjs",
+  testMatch:
+    process.env.GSTSHIELD_TEST_PREVIEW === "1"
+      ? "preview.smoke.mjs"
+      : "*.spec.mjs",
   fullyParallel: false,
   workers: 1,
   timeout: 60000,

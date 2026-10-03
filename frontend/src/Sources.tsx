@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { importFields } from "./contracts";
 import type { Schemas } from "./contracts";
 
 import {
@@ -19,29 +20,7 @@ import {
 
 import type { Context } from "./shared";
 
-const fields = [
-  "voucher_id",
-  "recipient_gstin",
-  "supplier_gstin",
-  "invoice_number",
-  "invoice_date",
-  "document_type",
-  "taxable_value",
-  "cgst",
-  "sgst",
-  "igst",
-  "cess",
-  "other_charges",
-  "round_off",
-  "gross_total",
-  "total_tax",
-  "supplier_name",
-  "irn",
-  "amount_paid",
-  "msme_classification",
-  "acceptance_date",
-  "written_terms_days",
-];
+const fields = importFields;
 
 function ImportDetail({
   c,
@@ -304,7 +283,7 @@ export default function Sources({ c }: { c: Context }) {
         fetching is unavailable.
       </Notice>
       {writable(c) && (
-        <details open={!list.data?.imports.length}>
+        <details open>
           <summary>Upload a source</summary>
           <form
             onSubmit={(e) => {

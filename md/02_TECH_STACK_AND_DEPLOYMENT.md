@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
@@ -13,7 +13,7 @@ This decision replaces the earlier cloud plan throughout this planning pack. The
 | PostgreSQL / hosted database | Local SQLite file | Durable PC storage without a separate database process |
 | Supabase Auth / signed JWTs | Local operator provisioned accounts + opaque sessions | No public signup, auth provider or refresh-token integration |
 | Supabase Storage / signed bucket URLs | Private local directory | Paths stay server generated; future file access goes through scoped backend routes |
-| Render / static cloud hosting | Backend and supplied website run locally | PC availability determines uptime; no cloud deployment is required |
+| Render / static cloud hosting | Backend and internal website run locally | PC availability determines uptime; no cloud deployment is required |
 | SQLAlchemy, psycopg, Alembic | sqlite3 + explicit schema version | Fewer dependencies; later upgrades are reviewed, backed up and tested |
 | Redis / external worker | SQLite job records + one bounded local dispatcher | Only one backend process may hold the data lock |
 | Browser localStorage as business storage | Backend SQLite as authority | Browser reloads and account changes cannot invent or lose financial truth |
@@ -46,7 +46,7 @@ HTTPX2 matches the installed Starlette test client; do not reintroduce the depre
 - Phase 3 now uses standard-library CSV/JSON, openpyxl 3.1.5, defusedxml 0.7.1, python-multipart 0.0.32 and psutil 7.2.2. The exact graph is committed in uv.lock; no pandas, ORM or external queue was added.
 - Phase 4 installs RapidFuzz 3.14.6 (locked range >=3.14.6,<3.15) for suggestions. Integer paise and standard-library Decimal handle money; floating point is confined to similarity scores. Similarity never becomes automatic legal approval.
 - Phase 5 installs ReportLab 5.0.1 (locked >=5.0.1,<5.1), resolving Pillow 12.3.0 and charset-normalizer 3.5.2. Bundled Noto Sans has a checked SHA-256 and SIL font license. pypdf 6.19.0 and PyMuPDF 1.28.2 are development-only extraction/rendering tools. No browser renderer or hosted reporting service is used.
-- Phase 8: preserve the supplied website's framework, package manager and lockfile. Node and browser dependencies cannot be selected before inspecting it.
+- Phases 8–9: the authorized internal website uses the pinned React/Vite/TypeScript stack recorded below and its pnpm lockfile. Inspect the separately supplied landing page/design when it arrives before integrating it.
 - Phase 13: select and test a supported HTTP client for Meta calls with real timeouts, redirect policy and bounded response bodies. The current HTTPX2 installation is a development dependency, not a provider adapter.
 
 Pandas, an AI service, a messaging aggregator and an external queue are not required for the deterministic core. Optional packages need a concrete implemented use and compatibility proof.

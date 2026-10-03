@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-03):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–8 are complete and locally verified. Phase 9 is next; Phases 9–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -34,7 +34,7 @@ backend/
   app/jobs/                   # durable claim, dispatcher, recovery
   app/security/               # local sessions, HMAC, capabilities, limits
   tests/fixtures/             # synthetic data and expected outputs
-frontend/                    # supplied website, preserve its framework
+frontend/                    # connected internal React/Vite website
 md/                          # this eight-document pack
 ```
 
@@ -330,3 +330,7 @@ Actual filing/submission is a separately recorded user observation: accepted rev
 ## Phase 7 shared request and shutdown boundary
 
 Small mutation bodies retain the byte limit and now have a total 20-second receive deadline (MAX_API_RECEIVE_SECONDS, validated integer 1–60). Actual bytes must match a declared length. Duplicate Content-Type, repeated JSON keys, malformed encoding and non-standard constants are rejected before route processing with sanitized 400/408/413/422 replies. Multipart mappings reuse the shared unique-object validator; larger uploads still authenticate first and use their separate deadline. Both background threads must stop before storage ownership is released. Schema 5 and dependency versions remain unchanged. The full local security/failure proof is in the Phase 7 record in 05.
+
+## Phase 9 website query support
+
+Added optional registration/month filters to runs, cases, proposals and business actions. Added a bounded private saved-artifact metadata list with the same filters. SQL joins remain workspace-qualified and parameters bound; filters precede cursor pagination. Artifact listing processes one snapshot at a time and omits report BLOBs. Source provenance, expiry/currentness, role enforcement and existing command transactions are reused. There is no schema migration or new external infrastructure. The browser persists only selection preferences; all invoice/review/evidence/action/report truth stays in backend SQLite.

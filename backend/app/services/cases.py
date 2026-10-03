@@ -273,12 +273,17 @@ class CaseService(WorkflowService):
                 connection, self.scoped(connection, "cases", workspace, identifier)
             )
 
-    def list_cases(self, identity, workspace, cursor, limit):
+    def list_cases(self, identity, workspace, cursor, limit, registration=None, period=None):
         with self.store.transaction(write=False) as connection:
             self.authorize(connection, identity, workspace)
             rows = connection.execute(
-                "SELECT * FROM cases WHERE workspace_id=? AND id>? ORDER BY id LIMIT ?",
-                (workspace, cursor, limit + 1),
+                "SELECT c.* FROM cases c JOIN run_results rr "
+                "ON rr.workspace_id=c.workspace_id AND rr.id=c.result_id "
+                "JOIN runs r ON r.workspace_id=rr.workspace_id AND r.id=rr.run_id "
+                "WHERE c.workspace_id=? AND c.id>? "
+                "AND (? IS NULL OR c.registration_id=?) AND (? IS NULL OR r.period=?) "
+                "ORDER BY c.id LIMIT ?",
+                (workspace, cursor, registration, registration, period, period, limit + 1),
             ).fetchall()
             return {
                 "cases": [self.detail_row(connection, row) for row in rows[:limit]],

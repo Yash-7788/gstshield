@@ -43,13 +43,20 @@ def create(request: Request, workspace_id: UUID, payload: RunCreate):
 def list_runs(
     request: Request,
     workspace_id: UUID,
+    registration_id: UUID | None = None,
+    period: str | None = Query(default=None, pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
     cursor: UUID | None = None,
     limit: int = Query(default=20, ge=1, le=100),
 ):
     return envelope(
         request,
         runs(request).list_runs(
-            authenticated(request), str(workspace_id), str(cursor) if cursor else None, limit
+            authenticated(request),
+            str(workspace_id),
+            str(cursor) if cursor else None,
+            limit,
+            str(registration_id) if registration_id else None,
+            period,
         ),
     )
 
