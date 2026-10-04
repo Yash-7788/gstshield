@@ -224,10 +224,6 @@ def pdf_bytes(snapshot, max_pages):
             group = story[start:]
             del story[start:]
             story.append(KeepTogether(group))
-        if snapshot.get("business_actions"):
-            paragraph("Business action history", "heading")
-            walk(snapshot["action_coverage"], "Action coverage")
-            walk(snapshot["business_actions"], "Actions")
     else:
         walk(
             {
@@ -263,6 +259,29 @@ def pdf_bytes(snapshot, max_pages):
                 f"Action: {action['id']} | version: {action['version']} | "
                 f"Current evidence: {action['sources_current']}"
             )
+            # Old retained snapshots did not contain this concise source summary.
+            source = action
+            if "invoice" not in source:
+                source = next(
+                    (
+                        event["snapshot"].get("current", event["snapshot"])
+                        for event in reversed(action["timeline"])
+                        if event["kind"] in {"DETECTED", "SOURCE_REFRESHED", "EVIDENCE_CHANGED"}
+                    ),
+                    {},
+                )
+            invoice = source.get("invoice", {})
+            paragraph(
+                f"Invoice: {invoice.get('invoice_number', 'NOT RECORDED')} | "
+                f"Date: {invoice.get('invoice_date', 'NOT RECORDED')} | "
+                f"Type: {invoice.get('document_type', 'NOT RECORDED')}"
+            )
+            paragraph(
+                f"Supplier: {invoice.get('supplier_gstin', 'NOT RECORDED')} | "
+                f"Comparison: {source.get('comparison_status', source.get('status', 'UNKNOWN'))} | "
+                f"Recorded GST: {source.get('recorded_tax') or 'UNKNOWN'}"
+            )
+            paragraph("Reasons: " + ", ".join(source.get("reason_codes", [])))
             due = action["due_at"]
             paragraph(
                 "Recorded review date: "
@@ -270,7 +289,23 @@ def pdf_bytes(snapshot, max_pages):
             )
             paragraph("Assigned reviewer: " + (action["assigned_to"] or "NOT ASSIGNED"))
             walk(action["outcome"], "Recorded outcome; external execution not verified")
+            refreshes = [
+                event for event in action["timeline"] if event["kind"] == "SOURCE_REFRESHED"
+            ]
+            if refreshes:
+                first = datetime.fromtimestamp(
+                    min(e["created_at"] for e in refreshes), UTC
+                ).isoformat()
+                last = datetime.fromtimestamp(
+                    max(e["created_at"] for e in refreshes), UTC
+                ).isoformat()
+                paragraph(
+                    f"Source/version refreshes: {len(refreshes)} | first: {first} | last: {last}. "
+                    "Individual refresh entries remain in the private audit history."
+                )
             for event in action["timeline"]:
+                if event["kind"] == "SOURCE_REFRESHED":
+                    continue
                 when = datetime.fromtimestamp(event["created_at"], UTC).isoformat()
                 paragraph(f"{when} | {event['kind']} | {event['actor_kind']}")
                 paragraph(event["reason"])
@@ -324,7 +359,14 @@ def pdf_bytes(snapshot, max_pages):
         canvas.drawRightString(192 * mm, 10 * mm, f"Page {doc.page}")
         canvas.restoreState()
 
-    document.build(story, onFirstPage=page, onLaterPages=page)
+    try:
+        document.build(story, onFirstPage=page, onLaterPages=page)
+    except ReportFailure as exc:
+        # ReportLab annotates callback exceptions by reconstructing their type.
+        # Keep the stable public code instead of exposing its internal annotation.
+        if exc.code.endswith("REPORT_PAGE_LIMIT"):
+            raise ReportFailure("REPORT_PAGE_LIMIT") from None
+        raise
     return stream.getvalue()
 
 
@@ -339,7 +381,7 @@ def generate(snapshot, max_bytes, max_pages):
 
 def generator_manifest():
     return {
-        "generator": "gstshield-reports-v1",
+        "generator": "gstshield-reports-v2",
         "reportlab": reportlab.Version,
         "font": "NotoSans-Regular",
         "font_sha256": FONT_SHA256,

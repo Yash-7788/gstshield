@@ -22,3 +22,6 @@ backend/data/
 # Synthetic browser verification artifacts.
 frontend/test-results/
 frontend/playwright-report/
+
+# Machine-specific synthetic benchmark diagnostics.
+backend/benchmarks/results/*.log

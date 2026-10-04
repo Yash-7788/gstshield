@@ -90,11 +90,13 @@ class ActionService(WorkflowService):
             event["actor_kind"] = "USER" if event["actor_id"] else "SYSTEM"
         return data
 
-    def source(self, connection, run, result, case=None):
+    def source(self, connection, run, result, case=None, *, sources=None):
+        sources = json.loads(run["sources_json"]) if sources is None else sources
         invoice = json.loads(result["canonical_json"])
         imported = connection.execute(
-            "SELECT total_tax FROM import_rows WHERE import_id=? AND row_number=?",
-            (result["purchase_import_id"], result["source_row_number"]),
+            "SELECT total_tax FROM import_rows "
+            "WHERE workspace_id=? AND import_id=? AND row_number=?",
+            (run["workspace_id"], result["purchase_import_id"], result["source_row_number"]),
         ).fetchone()
         data = {
             "run_id": run["id"],
@@ -103,14 +105,18 @@ class ActionService(WorkflowService):
             "result_version": result["version"],
             "purchase_import_id": run["purchase_import_id"],
             "portal_import_id": run["portal_import_id"],
-            "source_snapshots": json.loads(run["sources_json"]),
+            "source_snapshots": sources,
             "invoice": invoice,
             "status": result["status"],
             "reason_codes": json.loads(result["reasons_json"]),
             "recorded_tax": money_string(imported["total_tax"])
             if imported["total_tax"] is not None
             else None,
-            "provenance": self.runs.detail_row(connection, run)["provenance"],
+            "provenance": (
+                "SYNTHETIC_DEMO"
+                if any(source["provenance"] == "SYNTHETIC_DEMO" for source in sources)
+                else "USER_PROVIDED"
+            ),
             "legal_eligibility": "NOT_DETERMINED",
             "automatic_fetching": "NOT_IMPLEMENTED",
             "comparison_basis": "SAME_RETAINED_PURCHASE_DOCUMENT",
@@ -119,16 +125,18 @@ class ActionService(WorkflowService):
             json.loads(r[0])
             for r in connection.execute(
                 "SELECT p.canonical_json FROM run_candidates c JOIN import_rows p "
-                "ON p.import_id=c.portal_import_id AND p.row_number=c.portal_row_number "
-                "WHERE c.result_id=? ORDER BY p.canonical_json",
-                (result["id"],),
+                "ON p.workspace_id=c.workspace_id AND p.import_id=c.portal_import_id "
+                "AND p.row_number=c.portal_row_number "
+                "WHERE c.workspace_id=? AND c.result_id=? ORDER BY p.canonical_json",
+                (run["workspace_id"], result["id"]),
             )
         ]
         if result["assigned_portal_row"] is not None:
             data["assigned_portal_evidence"] = json.loads(
                 connection.execute(
-                    "SELECT canonical_json FROM import_rows WHERE import_id=? AND row_number=?",
-                    (run["portal_import_id"], result["assigned_portal_row"]),
+                    "SELECT canonical_json FROM import_rows "
+                    "WHERE workspace_id=? AND import_id=? AND row_number=?",
+                    (run["workspace_id"], run["portal_import_id"], result["assigned_portal_row"]),
                 ).fetchone()[0]
             )
         if case is not None:
@@ -148,7 +156,7 @@ class ActionService(WorkflowService):
                 data["provenance"] = "SYNTHETIC_DEMO"
         return data
 
-    def upsert(self, connection, run, result, case=None):
+    def upsert(self, connection, run, result, case=None, *, sources=None):
         workspace = run["workspace_id"]
         doc = document_id(run["purchase_import_id"], result["source_row_number"])
         kind = case["kind"] if case is not None else "INVOICE_REVIEW"
@@ -160,7 +168,7 @@ class ActionService(WorkflowService):
         ).fetchone()
         if row is None and case is None and result["status"] in ACCEPTED:
             return
-        source = self.source(connection, run, result, case)
+        source = self.source(connection, run, result, case, sources=sources)
         signature = digest(source)
         now = int(time.time())
         due = None
@@ -275,19 +283,21 @@ class ActionService(WorkflowService):
     def sync_run(self, connection, run):
         if not self.runs.sources_current(connection, run):
             return
+        # Transaction-local source metadata; no cached authorization or mutable truth.
+        sources = json.loads(run["sources_json"])
         for result in connection.execute(
             "SELECT * FROM run_results WHERE workspace_id=? AND run_id=? "
             "ORDER BY source_row_number",
             (run["workspace_id"], run["id"]),
         ).fetchall():
-            self.upsert(connection, run, result)
+            self.upsert(connection, run, result, sources=sources)
             doc = document_id(run["purchase_import_id"], result["source_row_number"])
             for case in connection.execute(
                 "SELECT * FROM cases WHERE workspace_id=? AND registration_id=? "
                 "AND purchase_document_id=?",
                 (run["workspace_id"], run["registration_id"], doc),
             ).fetchall():
-                self.upsert(connection, run, result, case)
+                self.upsert(connection, run, result, case, sources=sources)
 
     def sync_case(self, connection, case):
         original = self.scoped(connection, "run_results", case["workspace_id"], case["result_id"])
@@ -353,6 +363,21 @@ class ActionService(WorkflowService):
                         f"SELECT * FROM {table} WHERE workspace_id=? AND id=?",
                         (workspace, item["id"]),
                     ).fetchone()
+                    if row is None:
+                        continue
+                    # The monitor and an HTTP refresh may both have observed the same
+                    # pending source. Recheck only after acquiring the writer lock.
+                    checkpoint = connection.execute(
+                        "SELECT version,error_code FROM action_checkpoints "
+                        "WHERE workspace_id=? AND kind=? AND source_id=?",
+                        (workspace, item["kind"], item["id"]),
+                    ).fetchone()
+                    if (
+                        checkpoint is not None
+                        and checkpoint["version"] == row["version"]
+                        and checkpoint["error_code"] is None
+                    ):
+                        continue
                     if item["kind"] == "RUN":
                         if row["state"] == "COMPLETED":
                             self.sync_run(connection, row)

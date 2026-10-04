@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -334,3 +334,36 @@ Small mutation bodies retain the byte limit and now have a total 20-second recei
 ## Phase 9 website query support
 
 Added optional registration/month filters to runs, cases, proposals and business actions. Added a bounded private saved-artifact metadata list with the same filters. SQL joins remain workspace-qualified and parameters bound; filters precede cursor pagination. Artifact listing processes one snapshot at a time and omits report BLOBs. Source provenance, expiry/currentness, role enforcement and existing command transactions are reused. There is no schema migration or new external infrastructure. The browser persists only selection preferences; all invoice/review/evidence/action/report truth stays in backend SQLite.
+
+
+## Phase 11 query and processing boundaries
+
+Action purchase-tax and assigned-portal lookups bind workspace_id, import_id and row_number.
+Candidate-evidence joins bind the workspace on both candidate and import-row sides. Those
+predicates use the existing leading workspace indexes; there is no new schema/index migration.
+Transaction-local source manifests/provenance are reused while deriving one run; membership,
+case facts, legal eligibility and cross-request business truth are not cached.
+
+Successful source/version checkpoints are rechecked after the writer transaction starts, because
+HTTP catch-up and the background monitor may have selected the same pending item. The second
+successful refresh skips repeated derivation. Changed versions and failed checkpoints remain
+eligible, and source actions/events/checkpoint still commit or roll back together.
+
+A matching child copies scoped source rows and saved policy in a readonly transaction, closes
+that connection, then performs CPU comparisons. Publication still rechecks job lease and current
+source state/version/hash and preserves revision supersession. Read service transactions open
+SQLite with mode=ro; attempts to write through them fail and roll back. Write transactions still
+use the configured page/disk bounds and FULL synchronization. Short readonly queries can coexist
+with a reserved writer; the existing journal can still briefly block during large commits.
+
+Accepted portal comparison numbers are normalized once per reconciliation call. Cheap negative
+similarities avoid Decimal construction, while survivor thresholds still use floor-to-two-decimal
+comparison and raw-score ambiguity gaps. No financial float arithmetic, candidate pruning,
+assignment policy change, comparison-count relaxation or matching-version migration occurred.
+The entire previous and optimized result structures are equal on the recorded 100/2,000 datasets.
+
+Private report requests now record generator gstshield-reports-v2 and concise action invoice,
+comparison/reasons/tax fields alongside the retained timeline. PDF presentation summarizes pure
+SOURCE_REFRESHED events by count/date range and prints each meaningful/user event once; raw
+snapshots remain private. Stored historical report bytes and source data are untouched. Public
+DTOs/routes and schema 5 are unchanged. 05 records final timings, limits and verification.

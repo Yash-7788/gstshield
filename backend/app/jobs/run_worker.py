@@ -70,7 +70,10 @@ def main():
             portals = read_rows(
                 connection, run["workspace_id"], run["portal_import_id"], policy["max_rows"]
             )
-            result = {"result": reconcile(purchases, portals, policy)}
+        # Rows and policy are now immutable in memory. Release the read transaction
+        # before CPU work so local rate/session/action writes can commit. Publication
+        # still validates the lease and current source versions atomically.
+        result = {"result": reconcile(purchases, portals, policy)}
         encoded = json.dumps(result, ensure_ascii=True, separators=(",", ":"))
         if len(encoded.encode()) > policy["max_result_bytes"]:
             raise ParseFailure("PARSED_RESULT_LIMIT")

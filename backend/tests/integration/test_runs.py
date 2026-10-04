@@ -693,3 +693,52 @@ def test_sqlite_run_constraints_reject_invalid_assignments_and_cross_source_cand
                 connection.execute(query, parameters)
         assert details(client, workspace, result["id"]) == result
         store.validate()
+
+
+def test_matching_releases_read_snapshot_before_cpu_work(account, monkeypatch, capsys, tmp_path):
+    import json
+    import sys
+
+    from app.jobs import run_worker
+
+    settings, _, workspace, registration = account
+    with TestClient(create_app(settings)) as client:
+        headers = signed_in(client)
+        payload = prepare(client, workspace, registration, headers)
+        receipt = create(client, workspace, headers, payload).json()["data"]
+        run = finished(client, workspace, receipt["id"])
+        assert run["state"] == "COMPLETED"
+        application = client.app.app.app
+        application.state.action_monitor.close()
+        application.state.dispatcher.close()
+        store = application.state.store
+        with store.transaction() as connection:
+            connection.execute(
+                "UPDATE runs SET state='RUNNING',summary_json=NULL WHERE id=?", (run["id"],)
+            )
+        task = tmp_path / "synthetic-match-task.json"
+        task.write_text(
+            json.dumps(
+                {
+                    "database": str(store.path),
+                    "workspace_id": workspace,
+                    "run_id": run["id"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        original, writes = run_worker.reconcile, []
+
+        def compute(purchases, portals, policy):
+            # Actual SQLite commit, while the worker still owns its immutable input.
+            with store.transaction() as writer:
+                writer.execute("INSERT INTO metadata VALUES ('synthetic-worker-write','confirmed')")
+            writes.append(True)
+            return original(purchases, portals, policy)
+
+        monkeypatch.setattr(run_worker, "reconcile", compute)
+        monkeypatch.setattr(sys, "argv", ["run_worker", str(task)])
+        assert run_worker.main() == 0
+        outcome = json.loads(capsys.readouterr().out)
+        assert "error_code" not in outcome, outcome
+        assert writes == [True] and len(outcome["result"]["results"]) == 1

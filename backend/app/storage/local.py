@@ -301,7 +301,7 @@ class LocalStore:
         try:
             if write:
                 self.capacity()
-            connection = self.connect()
+            connection = self.connect(readonly=not write)
             connection.execute("BEGIN IMMEDIATE" if write else "BEGIN")
             yield connection
             connection.commit()

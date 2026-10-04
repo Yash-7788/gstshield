@@ -107,7 +107,7 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 | 8 | Frontend inspection, cleanup and complete screens | Not started |
 | 9 | Frontend and backend connection | Not started |
 | 10 | Frontend security and privacy review | Not started |
-| 11 | Backend performance and resource efficiency | Not started |
+| 11 | Backend performance and resource efficiency | Complete and locally verified |
 | 12 | Frontend smoothness, speed and usability | Not started |
 | 13 | WhatsApp connection and channel review | Not started |
 | 14 | Whole-application regression and hackathon rehearsal | Not started |
@@ -172,7 +172,7 @@ GitHub checks use the same frozen install, lint, format, syntax and tests on Win
 | tests/integration | API lifecycle, real process startup and failure behavior |
 | tests/fixtures | Reserved for clearly labeled synthetic input/expected results |
 
-Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phase 6 is complete and locally verified; Phase 7 security checks and Phases 8–9 internal website integration are implemented/verified; Phases 10–14 remain ahead.
+Phase 3 private imports, previews, mapping, confirmation and job endpoints are implemented. Phase 4 reconciliation/review is implemented; Phase 5 reports/cases/proposals are complete and locally verified; Phase 6 is complete and locally verified; Phase 7 security checks and Phases 8–9 internal website integration are implemented/verified; Phases 10–11 are now complete; Phases 12–14 remain ahead.
 
 ## Create local accounts and context
 
@@ -330,7 +330,7 @@ The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, coverag
 
 ## Business workflow roadmap correction
 
-Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. The internal website is implemented and connected through Phases 8–9; real WhatsApp remains Phase 13 and combined acceptance Phase 14. Phases 10–14 remain ahead.
+Phase 6 implements the six local business workflows through retained actions, supplier follow-up drafts/history, snapshot-change review, reversal/reclaim tracking, recorded-date reminders and notice/IRN tasks. Its local completion gate passed; the measured full-suite and final focused verification record is in 05. The internal website is implemented and connected through Phases 8–9; real WhatsApp remains Phase 13 and combined acceptance Phase 14. Phases 10–11 are now complete; Phases 12–14 remain ahead.
 
 
 ## Phase 6 local work queue and monitor
@@ -353,3 +353,37 @@ Complete locally: 230 affected tests passed, one Windows privilege skip, plus fr
 ## Phase 9 local website handoff
 
 The internal website uses the existing opaque session/CSRF protocol and all business services. Lists now support optional registration/month filters before pagination; GET artifacts exposes bounded authorized metadata without BLOBs. Schema remains version 5; no storage migration is required. Full regression passed 314 tests, 1 Windows symlink-privilege skip in 11:39. The real browser suite and built-preview check also pass; see frontend/README and 05.
+
+
+## Phase 11 performance and regression
+
+Complete locally: **343 backend tests passed, 1 Windows privilege-related skip in 12:13**.
+The 14 browser tests, 2 built-preview checks, 10 client/config checks, generated contracts and
+strict website build also pass. Core matching results match the actual Phase 10 implementation
+field-for-field on the recorded demo/maximum datasets. App source hashes tie the passing
+measurement to the final application; CI results remain separate.
+
+Normal 2,000-row matching takes about 1.5–1.8 seconds through real local HTTP; the four-million-pair
+case takes about 6 seconds. All eight repeated runs, every expected tracking action and six
+private PDFs completed; no 503 or failed health probe occurred. Query fixes use existing scoped
+indexes; matching releases the read snapshot before CPU work; reads use actual readonly SQLite.
+Reports print meaningful history once and summarize routine refreshes with count/date range,
+while all individual events remain in private storage. New report requests identify generator v2.
+Existing stored report bytes and public DTOs stay intact. Schema remains 5, with no migration,
+new dependency or new environment switch.
+
+For opt-in verification, run from backend:
+
+```powershell
+$env:PYTHONUTF8='1'
+.venv/Scripts/python.exe -m benchmarks.workload --output benchmarks/results/after.json
+```
+
+This is a reusable real-HTTP benchmark in temporary synthetic storage, not a runtime launcher.
+It does not load the actual `.env` or database. See [benchmark instructions](benchmarks/README.md)
+for measured stages, focused cases, cleanup and honest partial-baseline limitations.
+The [build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md#phase-11-completion-and-measured-verification--2026-10-04)
+records causes, budgets and full verification. The maximum repeated load retained about 51.5 MiB
+of the 64 MiB DB cap; capacity can be reached before run-count quotas. History is never silently
+removed. One child/five pending jobs, exact money, page/byte/deadline/RSS limits and local-only
+storage remain. Frontend smoothness, conditional WhatsApp and combined rehearsal remain 12–14.

@@ -102,6 +102,7 @@ def reconcile(purchases, portals, policy):
     """Evaluate the whole candidate graph before assigning suggestions/classifying ties."""
     tolerance = int(Decimal(policy["amount_tolerance"]) * 100)
     threshold = Decimal(policy["fuzzy_threshold"])
+    threshold_float = float(threshold)
     gap = Decimal(policy["fuzzy_gap"])
     purchase_counts = Counter(key(row) for row in purchases if all(identity(row)))
     portal_counts = Counter(key(row) for row in portals if all(identity(row)))
@@ -112,7 +113,9 @@ def reconcile(purchases, portals, policy):
         exact[key(portal)].append(portal)
         same_number[key(portal)[:-1][:-1] + (key(portal)[-1],)].append(portal)
         if portal["accepted"]:
-            groups[identity(portal)].append(portal)
+            groups[identity(portal)].append(
+                (portal, comparison_number(portal["canonical"]["invoice_number"]))
+            )
     results = []
     reserved = set()
     pairs = candidates = 0
@@ -196,16 +199,20 @@ def reconcile(purchases, portals, policy):
         if result["status"] != "MISSING_IN_SNAPSHOT":
             continue
         number = comparison_number(purchase["canonical"]["invoice_number"])
-        for portal in groups[identity(purchase)]:
+        for portal, other in groups[identity(purchase)]:
             pairs += 1
             if pairs > policy["max_pairs"]:
                 raise ParseFailure("MATCH_PAIR_LIMIT")
-            other = comparison_number(portal["canonical"]["invoice_number"])
             if not number or not other:
                 continue
             # Floor, never round a score up across the threshold. Financial values
             # never enter RapidFuzz or floating point arithmetic.
-            raw_score = Decimal(str(ratio(number, other)))
+            similarity = ratio(number, other)
+            # Reject clear negatives cheaply; survivors still pass the exact Decimal
+            # floor gate below. Scores never determine money or legal eligibility.
+            if similarity < threshold_float:
+                continue
+            raw_score = Decimal(str(similarity))
             score = raw_score.quantize(Decimal("0.01"), rounding=ROUND_FLOOR)
             if score < threshold:
                 continue

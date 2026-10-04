@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
@@ -202,7 +202,7 @@ The table below is generated from the template for this planning update. Blank M
 - Private requests: sixty reads and ten mutations per session per minute, stored in SQLite across restart.
 - SQL lock waiting: bounded to two seconds; failure is a truthful storage error, never successful empty data.
 
-These bounds are hackathon choices. Phase 11 measures implemented workload behavior before increasing them. Uploads have their own authenticated streaming boundary: 5 MiB file plus 64 KiB multipart envelope, one upload reception at a time and a 20-second receive deadline. Other mutation bodies remain 64 KiB. The dispatcher admits five queued/running jobs per workspace and runs one parser globally; twenty imports per workspace and 1,000 remembered operations per workspace bound history.
+These bounds are hackathon choices. Phase 11 measured the fixed demo/maximum workloads and retained them; see 05 for budgets and capacity limits. Uploads have their own authenticated streaming boundary: 5 MiB file plus 64 KiB multipart envelope, one upload reception at a time and a 20-second receive deadline. Other mutation bodies remain 64 KiB. The dispatcher admits five queued/running jobs per workspace and runs one parser globally; twenty imports per workspace and 1,000 remembered operations per workspace bound history.
 
 ## Checks and evidence
 
@@ -274,3 +274,26 @@ Uninterrupted full Windows Phase 6 runs took roughly eleven to sixteen minutes; 
 ## Internal website stack added in Phase 8
 
 React/DOM 19.3.0, Vite 8.3.2, React plugin 6.1.1 and TypeScript 7.0.2 are pinned in frontend/package.json and pnpm-lock.yaml. Node 24.19.0 and pnpm 11.19.0 were used for the verified install/build. Playwright 1.63.0 and Prettier 3.9.9 are development tools. No UI framework, remote fonts, cloud API client or external database is required. `.env.example` contains optional public `VITE_API_BASE_URL`; browser and backend must use the same HTTP loopback hostname. Screens call the actual private API contracts. Official stack references: [React release](https://react.dev/blog/2026/09/09/react-19-3), [Vite runtime requirements](https://vite.dev/guide/). Published npm registry metadata/peer requirements were checked before pinning. Final frontend audit returned zero known advisories for 72 dependency entries on 2026-10-04; that is a time-bound database result.
+
+
+## Phase 11 local performance evidence
+
+The implemented local stack remains Python/SQLite plus the existing disposable processing child.
+No dependency, external service, environment setting or storage schema changed. The final real
+loopback workload completed eight runs, six private PDFs, every expected retained action and all
+health probes without a 503. Recorded timings, hardware, source hashes and local acceptance
+budgets are in 05 and `backend/benchmarks/results/after.json`.
+
+Measured optimizations use existing workspace-leading indexes, short database snapshots before
+CPU work, actual readonly connections for read transactions, per-call invoice normalization and
+compact report presentation. SQLite DELETE journaling, FULL write synchronization, schema 5,
+exclusive process ownership, exact money, source/lease checks and finite histories remain.
+The single worker and shared queue budgets have not been increased. Full backend process-tree
+RSS measured about 175.7 MiB at peak; that observation is distinct from the enforced sampled
+256 MiB processing-child tree limit.
+
+Eight maximum/repeated stress runs retain about 51.5 MiB in the default 64 MiB database. Retention
+is deliberate and can exhaust byte capacity before the run-count quota. Keep backups and use
+existing reviewed maintenance; performance changes never silently discard earlier sources,
+actions, events or reports. This measurement covers fixed synthetic CSV distributions, not every
+5 MiB input or production concurrency. Browser performance remains Phase 12.

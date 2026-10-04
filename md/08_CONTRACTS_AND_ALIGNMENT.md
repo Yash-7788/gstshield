@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -386,3 +386,25 @@ HTTP failures stay error envelopes. Browser supplies cookies, in-memory X-CSRF-T
 ## Phase 10 browser access and configuration alignment
 
 No backend route, DTO or SQLite schema changed. VITE_API_BASE_URL remains the only public setting, with explicit exposure instead of the broad VITE_ prefix. Existing cookie/Origin/CSRF/version/idempotency requirements still apply. Read body/error and download completion checks reject obsolete sessions/scopes; report lookup requires UUID shape and backend ownership is rechecked. Access-denied cached data is discarded; visible workspace membership refresh runs every 15 seconds and changed roles reset screen state. Backend authorization remains immediate per request, while the UI learns external changes on polling/interaction. The Phase 10 record in 05 distinguishes real backend journeys, simulated privacy faults, strict built-preview checks and the retained full Phase 9 regression.
+
+
+## Phase 11 internal alignment
+
+Existing public routes, OpenAPI DTOs, HTTP envelopes, exact amount strings, expected versions,
+Origin/CSRF/session requirements, idempotency rules and schema 5 stay unchanged. Generated
+76-type alignment and the real website journeys pass against the optimized backend. There is
+no frontend fallback/mocked calculation introduced by the performance work.
+
+New private immutable report snapshots add action invoice, comparison_status, reason_codes and
+recorded_tax summary fields alongside retained timeline/source-version tracking. New manifests
+identify gstshield-reports-v2. A legacy snapshot without concise fields remains readable: the PDF
+can obtain its latest source summary from retained DETECTED/SOURCE_REFRESHED/EVIDENCE_CHANGED
+history. Existing stored PDF bytes are not rewritten. Meaningful/user events appear once; routine
+SOURCE_REFRESHED entries use count and earliest/latest dates with explicit private-history labels.
+REPORT_PAGE_LIMIT is the stable failure code, including when ReportLab annotates callback errors.
+
+Bounded PDF coverage still explicitly identifies selected details versus full-run summary totals
+and shown versus total actions. A successful report does not imply a filed return, delivered
+message, legal entitlement, payment or recovery. Repeated maximum matching/tracking/report and
+full-field golden equivalence evidence live in 05 and backend/benchmarks/results. Frontend
+smoothness, conditional WhatsApp and combined rehearsal retain Phases 12–14.

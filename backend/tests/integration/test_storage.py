@@ -324,3 +324,27 @@ def test_existing_directory_traversal_is_still_rejected(store):
     outside.write_bytes(b"outside")
     with pytest.raises(StorageError):
         check_path(outside, store.root)
+
+
+def test_readonly_transactions_do_not_configure_writes_or_allow_them(store):
+    with store.transaction() as writer:
+        writer.execute("INSERT INTO metadata VALUES ('synthetic-write-probe','pending')")
+        # A reserved writer can coexist with readers in DELETE journal mode.
+        assert store.ready()
+        with store.transaction(write=False) as reader:
+            assert (
+                reader.execute(
+                    "SELECT value FROM metadata WHERE key='synthetic-write-probe'"
+                ).fetchone()
+                is None
+            )
+    with pytest.raises(StorageError), store.transaction(write=False) as reader:
+        reader.execute("UPDATE metadata SET value='forbidden' WHERE key='schema'")
+    assert store.ready()
+    with store.transaction(write=False) as reader:
+        assert (
+            reader.execute(
+                "SELECT value FROM metadata WHERE key='synthetic-write-probe'"
+            ).fetchone()[0]
+            == "pending"
+        )

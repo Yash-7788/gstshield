@@ -1,12 +1,12 @@
 # GST-Shield — product and hackathon demonstration
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Planning baseline: 2026-10-03. Status: Phases 1–6 implemented and locally verified; later capabilities remain specifications until their gates pass. This is an independent GST project. The existing website will be supplied later; preserve its design and adapt its data integration.
 
 ## Active whole-application phase scope
 
-The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, internal frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–10 are implemented and locally verified; Phases 11–14 remain ahead. The original product capabilities and evidence boundaries below still apply.
+The implementation sequence now has 14 phases, owned by [05](05_BUILD_AND_VERIFICATION_PLAN.md). It gives separate attention to backend features/reports/security/performance, internal frontend completeness, real website/backend connection, frontend security/smoothness, WhatsApp and combined rehearsal. Phases 1–11 are implemented and locally verified; Phases 12–14 remain ahead. The original product capabilities and evidence boundaries below still apply.
 
 ## Read this pack
 

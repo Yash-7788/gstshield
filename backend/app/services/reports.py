@@ -152,18 +152,24 @@ class ReportService(WorkflowService):
                 details = self.actions.detail_row(connection, action)
                 common["business_actions"].append(
                     {
-                        key: details[key]
-                        for key in (
-                            "id",
-                            "kind",
-                            "state",
-                            "version",
-                            "due_at",
-                            "assigned_to",
-                            "outcome",
-                            "sources_current",
-                            "timeline",
-                        )
+                        "invoice": details["source"]["invoice"],
+                        "recorded_tax": details["source"]["recorded_tax"],
+                        "comparison_status": details["source"]["status"],
+                        "reason_codes": details["source"]["reason_codes"],
+                        **{
+                            key: details[key]
+                            for key in (
+                                "id",
+                                "kind",
+                                "state",
+                                "version",
+                                "due_at",
+                                "assigned_to",
+                                "outcome",
+                                "sources_current",
+                                "timeline",
+                            )
+                        },
                     }
                 )
         if len(encode(common).encode()) > self.settings.max_report_snapshot_bytes:

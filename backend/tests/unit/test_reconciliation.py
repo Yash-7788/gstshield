@@ -209,3 +209,49 @@ def test_equal_top_scores_stay_ambiguous_even_with_zero_configured_gap(gap):
     assert result["assigned_portal_row"] is None
     assert len(result["candidates"]) == 2
     assert all(candidate["hard_gates_passed"] for candidate in result["candidates"])
+
+
+def test_invoice_normalization_work_is_linear_even_when_candidate_graph_is_dense(monkeypatch):
+    import hashlib
+
+    from app.domain import reconciliation
+
+    original = reconciliation.comparison_number
+    normalized = []
+
+    def count(value):
+        normalized.append(value)
+        return original(value)
+
+    monkeypatch.setattr(reconciliation, "comparison_number", count)
+    numbers = [hashlib.sha256(str(index).encode()).hexdigest()[:24] for index in range(12)]
+    purchases = [record("INV/" + number, row=index + 1) for index, number in enumerate(numbers)]
+    portals = [
+        record("INV-" + number, row=index + 1, kind="PORTAL_2B")
+        for index, number in enumerate(numbers)
+    ]
+    result = reconciliation.reconcile(purchases, portals, POLICY)
+    assert result["compared_pairs"] == 144
+    assert result["candidate_count"] == 12
+    assert all(row["status"] == "FUZZY_SUGGESTION" for row in result["results"])
+    assert len(normalized) <= len(purchases) + len(portals)
+
+
+@pytest.mark.parametrize("raw_score", [0.0, 87.999999, 88.0, 88.009999, 90.0, 100.0])
+@pytest.mark.parametrize("threshold", ["0", "88", "88.001", "88.009"])
+def test_fast_score_rejection_preserves_decimal_floor_thresholds(monkeypatch, raw_score, threshold):
+    from decimal import ROUND_FLOOR, Decimal
+
+    monkeypatch.setattr("app.domain.reconciliation.ratio", lambda left, right: raw_score)
+    result = output(
+        [record("INV/001")], [record(kind="PORTAL_2B")], {"fuzzy_threshold": threshold}
+    )[0]
+    expected = Decimal(str(raw_score)).quantize(Decimal("0.01"), rounding=ROUND_FLOOR) >= Decimal(
+        threshold
+    )
+    assert bool(result["candidates"]) == expected
+    assert result["status"] == ("FUZZY_SUGGESTION" if expected else "MISSING_IN_SNAPSHOT")
+    if expected:
+        assert result["candidates"][0]["score"] == format(
+            Decimal(str(raw_score)).quantize(Decimal("0.01"), rounding=ROUND_FLOOR), ".2f"
+        )

@@ -1008,3 +1008,55 @@ def test_incomplete_tax_case_keeps_unknown_review_action_without_automation_fail
         assert not tracked["source"]["review"]["reclaim_candidate"]
         assert "recorded_tax_incomplete" in tracked["source"]["review"]["missing_facts"]
         assert queue(client, workspace)["automation"]["error_code"] is None
+
+
+def test_competing_refresh_rechecks_checkpoint_after_writer_lock(account, monkeypatch):
+    import threading
+
+    settings, _, workspace, registration = account
+    with TestClient(create_app(settings)) as client:
+        headers = signed_in(client)
+        run, _, _ = ready_run(client, workspace, registration, headers)
+        application = inner_app(client)
+        application.state.action_monitor.close()
+        service = application.state.actions
+        service.refresh(workspace)
+        with service.store.transaction() as connection:
+            connection.execute(
+                "DELETE FROM action_checkpoints WHERE workspace_id=? AND kind='RUN'",
+                (workspace,),
+            )
+            before = connection.execute("SELECT count(*) FROM action_events").fetchone()[0]
+        original_pending, original_sync = service.pending, service.sync_run
+        barrier, calls = threading.Barrier(2), []
+
+        def pending(connection, scope):
+            rows = original_pending(connection, scope)
+            barrier.wait(timeout=5)
+            return rows
+
+        def sync(connection, row):
+            calls.append(row["id"])
+            time.sleep(0.05)
+            original_sync(connection, row)
+
+        # Provenance derivation must not perform the whole run-detail query per row.
+        def unexpected_detail(*args):
+            raise AssertionError("Action source does not need run-detail rendering.")
+
+        monkeypatch.setattr(service, "pending", pending)
+        monkeypatch.setattr(service, "sync_run", sync)
+        monkeypatch.setattr(service.runs, "detail_row", unexpected_detail)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(service.refresh, workspace) for _ in range(2)]
+            for future in futures:
+                future.result(timeout=10)
+        assert calls == [run["id"]]
+        with service.store.transaction(write=False) as connection:
+            checkpoint = connection.execute(
+                "SELECT version,error_code FROM action_checkpoints "
+                "WHERE workspace_id=? AND kind='RUN' AND source_id=?",
+                (workspace, run["id"]),
+            ).fetchone()
+            assert checkpoint["version"] == run["version"] and checkpoint["error_code"] is None
+            assert connection.execute("SELECT count(*) FROM action_events").fetchone()[0] == before

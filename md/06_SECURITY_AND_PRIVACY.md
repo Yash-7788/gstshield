@@ -1,6 +1,6 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Implemented safeguards and the bounded Phase 7 backend review are recorded below; future channel/browser controls remain planned. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
@@ -320,3 +320,32 @@ Vite publishes only the explicitly selected API origin. A second VITE_ variable 
 Real browser checks inspect cookie/storage behavior and prove HTML-shaped imported text remains text. Missing-CSRF and foreign-origin writes fail; cross-site requests without the Strict cookie fail authentication; refused logout does not revoke the legitimate session. Logout and a replacement user's forged workspace request are independently refused by the actual backend. Six earlier real business journeys still pass, including authorized PDF/CSV downloads, restart, stale-write recovery and scope changes.
 
 Configuration rationale follows the official [Vite environment-prefix/define options](https://vite.dev/config/shared-options.html#envprefix) and [Vite filesystem serving restrictions](https://vite.dev/config/server-options.html#server-fs-deny). Browser content policies are checked against actual responses and behavior, following the [MDN CSP reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy). The passing checks are for this locked local implementation, not a general production certification.
+
+
+## Phase 11 performance safeguards
+
+Optimized source queries add the existing workspace identity to the indexed lookup/join rather
+than broadening access or introducing new caches. Live ownership/role/session checks remain per
+request. The normalization cache exists only for one bounded reconciliation call. Transaction-local
+run source metadata is not reused across identities, workspaces, later requests or case changes.
+
+The matching child releases its read connection before computation; immutable inputs are still
+verified again at atomic publish against lease, source state/version/hash and revision order.
+Service reads use actual mode=ro connections and cannot mutate storage. Writer durability,
+exclusive process lock, linked-file rejection, schema fingerprint and page/disk limits remain.
+Overlapping refreshes recheck a successful source checkpoint inside the writer transaction;
+failed/new-version work still retries and histories/checkpoints still roll back together.
+
+PDF compaction removes duplicated rendering, not stored evidence. Current invoice/context,
+meaningful evidence changes, human decisions, follow-up/submission observations, date-range/count
+summaries for routine refreshes and selected coverage remain visible. Escaping, trusted font hash,
+glyph/control checks, byte/page/snapshot caps and private source-aware download authorization
+remain. Page-limit failures use REPORT_PAGE_LIMIT without ReportLab's internal diagnostic prefix.
+Previous generated PDF bytes are unchanged; new manifests identify the compact generator v2.
+
+The complete final load probe has zero application 503s and zero failed readiness checks,
+complete expected action/result coverage, correct foreign-workspace 404, zero active jobs/scratch
+files after work, and valid DB integrity/FKs. A whole-process-tree RSS observation is not a new
+hard sandbox limit. Finite retention can still exhaust storage; no optimization silently deletes
+history or makes arbitrary candidate-heavy inputs guaranteed to fit. Full regression/website
+results and honest partial-baseline boundaries are recorded in 05.

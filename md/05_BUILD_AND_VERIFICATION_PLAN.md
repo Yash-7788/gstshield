@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–10 are complete and locally verified, including full post-Phase-9 regression and targeted Phase-10 privacy/access checks. Phases 11–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–11 are complete and locally verified, including the 343-pass Phase 11 full regression and maximum-workload/website checks. Phases 12–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -24,7 +24,7 @@ The active plan now contains **14 phases**. Phases 1–10 are complete and local
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Complete |
 | 9 | Frontend and backend connection | Both | Complete |
 | 10 | Frontend security and privacy review | Frontend | Complete and locally verified |
-| 11 | Backend performance and resource efficiency | Backend | Not started |
+| 11 | Backend performance and resource efficiency | Backend | Complete and locally verified |
 | 12 | Frontend smoothness, speed and usability | Frontend | Not started |
 | 13 | WhatsApp connection and channel review | Both | Not started |
 | 14 | Whole-application regression and hackathon rehearsal | Both | Not started |
@@ -60,8 +60,8 @@ This ledger reconciles the original six business problems with the active eight 
 | Notice case and private evidence pack | IMPLEMENTED: notice facts/checklist, linked action, recorded-date reminder, preparation PDF, accepted review and documented user submission observation | 5 complete for foundation; 6 for remaining workflow |
 | Automatic local due-review reminders and evidence-change alerts | IMPLEMENTED: bounded local monitor, persisted checkpoints/errors, deduplicated date events, startup and authenticated-read catch-up; PC/backend must run | 6: durable deduplicated tasks while backend runs, overdue catch-up after restart; visible in website 9 |
 | Private reports and generic proposal/error exports | IMPLEMENTED: bounded PDF/CSV snapshots/private downloads plus compact action/history coverage, stale action-set checks and JSON worksheet | 5 complete; extend for 6, browser 9 |
-| Supplied website screens and real operations | PLANNED: internal application is authorized now; the landing page/design remains pending | 8 inspect/finish, 9 connect; 10 security, 12 measured usability |
-| Whole-backend security/failure and measured performance review | IMPLEMENTED for the bounded Phase 7 backend review; measured performance remains PLANNED | 7 complete; 11 performance |
+| Internal website screens and real operations | IMPLEMENTED: six internal sections, real API journeys and browser privacy checks; supplied landing page/design remains pending | 8–10 complete; 12 measured usability |
+| Whole-backend security/failure and measured performance review | IMPLEMENTED: bounded backend security review and measured local workload/efficiency checks | 7 and 11 complete; combined rehearsal 14 |
 | WhatsApp linking, commands, imports, status, private report access and unlink | CONDITIONAL/PLANNED: no physical-phone/backend integration yet | 13: account/assets, permitted reachable callback and budget proof, real-phone gate |
 | Owner/reviewer reminders and supplier follow-up through WhatsApp | CONDITIONAL/PLANNED: local alerts/drafts do not mean messages sent | 13: explicit enablement, linked/consented verified recipient, window/template/account entitlement and bounded outbox; pending if setup is unavailable |
 | Government filing/IMS write actions, bank execution/escrow | EXCLUDED from corrected hackathon scope; an observation/proposal/export is not execution | No implementation phase; explicit unsupported state throughout 6/9/13/14 |
@@ -331,7 +331,7 @@ Review gate:
 4. Exercise cross-site request attempts appropriate to the selected session mechanism and verify backend rejection.
 5. Confirm security changes preserve real uploads, reviews, navigation and authorized downloads.
 
-### Phase 11 — Backend performance and resource efficiency (not started)
+### Phase 11 — Backend performance and resource efficiency (complete and locally verified)
 
 Owner: backend. Outcome: Measure and improve the real local workload while preserving exact results and bounded resource use.
 
@@ -697,3 +697,166 @@ Verification on the final code:
 The hostile invoice text is verified in a real parsed CSV preview/raw-field display; no image element, dialog or attacker-resource request appears. Browser storage contains selection IDs/month only, with no invoice, password, session token or CSRF. HttpOnly/Strict/API-path cookie flags are inspected. Missing CSRF is refused with 403; a cross-site browser logout with the Strict cookie withheld is refused with 401; an explicitly foreign Origin is refused with 403 even using the authenticated test request context. The original session remains active after refused logout attempts. Successful logout leaves private API reads at 401, and the next identity receives opaque 404 for the previous user's workspace.
 
 Phase 10 does not certify production security or every possible browser/OS attack. Local HTTP and OS-account trust remain the agreed hackathon boundary; private PC files/backups are not newly encrypted, screenshots/downloads intentionally saved by the user cannot be revoked, and server sign-out failure remains explicitly reported. Phases 11–14 and the supplied landing page/design remain future work. No government fetching/filing, legal approval, payment execution, real WhatsApp delivery or guaranteed recovery was added.
+
+
+## Phase 11 completion and measured verification — 2026-10-04
+
+Phase 11 is complete and locally verified. The final isolated workload gate and full backend
+regression passed: **343 passed, 1 Windows symlink-privilege skip in 733.76 seconds (12:13)**.
+Actual junction denial passes. Website alignment, strict TypeScript/Vite build and all 14
+existing browser tests passed against the final backend. No Phase 12 work has started.
+
+### Demonstrated causes and direct fixes
+
+1. Dense fuzzy matching repeatedly normalized each portal invoice number for every pair.
+   A 100-by-100 profile made 10,100 normalization calls; the optimized version makes 200.
+   Accepted portal comparison strings are prepared once inside one reconciliation call.
+   Clear similarity negatives bypass expensive Decimal creation, while survivors still pass
+   the original Decimal floor threshold and raw-score gap rules. Financial arithmetic remains
+   integer paise/Decimal. The pair counter, graph contests, candidate limits and ordering remain.
+2. Action source lookup omitted the leading workspace key of the existing import-row index.
+   A large tracking batch therefore repeatedly scanned retained invoice rows; [the diagnostic
+   action-source profile](../backend/benchmarks/results/action-diagnostic.json) spent about 32.8 seconds across 2,000 calls. Purchase tax, assigned
+   portal evidence and candidate joins now use workspace-scoped indexed lookups. This improves
+   scope clarity and avoids a new index or schema migration. Run provenance/source manifests
+   are computed from transaction-local snapshots, without repeating the whole run-detail query
+   for each invoice or caching membership/eligibility across requests.
+3. Monitor and HTTP catch-up could observe the same pending source before either acquired the
+   writer transaction. Refresh now rechecks the successful source/version checkpoint inside
+   that transaction. A competing refresh skips completed work; failures/new versions still retry.
+   The whole source derivation, action events and checkpoint remain atomic.
+4. The matching child retained its read transaction during CPU comparisons. It now closes the
+   database after loading scoped immutable rows/policy and computes from memory. Parent publish
+   still checks the lease and current source versions atomically. Local read transactions now
+   use actual SQLite read-only connections, avoiding writable connection setup during health
+   checks and rejecting accidental writes through read paths. Write durability/quota settings
+   and ordinary-file/process-lock protections remain unchanged.
+5. Reconciliation PDFs printed the complete nested action history and then printed a second
+   compact history. Even a bounded request could exceed the page cap or time out. The nested
+   duplicate is removed. New private snapshots retain concise invoice/date/type/supplier,
+   comparison reasons and recorded tax alongside the complete stored audit timeline. PDFs print
+   meaningful evidence changes, reviewer decisions, follow-up and filing/notice observations
+   once. Routine SOURCE_REFRESHED events are summarized by count and earliest/latest date;
+   individual events/raw snapshots remain in private history. Long meaningful histories/notes
+   still obey the page/byte limits. ReportLab callback annotations are normalized back to the
+   exact public REPORT_PAGE_LIMIT code. New requests identify generator gstshield-reports-v2;
+   existing stored report bytes and source records are not rewritten.
+
+### Reproducible evidence and limits of the comparison
+
+- [Benchmark instructions](../backend/benchmarks/README.md) and
+  [reusable workload](../backend/benchmarks/workload.py) use real loopback HTTP, disposable
+  Uvicorn/processing children, temporary synthetic accounts/storage and current private APIs.
+  They never read the real `.env` or taxpayer database and never call providers.
+- [Before](../backend/benchmarks/results/before.json) records the Phase 10 commit
+  `085cd746eda7d7ce19f771f00f404614c5d34e91`. It is explicitly partial: its first normal
+  2,000-row result pagination stopped on HTTP 503 STORAGE_UNAVAILABLE. The three completed
+  100-row trials and dense-domain measurements are preserved. Complete baseline health/memory
+  percentiles and maximum HTTP timings do not exist and are not invented. Its old small-sample
+  p95 estimator is flagged; median/max remain usable.
+- [After](../backend/benchmarks/results/after.json) is complete and passed all workload gates.
+  It records normalized application hash
+  `d9487d27f98190f0f1b06ed4088deb134d4018655cedb3615e9d6c3b2cef1076`, base commit and uv-lock
+  hash because the measured final edits were not committed yet. Final source must match that
+  hash. Same actual Windows 11 PC: AMD64 family 23/model 104, 16 logical CPUs, about 16.5 GB
+  physical RAM, Python 3.13.16, SQLite 3.53.1. Other background work can affect wall times.
+- Normal sources: 100 rows/13,445 bytes or 2,000 rows/269,045 bytes each, 95% exact and 5%
+  separator-only suggestions. Dense sources: 2,000 rows/259,935 bytes each, one identity group,
+  four million dissimilar pairs and no eligible candidates. The tool first derives tracking,
+  then records one human review, checks exact summary totals and refreshes tracking again.
+- Only synthetic-server request budgets are raised for rapid repeated polling: reads 5,000/min,
+  mutations 1,000/min and imports 100/min. Application budgets remain unchanged. All other
+  storage/worker/history limits remain defaults. Per-operation stages include accepted-to-final
+  polling delay and child startup; they are not pure algorithm timings.
+
+| Measured stage | Recorded result |
+|---|---|
+| Dense domain computation, before | 35.69 / 36.43 seconds |
+| Dense domain computation, after | 4.72 / 4.75 seconds |
+| 100-row complete HTTP run, before | 0.627–0.681 seconds, three saved trials |
+| 100-row complete HTTP run, after | 0.579–0.631 seconds, three trials |
+| 2,000-row normal complete HTTP run | 1.53–1.75 seconds, three trials |
+| 2,000-row dense complete HTTP run | 5.77 / 6.04 seconds, two trials |
+| Upload acceptance | 41–58 ms for these CSVs |
+| Parse after acceptance | 1.11–1.16 seconds for 100; 1.43–1.50 seconds for 2,000 |
+| Confirmation | 29–42 ms |
+| Run-summary HTTP median | About 20–22 ms across each five-query sample |
+| Initial tracking catch-up | 71–87 ms for 5 actions; 249–292 ms for 100; 1.57–1.91 seconds for 2,000 |
+| PDF creation-to-ready | 2.10–2.18 seconds for 100 details; 3.41–4.02 seconds for 200 details plus 100 actions |
+| PDF download | 24–92 ms, verified actual PDF bytes |
+| Concurrent readiness | 371 successful probes; median 20.98 ms, nearest-rank p95 58.11 ms, maximum 1.70 seconds |
+| Readiness / application storage failures | Zero failed probes; zero 503 responses in the final run |
+| Maximum backend process-tree RSS | 184,229,888 bytes, about 175.7 MiB; includes server/launchers/children |
+| Retained database after eight runs | 54,038,528 bytes, about 51.5 MiB; intentional retained history/reports |
+| Integrity and completion | integrity_check=ok, zero FK violations, eight completed/superseded runs, zero active jobs |
+| Tracking/result coverage | Complete unique result pagination; retained action counts 5 / 100 / 2,000; no pending automation/error after catch-up |
+| Scratch files | Zero parser descriptor/output files after every trial |
+
+The benchmark also proves opaque 404 for a foreign workspace and stable repeated-run logical
+hashes. [Equivalence evidence](../backend/benchmarks/results/equivalence.json) independently
+loads the actual Phase 10 reconciliation source from Git and compares every result field,
+canonical row, candidate, rank, reason, assignment, candidate count and compared-pair count
+against the final implementation for 100 normal, 2,000 normal and 2,000 dense inputs. All are
+identical. Its timings overlap regression work and are diagnostic, not the isolated HTTP table.
+The final dense exposure remains INR 360,000.00, with all 2,000 invoices unresolved.
+
+### Local rehearsal budgets and retained boundaries
+
+Chosen margins for these fixed datasets on this PC: upload accept under 1 second, parse under
+5 seconds, 100-row matching under 2 seconds, normal maximum matching under 5 seconds, dense
+maximum matching under 15 seconds, initial action catch-up under 5 seconds, and ordinary
+bounded reports under 15 seconds. Concurrent readiness target: no failed probes, p95 under
+100 ms and maximum under 3 seconds. These are local acceptance budgets with margins, not
+universal performance guarantees or permission to increase limits. The final measurement fits.
+
+Database growth is retained business history, not a memory/disk leak. Capacity can be exhausted
+before the numerical run/import quotas: eight stress runs already use about 51.5 MiB of the
+64 MiB DB limit. Preserve a backup and use existing reviewed maintenance; do not silently delete
+history or recreate a database. Maximum input rows remain 2,000, file size 5 MiB, pair cap four
+million, candidate cap 10,000, one active child, five pending jobs per workspace, 60-second child
+deadline and sampled 256 MiB child-tree RSS. A candidate-heavy graph can fail its explicit cap;
+large meaningful report histories can still fail REPORT_PAGE_LIMIT, byte or snapshot caps.
+
+No cloud worker, Redis, external DB, dependency update, new environment switch, public/private
+route change or SQLite migration was introduced. New ordinary report snapshots carry internal
+source-summary fields; existing public API DTOs stay aligned. The 81-page/146,378-byte synthetic
+maximum repeated-history report was rendered and inspected at pages 1, 41 and 81; first/last
+selected invoices remained present, text/footer spacing was readable and no overlap/clipping
+was observed. It is local synthetic QA, not a new legal-verification capability.
+
+The focused new regressions cover linear normalization effort, Decimal floor boundaries,
+competing successful checkpoints, report context/follow-up preservation, summarized routine
+refresh dates, stable page-limit codes, real readonly/write coexistence, and a real SQLite
+commit while matching computes from its copied inputs. Full backend/security/restart/backup,
+worker backpressure/cancellation and website gates are recorded below after their final result.
+
+
+Engineering references supporting the lock-lifetime/query work: [SQLite rollback-mode locking](https://www.sqlite.org/lockingv3.html),
+[SQLite cache-spill behavior](https://www.sqlite.org/pragma.html#pragma_cache_spill),
+[Python profiling](https://docs.python.org/3/library/profile.html) and
+[RapidFuzz ratio](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html#ratio).
+Measurements and correctness claims above come from the local code/tests, not those reference documents.
+
+
+Final review gates on the same measured application source:
+
+- **Full backend: 343 passed, 1 skipped in 733.76 seconds.** The platform skip needs Windows
+  symlink privileges; ordinary junction rejection passed. Coverage includes access/CSRF/revocation,
+  parser and malformed-body boundaries, exact matching/review races, source supersession,
+  audit rollback/quotas, report content/expiry/leases, case/proposal/action workflows, worker
+  deadline/RSS/queue/interruption handling, actual restart and offline backup/restore.
+- **14 browser checks passed in 2.1 minutes**: six actual business journeys plus existing screen,
+  privacy/failure and real security scenarios. **2 built-preview checks passed in 20.7 seconds**
+  under actual CSP, including real upload/confirmation and framing/configuration restrictions.
+- **10 Node client/config checks passed.** Canonical-field/76-type generation remained aligned;
+  strict TypeScript/Vite build passed. No frontend application source changed.
+- Frozen offline uv sync checked 37 installed packages; Ruff lint/format across app/tests/benchmarks,
+  compileall and Git whitespace checks passed. Locks and existing environment settings are unchanged.
+- The complete final load measurement passes with six actual PDF downloads, eight completed runs,
+  correct result/action coverage, no processing scratch files/active jobs, zero health failures,
+  zero 503s, valid database integrity and opaque foreign-workspace 404. Full-field matching
+  equality to the Phase 10 source also passes. Visual report review is recorded above.
+
+This is local verification, not a claimed GitHub CI result or production/zero-defect guarantee.
+Phases 12–14 remain pending: frontend profiling/smoothness, conditional real WhatsApp and the
+whole-application hackathon rehearsal. The separately supplied landing page/design remains pending.

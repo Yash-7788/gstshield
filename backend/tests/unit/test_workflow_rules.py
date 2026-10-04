@@ -98,8 +98,9 @@ def test_pdf_markup_rupee_page_and_size_bounds(tmp_path):
     assert "<b>not markup</b> & ₹1180.00" in text and "UNKNOWN / not recorded" in text
     assert 2 <= len(reader.pages) <= 10
     assert not any("/Annots" in page for page in reader.pages)
-    with pytest.raises(ReportFailure, match="REPORT_PAGE_LIMIT"):
+    with pytest.raises(ReportFailure, match="REPORT_PAGE_LIMIT") as failure:
         generate(snapshot, 5242880, 1)
+    assert failure.value.code == "REPORT_PAGE_LIMIT"
     with pytest.raises(ReportFailure, match="ARTIFACT_SIZE_LIMIT"):
         generate(snapshot, 100, 100)
     with pytest.raises(ReportFailure, match="REPORT_UNSUPPORTED_TEXT"):
@@ -145,3 +146,104 @@ def test_two_hundred_row_pdf_is_complete_bounded_and_readable(tmp_path):
     assert "INV-0001" in text and "INV-0200" in text
     assert 1 < len(reader.pages) <= 100
     print(f"REPORT_BASELINE rows=200 pages={len(reader.pages)} bytes={len(content)}")
+
+
+def test_pdf_prints_action_context_and_user_events_once_without_dumping_raw_snapshots(tmp_path):
+    from tests.unit.test_import_parsers import ROW
+
+    retained = {
+        "invoice": ROW | {"invoice_number": "TRACKED-ONLY-IN-ACTION"},
+        "status": "MISSING_IN_SNAPSHOT",
+        "recorded_tax": "180.00",
+        "reason_codes": ["NO_ELIGIBLE_SNAPSHOT_ROW"],
+        "private_diagnostic": "RAW-SNAPSHOT-SENTINEL " * 3000,
+    }
+    timeline = [
+        {
+            "kind": "DETECTED",
+            "reason": "Initial review needed.",
+            "snapshot": retained,
+            "created_at": 1713000000,
+            "actor_kind": "SYSTEM",
+        },
+        {
+            "kind": "EVIDENCE_CHANGED",
+            "reason": "Supplier corrected recorded evidence.",
+            "snapshot": {"previous": retained, "current": retained | {"status": "EXACT_MATCH"}},
+            "created_at": 1713000001,
+            "actor_kind": "SYSTEM",
+        },
+        {
+            "kind": "FOLLOWUP_ATTEMPT",
+            "reason": "Supplier contact observed.",
+            "snapshot": {"request": "UNIQUE-HUMAN-FOLLOWUP", "delivery": "NOT_VERIFIED"},
+            "created_at": 1713000002,
+            "actor_kind": "USER",
+        },
+    ]
+    timeline.extend(
+        [
+            {
+                "kind": "SOURCE_REFRESHED",
+                "reason": "ROUTINE-REFRESH-REASON",
+                "snapshot": {"previous": retained, "current": retained | {"status": "EXACT_MATCH"}},
+                "created_at": 1713000003 + index,
+                "actor_kind": "SYSTEM",
+            }
+            for index in range(30)
+        ]
+    )
+    snapshot = {
+        "kind": "RECONCILIATION_PDF",
+        "source_version": 3,
+        "provenance": "SYNTHETIC_DEMO",
+        "total_rows": 0,
+        "manifest": {"generator": "gstshield-reports-v2"},
+        "run": {"summary": {"accepted_purchase_rows": 0}},
+        "results": [],
+        "action_coverage": {"shown": 1, "total": 1},
+        "automation_coverage": {"pending_sources": 0, "error_code": None},
+        "business_actions": [
+            {
+                "id": "synthetic-action",
+                "kind": "INVOICE_REVIEW",
+                "state": "REVIEW_REQUIRED",
+                "version": 3,
+                "due_at": None,
+                "assigned_to": None,
+                "outcome": None,
+                "sources_current": True,
+                "timeline": timeline,
+            }
+        ],
+    }
+    # Legacy retained snapshots have no top-level concise invoice summary.
+    content = generate(snapshot, 5242880, 100)
+    reader = PdfReader(io.BytesIO(content))
+    text = "\n".join(page.extract_text() for page in reader.pages)
+    assert "TRACKED-ONLY-IN-ACTION" in text
+    assert "27PQRSX5678L1Z2" in text and "Recorded GST: 180.00" in text
+    assert "MISSING_IN_SNAPSHOT -> EXACT_MATCH" in text
+    assert text.count("UNIQUE-HUMAN-FOLLOWUP") == 1
+    assert "Source/version refreshes: 30" in text
+    assert "first: 2024-04-13T09:20:03+00:00" in text
+    assert "last: 2024-04-13T09:20:32+00:00" in text
+    assert "ROUTINE-REFRESH-REASON" not in text
+    assert "RAW-SNAPSHOT-SENTINEL" not in text
+    assert "Full audit snapshots remain in the private application." in text
+    assert len(reader.pages) <= 3
+    (tmp_path / "sample-actions.pdf").write_bytes(content)
+    # New snapshots use the concise current summary, including later invoice context.
+    snapshot["business_actions"][0].update(
+        {
+            "invoice": ROW | {"invoice_number": "LATEST-CONCISE-INVOICE"},
+            "comparison_status": "REVIEW_ACCEPTED",
+            "recorded_tax": "180.00",
+            "reason_codes": [],
+        }
+    )
+    text = "\n".join(
+        page.extract_text()
+        for page in PdfReader(io.BytesIO(generate(snapshot, 5242880, 100))).pages
+    )
+    assert "LATEST-CONCISE-INVOICE" in text and "Comparison: REVIEW_ACCEPTED" in text
