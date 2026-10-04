@@ -317,3 +317,39 @@ button.danger {
     width: 100%;
   }
 }
+
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+  transform: translateY(-200%);
+  padding: 0.6rem 1rem;
+  background: white;
+  z-index: 2;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.table-wrap {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+.table-wrap:focus-visible {
+  outline: 3px solid #d99b23;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .table-wrap table {
+    min-width: 600px;
+  }
+  .facts {
+    grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+  }
+}

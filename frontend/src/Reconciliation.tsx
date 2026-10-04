@@ -32,6 +32,7 @@ export function Results({
 }) {
   const [cursor, setCursor] = useState(0);
   const [status, setStatus] = useState("");
+  const [candidateCursor, setCandidateCursor] = useState(0);
   const [selected, setSelected] = useState("");
 
   const results = useResource<Schemas["ResultListData"]>(
@@ -49,6 +50,8 @@ export function Results({
 
   const action = useCommand();
   const item = detail.data;
+  const candidatePage =
+    item?.candidates.slice(candidateCursor, candidateCursor + 20) || [];
 
   return (
     <>
@@ -84,7 +87,12 @@ export function Results({
       <LoadState {...results} empty={!results.data?.results.length} />
       {results.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Comparison records table"
+          >
             <table>
               <thead>
                 <tr>
@@ -107,7 +115,12 @@ export function Results({
                       <Badge value={row.status} />
                     </td>
                     <td>
-                      <button onClick={() => setSelected(row.id)}>
+                      <button
+                        onClick={() => {
+                          setSelected(row.id);
+                          setCandidateCursor(0);
+                        }}
+                      >
                         Open result
                       </button>
                     </td>
@@ -149,7 +162,15 @@ export function Results({
             A match is not a legal credit approval.
           </Notice>
           <History rows={item.review_timeline} />
-          {item.candidates.map((candidate) => (
+          {item.candidates.length > 0 && (
+            <p className="muted">
+              Showing candidates {candidateCursor + 1} to{" "}
+              {Math.min(candidateCursor + 20, item.candidates.length)} of{" "}
+              {item.candidates.length}. All candidates remain available for
+              review.
+            </p>
+          )}
+          {candidatePage.map((candidate) => (
             <article key={candidate.id}>
               <strong>Candidate {candidate.original_invoice_number}</strong>
               <Facts
@@ -163,6 +184,26 @@ export function Results({
               />
             </article>
           ))}
+          {item.candidates.length > 20 && (
+            <div className="controls">
+              <button
+                type="button"
+                className="secondary"
+                disabled={!candidateCursor}
+                onClick={() => setCandidateCursor(0)}
+              >
+                First candidates
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={candidateCursor + 20 >= item.candidates.length}
+                onClick={() => setCandidateCursor((value) => value + 20)}
+              >
+                Next candidates
+              </button>
+            </div>
+          )}
           {writable(c) && run.sources_current && run.state === "COMPLETED" && (
             <form
               onSubmit={(e) => {
@@ -198,9 +239,9 @@ export function Results({
               </label>
               <label>
                 Candidate
-                <select name="candidate">
+                <select key={`${item.id}:${candidateCursor}`} name="candidate">
                   <option value="">Select for acceptance</option>
-                  {item.candidates
+                  {candidatePage
                     .filter((x) => x.hard_gates_passed && x.currently_available)
                     .map((x) => (
                       <option key={x.id} value={x.id}>
@@ -212,7 +253,9 @@ export function Results({
               <Field name="reason" required>
                 Review reason
               </Field>
-              <button disabled={action.busy}>Save review</button>
+              <button disabled={action.busy || detail.loading}>
+                Save review
+              </button>
             </form>
           )}
           {action.feedback}
@@ -328,7 +371,12 @@ export default function Reconciliation({ c }: { c: Context }) {
       <LoadState {...runs} empty={!runs.data?.runs.length} />
       {runs.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Comparison records table"
+          >
             <table>
               <thead>
                 <tr>
@@ -386,7 +434,11 @@ export default function Reconciliation({ c }: { c: Context }) {
         <article>
           <h2>Comparison revision {run.revision}</h2>
           <Badge value={run.state} />
-          <Job c={c} id={run.job_id} />
+          <Job
+            key={`${run.job_id}:${run.state}:${run.version}`}
+            c={c}
+            id={run.job_id}
+          />
           {!run.sources_current && (
             <Notice error>
               Earlier evidence changed. This comparison is historical; create a

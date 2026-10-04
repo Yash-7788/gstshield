@@ -2,17 +2,20 @@ export class ApiError extends Error {
   status: number;
   code: string;
   uncertain: boolean;
+  retryAfterMs: number;
 
   constructor(
     message: string,
     status = 0,
     code = "UNAVAILABLE",
     uncertain = false,
+    retryAfterMs = 0,
   ) {
     super(message);
     this.status = status;
     this.code = code;
     this.uncertain = uncertain;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -42,6 +45,11 @@ export function apiOrigin(
     );
 
   return url.origin;
+}
+
+function retryDelay(value: string | null) {
+  if (!value || !/^\d+$/.test(value)) return 0;
+  return Math.min(Number(value), 300) * 1000;
 }
 
 export class ApiClient {
@@ -140,6 +148,7 @@ export class ApiClient {
           response.status,
           data?.error?.code || "HTTP_ERROR",
           response.status >= 500 && method !== "GET",
+          retryDelay(response.headers?.get("Retry-After") ?? null),
         );
       }
 

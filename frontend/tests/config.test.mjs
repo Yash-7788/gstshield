@@ -22,6 +22,7 @@ test("only the API origin is public; dev server denies tests and backend files",
     assert.ok(!(await app.text()).includes(process.env.VITE_PRIVILEGED_CANARY));
     for (const path of [
       "/tests/client.test.mjs",
+      "/benchmarks/results/after.json",
       "/scripts/test-server.mjs",
       "/@fs/" + process.cwd().replaceAll("\\", "/") + "/../backend/app/main.py",
     ]) {

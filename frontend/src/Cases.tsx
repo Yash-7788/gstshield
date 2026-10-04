@@ -282,7 +282,9 @@ function CaseDetail({
                   <Field name="reason" required>
                     Evidence note / reason
                   </Field>
-                  <button disabled={action.busy}>Save evidence</button>
+                  <button disabled={action.busy || detail.loading}>
+                    Save evidence
+                  </button>
                 </form>
               </details>
 
@@ -310,7 +312,7 @@ function CaseDetail({
                           {text(event.kind)} · {String(event.id).slice(0, 8)}
                         </span>
                         <button
-                          disabled={action.busy}
+                          disabled={action.busy || detail.loading}
                           className="secondary"
                           onClick={() =>
                             void action.run(
@@ -370,7 +372,9 @@ function CaseDetail({
                 <Field name="reason" required>
                   Transition reason
                 </Field>
-                <button disabled={action.busy}>Save case state</button>
+                <button disabled={action.busy || detail.loading}>
+                  Save case state
+                </button>
               </form>
             </>
           )}
@@ -531,7 +535,12 @@ export default function Cases({ c }: { c: Context }) {
       <LoadState {...list} empty={!list.data?.cases.length} />
       {list.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Evidence cases table"
+          >
             <table>
               <thead>
                 <tr>

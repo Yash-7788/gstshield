@@ -1,6 +1,6 @@
 # GST-Shield — existing website and WhatsApp integration
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Future implementation instructions. [08](08_CONTRACTS_AND_ALIGNMENT.md) owns API contracts; [03](03_BACKEND_AND_DATA_SPEC.md) owns shared behavior; [06](06_SECURITY_AND_PRIVACY.md) owns authentication, signatures and linking safeguards.
 
@@ -300,3 +300,10 @@ The new frontend is a React/Vite/TypeScript internal application. The user's sep
 The full six business journeys use actual HTTP/cookies/private storage in browser tests. Separate empty-screen mocks are test fixtures only. Active jobs poll while visible and stop at terminal state; queue checks refresh every 10 seconds while visible, leaving the local backend monitor authoritative for reminders. Restart tests retain the original private SQLite file and recorded history. Website .env.example contains only the public API origin; secrets stay in the backend/private operator setup.
 
 Real WhatsApp delivery is still Phase 13. Draft saving and operator-reported attempts do not send messages. This site does not fetch government data, file returns, transfer payments, guarantee recovery or certify evidence/legal entitlement.
+
+
+## Phase 12 connected website behavior — 2026-10-04
+
+Same-client/session/URL refreshes keep loaded content and same-version drafts visible with refreshing feedback; affected save/approval/download controls wait for refreshed versions. A new workspace, registration, month, role or session still clears obsolete scope, and access denial clears private content. Processing reads use one parent-driven status schedule with two-to-five-second delays; hidden tabs pause timers. History and match candidates render in batches of 20 with all retained records reachable. Named table regions, heading focus and a skip link support keyboard and small-screen use.
+
+The final 22 browser checks include all six real business journeys; built-preview checks and 100/2,000-row real workflows also pass. No sample-response fallback, API contract change or automatic mutation retry is added. Physical-device/provider verification and real WhatsApp remain Phase 13; whole-application rehearsal remains Phase 14. Landing-page design is still supplied later.

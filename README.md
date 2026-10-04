@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–11 are complete and locally verified. Phase 11 passed 343 backend tests (1 Windows privilege-related skip), the full local load gate and website checks. Dated evidence is in 05. Phases 12–14 remain ahead.
+The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–12 are complete and locally verified. Phase 11 passed 343 backend tests (1 Windows privilege-related skip), the full local load gate and website checks. Dated evidence is in 05. Phases 13–14 remain ahead.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -40,7 +40,7 @@ The expanded plan has **14 phases** with separate backend, frontend, security, c
 5. Backend reports, cases and evidence workflow.
 6. Business workflows for all six original problems.
 7. Backend security and failure review.
-8. Supplied frontend inspection, cleanup and complete screens.
+8. Internal frontend inspection, cleanup and complete screens.
 9. Frontend/backend connection.
 10. Frontend security and privacy review.
 11. Backend performance and resource efficiency.
@@ -66,7 +66,7 @@ gstshield/
   frontend/                   # connected internal React website
 ```
 
-Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Phase 5 cases, proposals and private reports are implemented. Phase 6 business automation is complete and locally verified; frontend wiring and WhatsApp remain future phases.
+Run instructions and phase status are in [backend/README.md](backend/README.md). SQLite/private access is implemented in Phase 2. Private GST import/preview/confirmation endpoints are implemented in Phase 3. Reconciliation, saved runs/results and human review are implemented in Phase 4. Phase 5 cases, proposals and private reports are implemented. Phase 6 business automation is complete and locally verified; frontend wiring is delivered by Phases 8–9; WhatsApp remains Phase 13.
 
 
 ## Business workflow roadmap correction
@@ -92,4 +92,9 @@ Full regression: **343 passed, 1 Windows privilege-related skip**; 14 browser, 2
 and 10 client/config checks pass. See [Phase 11 evidence](md/05_BUILD_AND_VERIFICATION_PLAN.md#phase-11-completion-and-measured-verification--2026-10-04)
 and [reusable synthetic benchmark](backend/benchmarks/README.md). The default 64 MiB DB/history
 caps remain: maximum/repeated stress datasets consume storage faster than the 100-row demo.
-Phase 12 is frontend smoothness; it has not started. Real WhatsApp/design remain later work.
+The following Phase 12 review is complete; real WhatsApp/design remain later work.
+
+
+## Website smoothness verification
+
+Phase 12 preserves forms and filters during same-context refresh, reduces redundant processing polls, pauses hidden-tab polling and renders history/candidates in batches of 20. It improves keyboard focus and small-screen table scrolling without changing backend contracts or dependencies. Verification: **22 browser checks, 11 client/config checks, two built-preview checks and six backend website-contract checks passed**. Actual 100/2,000-row workflows pass all local performance budgets; startup/navigation stay broadly similar. [Dated evidence and limits](md/05_BUILD_AND_VERIFICATION_PLAN.md#phase-12-completion-and-measured-verification---2026-10-04) and [repeatable measurements](frontend/benchmarks/README.md) are recorded. Phases 13–14 remain pending.

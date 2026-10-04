@@ -3,9 +3,11 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
   testMatch:
-    process.env.GSTSHIELD_TEST_PREVIEW === "1"
-      ? "preview.smoke.mjs"
-      : "*.spec.mjs",
+    process.env.GSTSHIELD_TEST_PERFORMANCE === "1"
+      ? "performance.mjs"
+      : process.env.GSTSHIELD_TEST_PREVIEW === "1"
+        ? "preview.smoke.mjs"
+        : "*.spec.mjs",
   fullyParallel: false,
   workers: 1,
   timeout: 60000,

@@ -95,9 +95,47 @@ if (!ready) {
   throw new Error("Isolated test API failed readiness.");
 }
 if (process.env.GSTSHIELD_TEST_PREVIEW === "1") {
+  let baselineRoot;
+  if (process.env.GSTSHIELD_MEASUREMENT_LABEL === "before") {
+    const commit = process.env.GSTSHIELD_MEASUREMENT_COMMIT;
+    if (!/^[a-f0-9]{7,40}$/.test(commit || ""))
+      throw new Error("Specify a baseline commit hash");
+    baselineRoot = resolve("test-results/measurement-baseline");
+    const listed = spawnSync(
+      "git",
+      [
+        "ls-tree",
+        "-r",
+        "--name-only",
+        commit,
+        "frontend/src",
+        "frontend/index.html",
+      ],
+      { cwd: resolve(".."), encoding: "utf8", windowsHide: true },
+    );
+    if (listed.status !== 0) throw new Error("Cannot read baseline tree");
+    for (const file of listed.stdout.trim().split("\n")) {
+      if (!/^frontend\/(src\/[a-zA-Z0-9_.-]+|index\.html)$/.test(file))
+        throw new Error("Unexpected baseline path");
+      const saved = spawnSync("git", ["show", `${commit}:${file}`], {
+        cwd: resolve(".."),
+        windowsHide: true,
+      });
+      if (saved.status !== 0) throw new Error("Cannot read baseline file");
+      const target = join(baselineRoot, file.slice("frontend/".length));
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, saved.stdout);
+    }
+  }
   const built = spawnSync(
     process.execPath,
-    ["node_modules/vite/bin/vite.js", "build"],
+    [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      ...(baselineRoot
+        ? [baselineRoot, "--outDir", resolve("dist"), "--emptyOutDir"]
+        : []),
+    ],
     {
       env: {
         ...process.env,

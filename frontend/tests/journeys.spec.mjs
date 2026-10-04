@@ -155,12 +155,17 @@ async function createCase(page, run, kind, facts) {
   return item;
 }
 async function addEvidence(page, item, event, source) {
+  await expect(
+    page.getByText("Refreshing saved records", { exact: false }),
+  ).toHaveCount(0);
   const box = page
     .getByRole("heading", { name: "Evidence case", exact: true })
     .locator("..");
-  await box
-    .getByText("Add or update evidence and recorded facts", { exact: true })
-    .click();
+  const summary = box.getByText("Add or update evidence and recorded facts", {
+    exact: true,
+  });
+  if (!(await summary.locator("..").evaluate((element) => element.open)))
+    await summary.click();
   const form = box.locator("form").filter({
     has: page.getByRole("button", { name: "Save evidence", exact: true }),
   });
@@ -188,6 +193,9 @@ async function addEvidence(page, item, event, source) {
   return data;
 }
 async function caseState(page, item, state) {
+  await expect(
+    page.getByText("Refreshing saved records", { exact: false }),
+  ).toHaveCount(0);
   const box = page
     .getByRole("heading", { name: "Evidence case", exact: true })
     .locator("..");

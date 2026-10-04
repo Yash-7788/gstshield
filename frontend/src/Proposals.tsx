@@ -337,7 +337,12 @@ export default function Proposals({ c }: { c: Context }) {
       <LoadState {...list} empty={!list.data?.proposals.length} />
       {list.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Payment proposals table"
+          >
             <table>
               <thead>
                 <tr>
@@ -418,7 +423,9 @@ export default function Proposals({ c }: { c: Context }) {
               <Field name="reason" required>
                 Approval reason
               </Field>
-              <button disabled={action.busy}>Approve recorded draft</button>
+              <button disabled={action.busy || detail.loading}>
+                Approve recorded draft
+              </button>
             </form>
           )}
           {action.feedback}

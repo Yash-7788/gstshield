@@ -64,7 +64,11 @@ function ImportDetail({
               Refresh source
             </button>
           </div>
-          <Job c={c} id={item.job_id} />
+          <Job
+            key={`${item.job_id}:${item.state}:${item.version}`}
+            c={c}
+            id={item.job_id}
+          />
           <Facts
             values={{
               kind: item.kind,
@@ -136,7 +140,9 @@ function ImportDetail({
                       </Field>
                     )}
                   </div>
-                  <button disabled={action.busy}>Create mapped preview</button>
+                  <button disabled={action.busy || detail.loading}>
+                    Create mapped preview
+                  </button>
                 </form>
               </details>
             )}
@@ -160,7 +166,12 @@ function ImportDetail({
           <LoadState {...preview} empty={!preview.data?.rows.length} />
           {preview.data && (
             <>
-              <div className="table-wrap">
+              <div
+                className="table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Source records table"
+              >
                 <table>
                   <thead>
                     <tr>
@@ -401,7 +412,12 @@ export default function Sources({ c }: { c: Context }) {
       <LoadState {...list} empty={!list.data?.imports.length} />
       {list.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Source records table"
+          >
             <table>
               <thead>
                 <tr>

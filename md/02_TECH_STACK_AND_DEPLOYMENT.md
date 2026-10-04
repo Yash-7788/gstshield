@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
@@ -297,3 +297,8 @@ is deliberate and can exhaust byte capacity before the run-count quota. Keep bac
 existing reviewed maintenance; performance changes never silently discard earlier sources,
 actions, events or reports. This measurement covers fixed synthetic CSV distributions, not every
 5 MiB input or production concurrency. Browser performance remains Phase 12.
+
+
+## Phase 12 website performance verification — 2026-10-04
+
+The installed pinned stack and both lockfiles remain unchanged. The built website was profiled against the actual isolated local API with 100 and 2,000 invoices; all local interaction, processing, download and retained-JS-heap budgets passed. Baseline and final synthetic measurements and repeatable instructions live in frontend/benchmarks. This introduces no additional service, database, package or deployment requirement. Startup/navigation stayed broadly similar; the principal improvements are preserving same-context forms/filters and reducing unnecessary polling/rendering. See 05 for measured values and limits.

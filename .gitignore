@@ -25,3 +25,6 @@ frontend/playwright-report/
 
 # Machine-specific synthetic benchmark diagnostics.
 backend/benchmarks/results/*.log
+
+# Private synthetic browser-performance screenshots.
+frontend/benchmarks/screenshots/

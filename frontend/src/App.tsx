@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiClient, apiOrigin } from "./client";
 
@@ -159,6 +159,7 @@ function Workspace({
   const [period, setPeriod] = useState(remembered.period);
 
   const [section, setSection] = useState(sectionFromHash);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const change = () => {
@@ -188,10 +189,24 @@ function Workspace({
         }),
       );
   }, [user.user_id, selected?.id, registration?.id, period]);
+  useEffect(() => {
+    if (selected && registration)
+      heading.current?.focus({ preventScroll: true });
+  }, [section, selected?.id, selected?.role, registration?.id, period]);
   const key = `${user.user_id}:${selected?.id}:${selected?.role}:${registration?.id}:${period}:${section}`;
 
   return (
     <div className="app">
+      <a
+        className="skip-link"
+        href="#workspace-content"
+        onClick={(event) => {
+          event.preventDefault();
+          heading.current?.focus();
+        }}
+      >
+        Skip to workspace content
+      </a>
       <header>
         <div>
           <strong className="brand">GSTShield</strong>
@@ -256,7 +271,9 @@ function Workspace({
           ))}
         </nav>
         <main>
-          <h1>{section}</h1>
+          <h1 id="workspace-content" ref={heading} tabIndex={-1}>
+            {section}
+          </h1>
           {workspaces.error && (
             <Notice error>
               {workspaces.error}{" "}

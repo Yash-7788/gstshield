@@ -165,7 +165,9 @@ export default function Reports({ c }: { c: Context }) {
                 Next report sources
               </button>
             </div>
-            <button disabled={action.busy || !candidates.length}>
+            <button
+              disabled={action.busy || sources.loading || !candidates.length}
+            >
               Generate private report
             </button>
           </form>
@@ -178,7 +180,12 @@ export default function Reports({ c }: { c: Context }) {
       <LoadState {...list} empty={!list.data?.artifacts.length} />
       {list.data && (
         <>
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Private reports table"
+          >
             <table>
               <thead>
                 <tr>
@@ -283,6 +290,7 @@ export default function Reports({ c }: { c: Context }) {
           <button
             disabled={
               action.busy ||
+              detail.loading ||
               item.state !== "READY" ||
               (!item.sources_current &&
                 (!historical || item.kind === "PROPOSAL_CSV"))

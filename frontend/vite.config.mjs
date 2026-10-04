@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
           ".yarnrc.yml",
           "**/.git/**",
           "**/tests/**",
+          "**/benchmarks/**",
           "**/scripts/**",
           "**/test-results/**",
           "**/playwright-report/**",

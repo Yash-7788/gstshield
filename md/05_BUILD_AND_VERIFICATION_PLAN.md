@@ -1,16 +1,16 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
 Read before coding: product scope (01), installed stack/configuration (02), backend/data behavior (03), website/WhatsApp connection (04), this plan (05), security/privacy (06), GST evidence boundaries (07), and API alignment (08). The original report/review and Engineering Headstart remain supporting context.
 
-Latest user decisions: local PC execution and local PC storage; proceed one phase at a time; review each phase before starting the next; expand the full application plan with dedicated frontend improvement/connection/security/smoothness and backend security/performance phases. Do not create hosting infrastructure or external databases. The latest user instruction authorizes building the internal application now; the separately supplied landing page/design is later work. The phase order is a dependency order, not a ranking of importance.
+Latest user decisions: local PC execution and local PC storage; proceed one phase at a time; review each phase before starting the next; expand the full application plan with dedicated frontend improvement/connection/security/smoothness and backend security/performance phases. Do not create hosting infrastructure or external databases. The latest user instruction authorizes building the internal application now; the separately supplied landing page/design is later work. The phase order is a dependency order, not a ranking of importance. The user plans to finish all 14 phases before the hackathon starts; the two hackathon days are reserved for selectively scoped deferred additions with prerequisites prepared beforehand.
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–11 are complete and locally verified, including the 343-pass Phase 11 full regression and maximum-workload/website checks. Phases 12–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–12 are complete and locally verified, including the Phase 11 backend regression and Phase 12 connected website/performance checks. Phases 13–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -25,7 +25,7 @@ The active plan now contains **14 phases**. Phases 1–11 are complete and local
 | 9 | Frontend and backend connection | Both | Complete |
 | 10 | Frontend security and privacy review | Frontend | Complete and locally verified |
 | 11 | Backend performance and resource efficiency | Backend | Complete and locally verified |
-| 12 | Frontend smoothness, speed and usability | Frontend | Not started |
+| 12 | Frontend smoothness, speed and usability | Frontend | Complete and locally verified |
 | 13 | WhatsApp connection and channel review | Both | Not started |
 | 14 | Whole-application regression and hackathon rehearsal | Both | Not started |
 
@@ -354,7 +354,7 @@ Review gate:
 4. Exercise the largest supported dataset without uncontrolled memory, disk usage or silently dropped work.
 5. State remaining bottlenecks and agreed operating limits; no unmeasured promise of zero lag or an arbitrary completion time.
 
-### Phase 12 — Frontend smoothness, speed and usability (not started)
+### Phase 12 — Frontend smoothness, speed and usability (complete and locally verified)
 
 Owner: frontend. Outcome: Make the connected website responsive and predictable during the real demo flow.
 
@@ -860,3 +860,48 @@ Final review gates on the same measured application source:
 This is local verification, not a claimed GitHub CI result or production/zero-defect guarantee.
 Phases 12–14 remain pending: frontend profiling/smoothness, conditional real WhatsApp and the
 whole-application hackathon rehearsal. The separately supplied landing page/design remains pending.
+
+
+## Phase 12 completion and measured verification - 2026-10-04
+
+Scope is the existing connected internal website. All earlier business workflows, exact amounts, live backend authorization, scoped state, CSRF/version/idempotency and private report rules remain authoritative. No Phase 13 provider implementation or landing-page redesign is included.
+
+The built Phase 11 baseline at 4ff43fe successfully ran real 100-row and 2,000-row uploads, confirmation, comparison, review, pagination, work queue/history, PDF generation/download, repeated navigation, mobile layout and a second authenticated tab. Both lost their selected result filter after saving review because a same-URL reload removed the comparison subtree. The successful baseline is retained in frontend/benchmarks/results/before.json; the initial selector-error attempt is not completion evidence.
+
+Phase 12 retains loaded data only for the same client identity, session epoch and URL during explicit refresh, marks it refreshing and disables affected save/approval/download operations while versions reload. Changed context/URL/session hides old data synchronously and aborts old reads; 401/403/404 discard data. Same-version unsaved fields and open panels remain; existing version-keyed evidence forms reset on changed versions. There is no persistent business cache or automatic write retry.
+
+Active processing reads start at two seconds and back off to five seconds when jobs take longer. Job status is read on parent state/version changes instead of running a second independent poller. Routine membership refresh remains 15 seconds, queue refresh remains 10 seconds, and backend default request limits are unchanged. Hidden tabs clear polling timers and resume one current check when due; read failures back off and honor bounded numeric Retry-After hints. Denial stops automatic retry. Started reads remain cancellable by scope/session; mutations are never automatically resubmitted.
+
+Collapsed evidence history renders only its summary. Opening renders the first 20 retained events; explicit Show more history reaches every retained event, and closing removes hidden descendants. Candidate details and acceptance options use 20-item pages with every server candidate still reachable, preserving ranking and evidence. Existing source/result/list pagination stays 20. Currency formatting reuses Intl.NumberFormat and preserves the minus sign for exact -0.xx decimal strings; money is not recalculated in the browser.
+
+Keyboard changes add a skip link, move focus to the main heading on section/context navigation, and give tables named focusable scroll regions. Small-screen tables retain readable columns with horizontal scroll inside the region. No browser-wide horizontal overflow or replacement landing design is intended.
+
+Eight focused usability regressions cover unchanged-version draft retention and disabled saves during refresh, denial clearing, 100-event lazy history/all-event access, processing request budget/terminal errors, hidden visibility, server retry hints, delayed filter replies, mobile keyboard use and 60-candidate access/exact negative sub-rupee formatting (the last two are combined scenario checks). The real journey helper now opens evidence panels only when closed and waits for refresh before editing; it no longer assumes every save destroys/collapses the detail. This changes the test's navigation assumption, not backend expected outcomes.
+
+Final verification: **22 browser checks passed in 2.7 minutes**: six real business journeys, two real security journeys, four explicitly simulated privacy faults, two screen fixtures and eight usability checks. **11 Node client/configuration checks passed**, including bounded retry hints and denial of benchmark files through Vite dev serving. **Two built-preview checks passed in 19.2 seconds** under the actual content security policy. **Six backend website-contract checks passed in 72.94 seconds**. Strict TypeScript, formatting, the generated 76-type contract comparison and Git whitespace checks passed. The real-workload measurement passed in 54.8 seconds against the final application source. The initial fixture/selector/helper failures were corrected and are not counted as passing evidence; notably the retry-hint fixture needed the same CORS-exposed header as the real backend, and retained panels needed conditional opening in the journey helper.
+
+Full backend regression remains the 343-pass/one Windows privilege skip Phase 11 evidence, rather than a newly claimed Phase 12 full run. Phase 12 has no backend runtime/schema/dependency changes; the agreed focused/batched cadence applies, with combined full regression due in Phase 14. All six real business journeys continue to cover original workflows, reports, role/context changes, actual delayed replies, restart, revocation and stale-write recovery. These results support connection to earlier phases within the tested local scope.
+
+
+### Recorded website performance and visual review
+
+[Before](../frontend/benchmarks/results/before.json) measures committed Phase 11 frontend source at `4ff43fe`; [after](../frontend/benchmarks/results/after.json) measures final Phase 12 source SHA-256 `d6138a7c858964db41dd85335d610aadb1246a1994061fc98f40fc357c3850fc`. Both use the same installed stack, synthetic datasets and isolated real local API. Runtime source hashing normalizes LF and sorts filenames case-sensitively. [The measurement instructions](../frontend/benchmarks/README.md) explain how to repeat it. No real taxpayer records or presenter configuration are read.
+
+| Observation | Phase 11 baseline | Phase 12 final |
+|---|---|---|
+| Initial login UI | 907 ms | 884 ms |
+| Navigation median, 100 / 2,000 rows | 153.56 / 167.00 ms | 149.54 / 149.98 ms |
+| Navigation maximum, 100 / 2,000 rows | 217.80 / 217.17 ms | 200.38 / 232.68 ms |
+| Result filter after saving review | Lost in both workloads | Preserved in both workloads |
+| Collapsed action-history descendants | 38 / 38 | 1 / 1 (summary only) |
+| Main measured page API requests | 89 / 90 | 86 / 88 |
+| Retained JS heap change after repeated navigation | 188,616 / 24,888 bytes | 202,872 / 45,952 bytes |
+| Compiled JS / CSS resource bytes | 283,404 / 3,776 | 286,343 / 4,282 |
+
+All final local budgets pass, with no API/browser errors: ordinary measured interactions below one second, parsed previews 2.52–2.59 seconds, comparison readiness 2.38–2.42 seconds, PDF readiness 2.42 / 4.50 seconds, and private downloads 0.37 / 0.30 seconds. The 100-row initial comparison contains 95 exact and 5 suggested matches; the 2,000-row comparison contains 1,900 exact and 100 suggestions. One reviewed suggestion moves to REVIEW_ACCEPTED and remains present in retained results. Three complete navigation rounds give 18 navigation observations per workload. Long tasks remain (55/62/68 ms in the final run); the change does not promise zero lag.
+
+This is one observation per dataset, including automation overhead, not a statistically established general speedup. Startup and navigation remain broadly similar, and the small bundle increase is explicit. The measured practical improvements are preservation of filters/forms, fewer redundant requests, bounded hidden-history/candidate rendering, and controlled polling under the separate long-job/visibility/retry tests. Heap measurements cover garbage-collected JavaScript, not full browser-process memory or a proof against every long-lived leak. Budgets are margins on this Windows PC, not guarantees for all devices or network conditions.
+
+Final 390px screenshots for both workloads were inspected: controls and summaries remain readable, tables scroll inside their named regions, and the page stays within the viewport. Separate automated 320/390px keyboard tests verify no page-wide horizontal overflow and access to offscreen table columns. These are installed-Chrome viewport checks, not physical-phone, Safari or external-network evidence. Screenshots are ignored under frontend/benchmarks/screenshots; synthetic JSON measurements are committed. Benchmark files are denied by development serving. Real WhatsApp/device/provider setup remains Phase 13.
+
+No new dependency, migration, backend endpoint, environment switch, external database, hosted service or landing-page design is introduced. Default backend limits stay unchanged. The isolated measurement server raises its test-only request budgets for rapid synthetic setup; those settings are not application defaults. Phases 13–14 and the supplied landing page/design remain pending.

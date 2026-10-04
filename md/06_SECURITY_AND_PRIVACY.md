@@ -1,6 +1,6 @@
 # GST-Shield — essential hackathon security and privacy
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Implemented safeguards and the bounded Phase 7 backend review are recorded below; future channel/browser controls remain planned. The project handles financial documents and phone identities even in a demonstration, so these controls are part of making it work correctly. [03](03_BACKEND_AND_DATA_SPEC.md) implements them; [05](05_BUILD_AND_VERIFICATION_PLAN.md) verifies them.
 
@@ -349,3 +349,10 @@ files after work, and valid DB integrity/FKs. A whole-process-tree RSS observati
 hard sandbox limit. Finite retention can still exhaust storage; no optimization silently deletes
 history or makes arbitrary candidate-heavy inputs guaranteed to fit. Full regression/website
 results and honest partial-baseline boundaries are recorded in 05.
+
+
+## Phase 12 responsiveness safeguards — 2026-10-04
+
+Loaded-data retention is limited to the same API identity, session epoch and URL. Context/session changes hide old data synchronously; 401/403/404 remove retained private content and stop automatic retries. Backend authorization, cookie/CSRF protections and write version/idempotency rules stay authoritative. Refreshing version-dependent save/approval/download controls are disabled. No financial cache is persisted in browser storage, and no failed mutation is automatically resubmitted.
+
+Polling timers stop in hidden tabs; read failures back off and accept only bounded numeric Retry-After hints. Candidate/history rendering limits do not discard backend evidence or change which candidates may be reviewed. Vite development serving now denies frontend/benchmarks/** alongside existing private/test paths. Screenshot outputs remain Git-ignored; committed JSON contains only synthetic evidence. Final real security/privacy/browser and built CSP checks pass within the local scope. Viewport/visibility simulations do not establish physical-device, provider or production security. See 05 for final evidence and remaining Phase 13/14 gates.

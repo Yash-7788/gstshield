@@ -224,3 +224,36 @@ test("aborted report context cannot expose a completed file", async () => {
     URL.createObjectURL = originalURL;
   }
 });
+
+test("read errors expose bounded server retry hints without retrying mutations", async () => {
+  const original = globalThis.fetch;
+  try {
+    for (const [header, expected] of [
+      ["60", 60000],
+      ["999999", 300000],
+      ["-1", 0],
+      ["invalid", 0],
+    ]) {
+      let count = 0;
+      globalThis.fetch = async () => {
+        count++;
+        return Response.json(
+          { error: { message: "Limited", code: "RATE_LIMITED" } },
+          { status: 429, headers: { "Retry-After": header } },
+        );
+      };
+      const api = new ApiClient("http://localhost:8000");
+      await assert.rejects(
+        api.get("/api/v1/workspaces"),
+        (error) => error.retryAfterMs === expected,
+      );
+      await assert.rejects(
+        api.command("/api/v1/workspaces/a/update", {}),
+        (error) => error.status === 429,
+      );
+      assert.equal(count, 2);
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+});

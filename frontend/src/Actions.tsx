@@ -178,7 +178,9 @@ function ActionDetail({
                     Closing requires a recorded review outcome. Reopening clears
                     the previous closure outcome.
                   </p>
-                  <button disabled={action.busy}>Save action state</button>
+                  <button disabled={action.busy || detail.loading}>
+                    Save action state
+                  </button>
                 </form>
               </details>
 
@@ -212,7 +214,9 @@ function ActionDetail({
                       <Field name="reason" required>
                         Draft reason
                       </Field>
-                      <button disabled={action.busy}>Save private draft</button>
+                      <button disabled={action.busy || detail.loading}>
+                        Save private draft
+                      </button>
                       <small>No message is sent by this website.</small>
                     </form>
                   </details>
@@ -269,7 +273,7 @@ function ActionDetail({
                         <Field name="reason" required>
                           What happened
                         </Field>
-                        <button disabled={action.busy}>
+                        <button disabled={action.busy || detail.loading}>
                           Record unverified contact attempt
                         </button>
                       </form>
@@ -313,7 +317,7 @@ function ActionDetail({
                       <Field name="reason" required>
                         Review reason
                       </Field>
-                      <button disabled={action.busy}>
+                      <button disabled={action.busy || detail.loading}>
                         Save review outcome
                       </button>
                     </form>
@@ -396,7 +400,7 @@ function ActionDetail({
                           <Field name="reason" required>
                             Observation reason
                           </Field>
-                          <button disabled={action.busy}>
+                          <button disabled={action.busy || detail.loading}>
                             Record user-reported submission
                           </button>
                         </form>
@@ -410,7 +414,7 @@ function ActionDetail({
           <div className="controls">
             <button
               className="secondary"
-              disabled={action.busy}
+              disabled={action.busy || detail.loading}
               onClick={() =>
                 void action.run(
                   () =>
@@ -509,7 +513,12 @@ export default function Actions({ c }: { c: Context }) {
               {list.data.automation.error_code || "Refresh after processing."}
             </Notice>
           )}
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Business actions table"
+          >
             <table>
               <thead>
                 <tr>

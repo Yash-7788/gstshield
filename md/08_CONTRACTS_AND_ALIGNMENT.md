@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–11 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip), real maximum-workload checks and website verification. See 05 for dated evidence. Phases 12–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -408,3 +408,10 @@ and shown versus total actions. A successful report does not imply a filed retur
 message, legal entitlement, payment or recovery. Repeated maximum matching/tracking/report and
 full-field golden equivalence evidence live in 05 and backend/benchmarks/results. Frontend
 smoothness, conditional WhatsApp and combined rehearsal retain Phases 12–14.
+
+
+## Phase 12 contract continuity — 2026-10-04
+
+Public routes, generated 76 DTOs, schema, money strings and backend rules remain unchanged. Internal resource state now distinguishes an initial load from a same-identity/session/URL refresh; consumers preserve same-version drafts while refreshing and disable writes requiring current detail versions. Job detail reloads follow parent job identity/state/version changes instead of a second timer. Read errors honor bounded numeric Retry-After, but writes retain explicit retry/idempotency behavior.
+
+History and candidate pages render 20 items at a time while preserving all retained evidence/ranking and access to every candidate. Currency formatting continues exact string/BigInt handling and fixes the display of negative sub-rupee values such as -0.50. No tax calculation moves into the browser. Six real backend website-contract checks, generated-contract comparison, 22 browser checks, two built-preview checks and the maximum real 2,000-row connected workload pass. Phase 13/14 remain pending; dated details and measurement limits are in 05.
