@@ -81,7 +81,9 @@ export class ApiClient {
     if (
       !path.startsWith("/api/v1/") ||
       path.includes("..") ||
-      path.includes("#")
+      path.includes("#") ||
+      /[\\\x00-\x20\x7f]/.test(path) ||
+      !/^\/api\/v1\/[a-zA-Z0-9_/-]+$/.test(path.split("?", 1)[0])
     )
       throw new Error("Unsupported request path");
 
@@ -114,7 +116,7 @@ export class ApiClient {
           : controller.signal,
       });
 
-      if (epoch !== this.epoch)
+      if (epoch !== this.epoch || signal?.aborted)
         throw new ApiError(
           "Selection changed; refresh the current workspace.",
           0,
@@ -123,6 +125,8 @@ export class ApiClient {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+        if (epoch !== this.epoch || signal?.aborted)
+          throw new ApiError("Session changed.", 0, "OBSOLETE");
 
         if (response.status === 401 && path !== "/api/v1/auth/login")
           this.onExpired();
@@ -169,7 +173,7 @@ export class ApiClient {
           await reader.cancel();
         }
 
-        if (epoch !== this.epoch)
+        if (epoch !== this.epoch || signal?.aborted)
           throw new ApiError("Session changed.", 0, "OBSOLETE");
 
         return new Blob(chunks, { type: mime }) as T;
@@ -177,7 +181,7 @@ export class ApiClient {
 
       const data = await response.json();
 
-      if (epoch !== this.epoch)
+      if (epoch !== this.epoch || signal?.aborted)
         throw new ApiError(
           "Selection changed; refresh the current workspace.",
           0,
@@ -275,15 +279,18 @@ export class ApiClient {
     return task;
   }
 
-  async download(path: string, filename: string) {
+  async download(path: string, filename: string, signal?: AbortSignal) {
+    const epoch = this.epoch;
     const blob = await this.request<Blob>(
       path,
       "GET",
       undefined,
       undefined,
-      undefined,
+      signal,
       true,
     );
+    if (epoch !== this.epoch || signal?.aborted)
+      throw new ApiError("Report selection changed.", 0, "OBSOLETE");
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

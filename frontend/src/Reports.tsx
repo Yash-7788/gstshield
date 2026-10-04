@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Schemas } from "./contracts";
 
@@ -25,6 +25,11 @@ export default function Reports({ c }: { c: Context }) {
     useState<Schemas["ArtifactCreate"]["kind"]>("RECONCILIATION_PDF");
   const [historical, setHistorical] = useState(false);
   const action = useCommand();
+  const downloadScope = useRef(new AbortController());
+  useEffect(() => {
+    downloadScope.current = new AbortController();
+    return () => downloadScope.current.abort();
+  }, []);
 
   const list = useResource<Schemas["ArtifactListData"]>(
     c.api,
@@ -231,7 +236,12 @@ export default function Reports({ c }: { c: Context }) {
             setHistorical(false);
           }}
         >
-          <Field name="id" required maxLength={36}>
+          <Field
+            name="id"
+            required
+            maxLength={36}
+            pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+          >
             Report ID
           </Field>
           <button>Find report</button>
@@ -286,6 +296,7 @@ export default function Reports({ c }: { c: Context }) {
                       `artifacts/${item.id}/download${historical ? "?historical=true" : ""}`,
                     ),
                     item.filename,
+                    downloadScope.current.signal,
                   ),
                 undefined,
                 "Download prepared.",

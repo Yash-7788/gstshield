@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–9 are complete and locally verified; full regression: 314 passed, 1 skipped. The verification record is in 05. Phases 10–14 remain ahead.
+The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–10 are complete and locally verified. The full post-Phase-9 regression passed: 314 passed, 1 skipped. Phase 10 passed frontend privacy/access checks; both records are in 05. Phases 11–14 remain ahead.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -76,3 +76,5 @@ Phase 6 implements the six local business workflows through retained actions, su
 ## Website connection verification
 
 Phases 7–9 are complete: backend security checks, internal workspace screens and actual browser/API workflows. Full backend regression passed 314 tests (1 platform-privilege skip); eight browser tests, six API-client tests and the built-preview CSP upload/confirmation test passed. [Build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) records scope, evidence and remaining phases. Start the website from frontend with `pnpm dev` alongside the local backend. Landing-page design and real WhatsApp remain later work.
+
+Phase 10 adds denied-access screen clearing, role refresh, obsolete-response/download cancellation, strict API paths/UUID lookup and explicit public configuration. Verification: 10 client/config checks, 14 browser checks, 2 built-preview checks and 25 targeted backend checks passed. [The phase plan](md/05_BUILD_AND_VERIFICATION_PLAN.md#phase-10-completion-and-verification--2026-10-04) records their scope and limits.

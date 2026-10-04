@@ -107,13 +107,14 @@ export function useResource<T>(
     data: T | null;
     error: string;
     loading: boolean;
-  }>({ url: null, data: null, error: "", loading: false });
+    denied: boolean;
+  }>({ url: null, data: null, error: "", loading: false, denied: false });
 
   const [revision, bump] = useState(0);
   const reload = useCallback(() => bump((v) => v + 1), []);
 
   useEffect(() => {
-    setState({ url, data: null, error: "", loading: !!url });
+    setState({ url, data: null, error: "", loading: !!url, denied: false });
     if (!url) return;
 
     const controller = new AbortController();
@@ -135,7 +136,7 @@ export function useResource<T>(
       try {
         const data = await api.get<T>(url, controller.signal);
         if (!controller.signal.aborted)
-          setState({ url, data, error: "", loading: false });
+          setState({ url, data, error: "", loading: false, denied: false });
         const status = (data as { state?: string }).state;
         again ||=
           watch === true &&
@@ -147,8 +148,16 @@ export function useResource<T>(
         if (!controller.signal.aborted)
           setState((previous) => ({
             ...previous,
+            data:
+              error instanceof ApiError &&
+              [401, 403, 404].includes(error.status)
+                ? null
+                : previous.data,
             error: error instanceof Error ? error.message : "Unable to load",
             loading: false,
+            denied:
+              error instanceof ApiError &&
+              [401, 403, 404].includes(error.status),
           }));
       }
 
@@ -163,7 +172,9 @@ export function useResource<T>(
   }, [api, url, revision, watch]);
 
   return {
-    ...(state.url === url ? state : { data: null, error: "", loading: !!url }),
+    ...(state.url === url
+      ? state
+      : { data: null, error: "", loading: !!url, denied: false }),
     reload,
   };
 }
@@ -256,6 +267,7 @@ export function Field({
   value,
   required = false,
   maxLength = 1000,
+  pattern,
 }: {
   name: string;
   children: ReactNode;
@@ -263,6 +275,7 @@ export function Field({
   value?: string;
   required?: boolean;
   maxLength?: number;
+  pattern?: string;
 }) {
   return (
     <label>
@@ -273,6 +286,7 @@ export function Field({
         defaultValue={value}
         required={required}
         maxLength={maxLength}
+        pattern={pattern}
         step={type === "number" ? "1" : undefined}
       />
     </label>

@@ -136,6 +136,7 @@ function Workspace({
   const workspaces = useResource<Schemas["WorkspaceData"][]>(
     api,
     "/api/v1/workspaces",
+    15000,
   );
 
   const [remembered] = useState(() => rememberedSelection(user.user_id));
@@ -187,7 +188,7 @@ function Workspace({
         }),
       );
   }, [user.user_id, selected?.id, registration?.id, period]);
-  const key = `${user.user_id}:${selected?.id}:${registration?.id}:${period}:${section}`;
+  const key = `${user.user_id}:${selected?.id}:${selected?.role}:${registration?.id}:${period}:${section}`;
 
   return (
     <div className="app">

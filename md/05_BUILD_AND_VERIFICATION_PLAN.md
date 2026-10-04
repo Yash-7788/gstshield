@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–9 are complete and locally verified; the full regression passed (314 passed, 1 skipped). See 05 for the verification record. Phases 10–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–10 are complete and locally verified. The post-Phase-9 full regression passed (314 passed, 1 skipped); Phase 10 adds targeted frontend/privacy and access checks. See 05 for both verification records. Phases 11–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–9 are complete and locally verified, including full post-Phase-9 regression. Phases 10–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–10 are complete and locally verified, including full post-Phase-9 regression and targeted Phase-10 privacy/access checks. Phases 11–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -23,7 +23,7 @@ The active plan now contains **14 phases**. Phases 1–9 are complete and locall
 | 7 | Backend security and failure review | Backend | Complete and locally verified |
 | 8 | Frontend inspection, cleanup and complete screens | Frontend | Complete |
 | 9 | Frontend and backend connection | Both | Complete |
-| 10 | Frontend security and privacy review | Frontend | Not started |
+| 10 | Frontend security and privacy review | Frontend | Complete and locally verified |
 | 11 | Backend performance and resource efficiency | Backend | Not started |
 | 12 | Frontend smoothness, speed and usability | Frontend | Not started |
 | 13 | WhatsApp connection and channel review | Both | Not started |
@@ -308,7 +308,7 @@ Review gate:
 4. Check double submissions, failed requests, expired sessions, stale reviews and recovery without duplicate work.
 5. Verify the website build and generated/shared types agree with the backend contract.
 
-### Phase 10 — Frontend security and privacy review (not started)
+### Phase 10 — Frontend security and privacy review (complete and locally verified)
 
 Owner: frontend. Outcome: Review the actual browser application and its connection for data exposure and unsafe user-controlled content.
 
@@ -674,3 +674,26 @@ Application physical source lines: backend/app Python plus frontend/src TS/TSX/C
 Phases 7, 8 and 9 are complete. Phases 10 frontend security/privacy, 11 backend measurement, 12 frontend efficiency, 13 conditional physical WhatsApp and 14 whole-product rehearsal remain pending. User landing page/design is still separate later work. These passing gates do not promise zero defects, production certification or guaranteed tax recovery.
 
 Final physical source counts: **12,743 application lines excluding tests; 6,947 test/support lines; 19,690 including tests.** Generated DTOs are 80 of the application lines. Generator/build configuration remains outside those counts.
+
+
+## Phase 10 completion and verification — 2026-10-04
+
+Frontend privacy review is complete for the implemented local website. Direct changes went into the existing client, shared resource hook, workspace shell, queue and reports screen. There is no backend schema change, added dependency, provider connection or new tax capability.
+
+Three new client regressions first failed against the previous implementation: percent-encoded request paths reached fetch; a delayed 401 error body could expire a replacement session; a cancelled report scope could reach file exposure. Request paths now accept only the fixed API pathname alphabet and reject traversal, encoded segments, fragments, backslashes and controls. Every response-body branch rechecks session generation and read cancellation. Report downloads additionally recheck immediately before creating a blob URL and use a component-lifetime abort signal, so leaving a section, changing registration/month/workspace/role or signing out cancels the pending download. Report lookup accepts UUID-shaped IDs; backend UUID/ownership validation remains the authority.
+
+The resource hook clears cached data on 401/403/404. A denied queue response also unmounts its open action detail; ordinary refresh/temporary failure preserves the detail's existing workflow state. Permitted workspaces refresh every 15 seconds while visible, with roles included in the screen identity so role changes discard old forms. These polls do not replace authorization: the backend already checks active account, session, membership and role for every operation. Changes made elsewhere become visible on the next successful poll or interaction, not through instantaneous push notifications.
+
+Only VITE_API_BASE_URL is exposed as public configuration. Other VITE_ variables are no longer automatically exposed. Synthetic privileged/provider canaries test development transformation and built assets. Dev serving is restricted to the frontend root, keeps Vite's environment/key/Git deny rules and additionally blocks tests, scripts, traces and screenshots. Automatic public-directory copying is disabled; future design assets should be explicitly imported from reviewed source. Preview retains strict script/style/connect policies, disables objects and framing, and uses no-store/nosniff/no-referrer. Development hot reload retains its working configuration and framing header; the strict built CSP is a preview policy, not a claim that developer tooling is a hardened public host.
+
+Verification on the final code:
+
+- **10 Node client/configuration tests passed**, including the three reproduced failures, public-setting allowlist and HTTP denial of test/server/backend source files.
+- **14 browser tests passed in 2.5 minutes**: the six existing real business journeys, two existing screen fixtures, four explicitly mocked privacy/failure cases, and two additional real-backend security journeys. They cover denied queue/detail clearing, role refresh, UUID lookup, download cancellation, HTML-shaped CSV display, storage/cookie inspection, logout/identity isolation and request forgery.
+- **2 built-preview tests passed in 25.0 seconds**: real login/upload/parse/confirm/logout under CSP, actual blocked framing/unconfigured connections, shipped-asset canary/test-password scans and absence of source maps.
+- **25 targeted backend checks passed in 246.27 seconds**, covering access, endpoint security and website contracts. Backend code was unchanged. The full 314-pass/1-skip suite recorded after Phase 9 was not rerun for these frontend-only changes.
+- Generated 76-schema/canonical-field alignment, Prettier formatting, strict TypeScript/Vite build and Git whitespace checks passed. Existing pinned dependencies and lockfiles remain unchanged.
+
+The hostile invoice text is verified in a real parsed CSV preview/raw-field display; no image element, dialog or attacker-resource request appears. Browser storage contains selection IDs/month only, with no invoice, password, session token or CSRF. HttpOnly/Strict/API-path cookie flags are inspected. Missing CSRF is refused with 403; a cross-site browser logout with the Strict cookie withheld is refused with 401; an explicitly foreign Origin is refused with 403 even using the authenticated test request context. The original session remains active after refused logout attempts. Successful logout leaves private API reads at 401, and the next identity receives opaque 404 for the previous user's workspace.
+
+Phase 10 does not certify production security or every possible browser/OS attack. Local HTTP and OS-account trust remain the agreed hackathon boundary; private PC files/backups are not newly encrypted, screenshots/downloads intentionally saved by the user cannot be revoked, and server sign-out failure remains explicitly reported. Phases 11–14 and the supplied landing page/design remain future work. No government fetching/filing, legal approval, payment execution, real WhatsApp delivery or guaranteed recovery was added.

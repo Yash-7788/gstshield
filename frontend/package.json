@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "generate:api": "node scripts/generate-contracts.mjs",
     "check:contracts": "node scripts/generate-contracts.mjs --check",
-    "test": "node --test tests/client.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
     "format": "prettier --write src scripts tests *.mjs *.json index.html",
     "check:format": "prettier --check src scripts tests *.mjs *.json index.html",

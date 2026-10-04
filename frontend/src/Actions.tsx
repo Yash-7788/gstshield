@@ -572,7 +572,7 @@ export default function Actions({ c }: { c: Context }) {
           </div>
         </>
       )}
-      {selected && (
+      {selected && !list.denied && (
         <ActionDetail key={selected} c={c} id={selected} reload={list.reload} />
       )}
     </>

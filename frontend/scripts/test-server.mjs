@@ -99,7 +99,12 @@ if (process.env.GSTSHIELD_TEST_PREVIEW === "1") {
     process.execPath,
     ["node_modules/vite/bin/vite.js", "build"],
     {
-      env: { ...process.env, VITE_API_BASE_URL: "http://127.0.0.1:8027" },
+      env: {
+        ...process.env,
+        VITE_API_BASE_URL: "http://127.0.0.1:8027",
+        VITE_PRIVILEGED_CANARY: "synthetic-secret-must-not-be-public",
+        GSTSHIELD_PROVIDER_CANARY: "synthetic-provider-secret-not-public",
+      },
       stdio: "inherit",
       windowsHide: true,
     },
@@ -117,7 +122,12 @@ website = spawn(
     ...(process.env.GSTSHIELD_TEST_PREVIEW === "1" ? ["preview"] : []),
   ],
   {
-    env: { ...process.env, VITE_API_BASE_URL: "http://127.0.0.1:8027" },
+    env: {
+      ...process.env,
+      VITE_API_BASE_URL: "http://127.0.0.1:8027",
+      VITE_PRIVILEGED_CANARY: "synthetic-secret-must-not-be-public",
+      GSTSHIELD_PROVIDER_CANARY: "synthetic-provider-secret-not-public",
+    },
     stdio: "inherit",
     windowsHide: true,
   },

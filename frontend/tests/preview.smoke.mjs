@@ -47,3 +47,59 @@ test("built website signs in, uploads and confirms through configured local API 
     page.getByRole("button", { name: "Sign in", exact: true }),
   ).toBeVisible();
 });
+
+test("built CSP blocks framing and unconfigured connections; shipped assets contain no canaries", async ({
+  page,
+}) => {
+  const response = await page.goto("/");
+  const headers = response.headers();
+  expect(headers["cache-control"]).toBe("no-store");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["content-security-policy"]).toContain("object-src 'none'");
+  const violations = [];
+  page.on("console", (m) => {
+    if (/violates|refused|blocked/i.test(m.text())) violations.push(m.text());
+  });
+  const blocked = await page.evaluate(async () => {
+    try {
+      await fetch("http://127.0.0.1:9/phase10-blocked");
+      return false;
+    } catch {
+      return true;
+    }
+  });
+  expect(blocked).toBe(true);
+  expect(violations.some((v) => v.includes("connect-src"))).toBe(true);
+  const framed = page.waitForResponse(
+    (r) =>
+      new URL(r.url()).pathname === "/" &&
+      r.request().resourceType() === "document",
+  );
+  await page.evaluate(() => {
+    const iframe = document.createElement("iframe");
+    iframe.id = "security-frame";
+    iframe.src = "/";
+    document.body.append(iframe);
+  });
+  await framed;
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document.querySelector("#security-frame").contentDocument === null,
+      ),
+    )
+    .toBe(true);
+  const { readdir, readFile } = await import("node:fs/promises");
+  const paths = [
+    "dist/index.html",
+    ...(await readdir("dist/assets")).map((name) => "dist/assets/" + name),
+  ];
+  for (const path of paths) {
+    expect(path).not.toMatch(/\.map$/);
+    const content = await readFile(path, "utf8");
+    expect(content).not.toContain("synthetic-secret-must-not-be-public");
+    expect(content).not.toContain("synthetic-provider-secret-not-public");
+    expect(content).not.toContain("synthetic-passphrase-only");
+  }
+});

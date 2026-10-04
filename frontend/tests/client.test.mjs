@@ -135,3 +135,92 @@ test("download validates MIME and caps streaming bytes before exposing a file", 
     globalThis.fetch = original;
   }
 });
+
+test("encoded traversal, separators and controls are rejected before fetch", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  try {
+    globalThis.fetch = async () => {
+      calls++;
+      return Response.json({ data: true });
+    };
+    const api = new ApiClient("http://localhost:8000");
+    for (const path of [
+      "/api/v1/%2e%2e/auth",
+      "/api/v1/workspaces/a%2fb",
+      "/api/v1/workspaces/a\\b",
+      "/api/v1/auth/session\n",
+      "/api/v1/%252e%252e/auth",
+    ]) {
+      await assert.rejects(api.get(path), /Unsupported request path/);
+    }
+    assert.equal(calls, 0);
+    assert.equal(
+      await api.get("/api/v1/workspaces/a/imports?limit=20&period=2026-05"),
+      true,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("late error body cannot expire a replacement session", async () => {
+  const original = globalThis.fetch;
+  let finish;
+  let started;
+  const reading = new Promise((resolve) => (started = resolve));
+  let expired = 0;
+  try {
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 401,
+      json: () => {
+        started();
+        return new Promise((resolve) => (finish = resolve));
+      },
+    });
+    const api = new ApiClient("http://localhost:8000", () => expired++);
+    const request = api.get("/api/v1/workspaces");
+    await reading;
+    api.reset();
+    api.csrf = "replacement-session";
+    finish({ error: { message: "Old session expired" } });
+    await assert.rejects(request, (e) => e.code === "OBSOLETE");
+    assert.equal(expired, 0);
+    assert.equal(api.csrf, "replacement-session");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("aborted report context cannot expose a completed file", async () => {
+  const original = globalThis.fetch;
+  const originalURL = URL.createObjectURL;
+  let exposed = 0;
+  try {
+    const scope = new AbortController();
+    globalThis.fetch = async () => {
+      scope.abort();
+      return new Response("%PDF-synthetic", {
+        headers: { "content-type": "application/pdf" },
+      });
+    };
+    URL.createObjectURL = () => {
+      exposed++;
+      throw new Error("Unexpected exposure");
+    };
+    const api = new ApiClient("http://localhost:8000");
+    await assert.rejects(
+      api.download(
+        "/api/v1/workspaces/a/artifacts/b/download",
+        "bad",
+        scope.signal,
+      ),
+      (e) => e.code === "OBSOLETE",
+    );
+    assert.equal(exposed, 0);
+  } finally {
+    globalThis.fetch = original;
+    URL.createObjectURL = originalURL;
+  }
+});

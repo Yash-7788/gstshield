@@ -34,6 +34,15 @@ All six internal sections use the real local API. Saved reports remain discovera
 
 Authentication uses HttpOnly backend cookies, credentials-included requests and in-memory CSRF. Session data is never saved to localStorage. A user-scoped sessionStorage selection stores only workspace/registration IDs and month for refresh; it is cleared on sign-out/expiry and is never access authority. A separate sessionStorage boolean remembers an explicit sign-out even if server sign-out is unavailable; it contains no token or tax data. Lists use bounded pagination, active jobs poll while visible, money remains exact decimal strings, stale sources are labelled, and consequential writes send expected versions plus idempotency keys. An interrupted reply reuses its receipt for an unchanged explicit retry. Downloads validate MIME, enforce the 5 MiB limit and remain within the request deadline/session cancellation boundary.
 
-Payment drafts are not bank transfers, supplier drafts are NOT_SENT, worksheets/reports are not filed returns, and IRN format is not government verification. WhatsApp belongs to Phase 13. The fuller frontend security/performance reviews remain Phases 10 and 12.
+Payment drafts are not bank transfers, supplier drafts are NOT_SENT, worksheets/reports are not filed returns, and IRN format is not government verification. WhatsApp belongs to Phase 13. Phase 10 completed the frontend security/privacy review for this local scope; performance review remains Phase 12.
 
 `test:preview` builds the real site against the isolated API and verifies login, upload, parsing, confirmation and sign-out under the preview CSP. Dev and preview remain loopback-only. Core browser tests are a sequential shared-fixture rehearsal; run the whole journey file when exercising persistence and later review gates.
+
+
+## Frontend privacy review
+
+Phase 10 clears cached data on access denial, removes denied action details and refreshes workspace roles every 15 seconds while visible. Role changes reset private forms. Report downloads are cancelled when leaving their context; late error bodies cannot expire replacement sessions. API pathnames and report ID lookup are restricted, with backend authorization still controlling all operations.
+
+Only VITE_API_BASE_URL is exposed. Automatic public-directory copying is disabled; import reviewed assets from source when integrating the later design. Vite dev serving blocks backend paths, tests, helper scripts and test traces/screenshots. Strict CSP is exercised on the built preview; development retains functional hot reload and the framing denial header. This remains local PC software.
+
+`pnpm test` now includes 10 client/configuration checks. The browser suite has 14 passing tests: six original real journeys, two real security journeys, four explicitly simulated privacy faults and two original screen fixtures. `test:preview` has two passing checks for the working built flow, content policies and synthetic secret-canary absence. The real and mocked checks are labelled separately. Fixed browser-test ports 3000 and 8027 must be free; test output is ignored and must not be published. Full records and accepted limits are in md/05 and md/06.
