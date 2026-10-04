@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
 
-from app.config import ConfigurationError, Settings
+from app.config import Settings
 from app.main import create_app
 
 ORIGIN = "http://localhost:3000"
@@ -70,7 +70,7 @@ def test_health_readiness_tracks_storage_lifespan(application):
     ("method", "path", "status", "code"),
     [
         ("GET", "/api/v1/workspaces", 401, "AUTH_REQUIRED"),
-        ("GET", "/webhooks/whatsapp", 404, "NOT_FOUND"),
+        ("GET", "/webhooks/whatsapp", 503, "CHANNEL_DISABLED"),
         ("POST", "/health/live", 405, "METHOD_NOT_ALLOWED"),
         ("GET", "/test/forbidden", 403, "FORBIDDEN"),
         ("GET", "/test/validation?count=secret-value", 422, "VALIDATION_ERROR"),
@@ -195,6 +195,7 @@ def test_openapi_describes_enveloped_health_responses(application):
 def test_no_provider_feature_is_silently_activated():
     settings = Settings(
         whatsapp_enabled=True,
+        whatsapp_public_url="https://callback.example.test",
         meta_graph_version="v25.0",
         meta_phone_number_id="123",
         meta_waba_id="456",
@@ -202,5 +203,8 @@ def test_no_provider_feature_is_silently_activated():
         meta_app_secret="secret",
         meta_verify_token="secret",
     )
-    with pytest.raises(ConfigurationError, match="not implemented"):
-        create_app(settings)
+    with TestClient(create_app(settings)) as client:
+        service = client.app.app.app.state.whatsapp
+        assert settings.whatsapp_send_budget == 0
+        assert service.send_one() is False
+        assert client.get("/health/ready", headers={"Host": "localhost"}).status_code == 200

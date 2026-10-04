@@ -15,12 +15,14 @@ from app.api.access import router
 from app.api.actions import router as action_router
 from app.api.imports import router as import_router
 from app.api.runs import router as run_router
+from app.api.whatsapp import router as whatsapp_router
 from app.api.workflows import router as workflow_router
-from app.config import ConfigurationError, Settings, load_settings
+from app.config import Settings, load_settings
 from app.contracts.http import ErrorResponse, HealthResponse, error_payload
 from app.errors import APIError, StorageError
 from app.jobs.automation import ActionMonitor
 from app.jobs.imports import ImportDispatcher
+from app.jobs.whatsapp import WhatsAppWorker
 from app.security.http import LocalHTTPBoundary
 from app.services.access import AccessService
 from app.services.actions import ActionService
@@ -29,6 +31,7 @@ from app.services.imports import ImportService
 from app.services.proposals import ProposalService
 from app.services.reports import ReportService
 from app.services.runs import RunService
+from app.services.whatsapp import WhatsAppService
 from app.storage.local import LocalStore
 
 logger = logging.getLogger("gstshield")
@@ -37,14 +40,12 @@ logger = logging.getLogger("gstshield")
 def create_app(settings: Settings | None = None) -> ASGIApp:
     settings = settings if settings is not None else load_settings()
 
-    if settings.whatsapp_enabled:
-        raise ConfigurationError("WhatsApp is not implemented yet; keep WHATSAPP_ENABLED=false")
-
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         store = LocalStore(settings)
         dispatcher = None
         monitor = None
+        channel_worker = None
         try:
             store.acquire()
             store.initialize()
@@ -71,23 +72,39 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             monitor = ActionMonitor(application.state.actions)
             monitor.start()
             application.state.action_monitor = monitor
+            application.state.whatsapp = WhatsAppService(
+                application.state.access,
+                application.state.imports,
+                application.state.runs,
+                application.state.reports,
+                application.state.actions,
+            )
+            if settings.whatsapp_enabled:
+                channel_worker = WhatsAppWorker(application.state.whatsapp)
+                channel_worker.start()
+            application.state.channel_worker = channel_worker
             application.state.ready = True
             yield
         finally:
             application.state.ready = False
             try:
-                if monitor is not None:
-                    monitor.close()
+                if channel_worker is not None:
+                    channel_worker.close()
             finally:
                 try:
-                    if dispatcher is not None:
-                        dispatcher.close()
+                    if monitor is not None:
+                        monitor.close()
                 finally:
-                    # Both threads can still access storage after a shutdown timeout.
-                    if (monitor is None or not monitor.thread.is_alive()) and (
-                        dispatcher is None or not dispatcher.thread.is_alive()
-                    ):
-                        store.close()
+                    try:
+                        if dispatcher is not None:
+                            dispatcher.close()
+                    finally:
+                        # Never release the process lock while a worker can still touch storage.
+                        workers = (channel_worker, monitor, dispatcher)
+                        if all(
+                            worker is None or not worker.thread.is_alive() for worker in workers
+                        ):
+                            store.close()
 
     application = FastAPI(
         title="GSTShield Local API",
@@ -104,6 +121,7 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
     application.include_router(run_router)
     application.include_router(workflow_router)
     application.include_router(action_router)
+    application.include_router(whatsapp_router)
 
     @application.exception_handler(APIError)
     async def application_error(request: Request, exc: APIError) -> JSONResponse:
@@ -241,6 +259,10 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
             or not application.state.store.ready()
             or not application.state.dispatcher.thread.is_alive()
             or not application.state.action_monitor.thread.is_alive()
+            or (
+                application.state.channel_worker is not None
+                and not application.state.channel_worker.thread.is_alive()
+            )
         ):
             return JSONResponse(
                 error_payload(
@@ -273,4 +295,5 @@ def create_app(settings: Settings | None = None) -> ASGIApp:
         testing=settings.app_env == "test",
         max_body_bytes=settings.max_api_body_bytes,
         receive_timeout_seconds=settings.max_api_receive_seconds,
+        channel_origin=settings.whatsapp_public_url if settings.whatsapp_enabled else "",
     )

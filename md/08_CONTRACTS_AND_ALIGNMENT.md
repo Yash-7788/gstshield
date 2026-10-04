@@ -1,6 +1,6 @@
 # GST-Shield — authoritative contracts and cross-layer alignment
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Contract baseline v1, 2026-10-03. This document owns wire names, enum semantics and endpoint behavior. Planned models must be reflected in generated OpenAPI and the database migration before frontend integration. [03](03_BACKEND_AND_DATA_SPEC.md) owns algorithms/persistence; [04](04_WEBSITE_AND_WHATSAPP_INTEGRATION.md) maps channels.
 
@@ -38,7 +38,7 @@ Invalid credentials are a generic 401 for unknown/inactive users or a wrong pass
 
 Session replacement, logout and password reset revoke old sessions. Normal backend restart preserves unexpired sessions and scopes. Backup restore revokes all sessions and disables all restored accounts until operator recovery; the browser must return to sign-in.
 
-The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Phase 5 cases, proposals, report jobs and downloads are implemented. WhatsApp routes/capabilities remain later-phase contracts; those catalog entries do not imply they exist. Current typed response models generate OpenAPI; the connected internal website generates its DTOs from these same models.
+The imports and import jobs below are implemented in Phase 3. Runs/results/reviews are implemented in Phase 4. Phase 5 cases, proposals, report jobs and downloads are implemented. Phase 13 implements the current local channel contracts in the final section; the earlier proposed phone catalog is superseded. Real provider acceptance remains pending. Current typed response models generate OpenAPI; the connected internal website generates its DTOs from these same models.
 
 ## Shared enums
 
@@ -142,10 +142,10 @@ All workspace paths below are prefixed `/api/v1/workspaces/{workspace_id}`. Muta
 | GET /artifacts/{artifact_id} | None | ArtifactDetail / 200 |
 | GET /artifacts/{artifact_id}/download | historical=false default | Private attachment bytes / 200; expired 410, stale/not-ready 409 |
 | POST /artifacts/cleanup | {expired_only:true}; OWNER only | Expired-artifact cleanup receipt / 200 |
-| POST /whatsapp/link-code | registration_id, period | LinkCodeReceipt / 201 |
-| GET /whatsapp/link | None | Current own LinkDetail or null / 200 |
-| PATCH /whatsapp/link/context | registration_id, period | LinkDetail / 200 |
-| DELETE /whatsapp/link | None | data {revoked:true} / 200 |
+| POST /whatsapp/link-code | registration_id, period | LinkCodeData / 200 |
+| GET /whatsapp | None | ChannelData / 200 |
+| POST /whatsapp/context | registration_id, period, expected_version, consent_alerts | ChannelData / 200 |
+| POST /whatsapp/unlink | expected_version | ChannelData / 200 |
 
 Explicitly no bank-submit, GST-file, escrow-release or provider-status-override endpoint. Future features add contracts rather than overloading a review command into execution.
 
@@ -415,3 +415,22 @@ smoothness, conditional WhatsApp and combined rehearsal retain Phases 12–14.
 Public routes, generated 76 DTOs, schema, money strings and backend rules remain unchanged. Internal resource state now distinguishes an initial load from a same-identity/session/URL refresh; consumers preserve same-version drafts while refreshing and disable writes requiring current detail versions. Job detail reloads follow parent job identity/state/version changes instead of a second timer. Read errors honor bounded numeric Retry-After, but writes retain explicit retry/idempotency behavior.
 
 History and candidate pages render 20 items at a time while preserving all retained evidence/ranking and access to every candidate. Currency formatting continues exact string/BigInt handling and fixes the display of negative sub-rupee values such as -0.50. No tax calculation moves into the browser. Six real backend website-contract checks, generated-contract comparison, 22 browser checks, two built-preview checks and the maximum real 2,000-row connected workload pass. Phase 13/14 remain pending; dated details and measurement limits are in 05.
+
+
+## Phase 13 actual channel contracts — 2026-10-04
+
+This section supersedes the earlier proposed phone-route catalog. Existing business routes/DTOs keep their units and semantics; generated contracts now contain 93 actual schemas. Browser channel mutations require session, Origin/CSRF and UUID Idempotency-Key. Link-code responses contain a fresh one-use secret and do not persist a raw response receipt; repeat requests replace previous codes. Context/unlink use expected_version and require refreshing after an uncertain response. Supplier queueing replays the same recipient delivery; phone business effects replay deterministic shared-service receipts.
+
+| Method / workspace suffix | Actual request / response |
+|---|---|
+| GET /whatsapp | ChannelData with enabled/sending_enabled, masked own link, recent delivery states/history, remaining attempt budget; physical_phone_verified is false pending proof |
+| POST /whatsapp/link-code | registration_id, period; LinkCodeData / 200 |
+| POST /whatsapp/context | registration_id, period, expected_version, consent_alerts; ChannelData / 200 |
+| POST /whatsapp/unlink | expected_version; ChannelData / 200 |
+| POST /whatsapp/supplier-consent-code | action_id, draft_id, expected_version; ConsentCodeData / 200 |
+| GET /whatsapp/supplier-recipients | Current actor/workspace's masked SupplierRecipientData[] / 200; OWNER/REVIEWER |
+| POST /whatsapp/supplier-followups | action_id, draft_id, expected_version, recipient_id; DeliveryData / 200; queued is not delivered |
+
+Global GET/POST `/webhooks/whatsapp` are provider-authenticated and hidden from browser OpenAPI. GET `/wa/reports/{43-character token}` returns a bounded PDF attachment or generic 404; bearer redemption rechecks live authority/current artifact. Disabled callbacks/creation return CHANNEL_DISABLED (503), zero-budget supplier queueing is unavailable, stale versions conflict, and ambiguous READY source selection returns SOURCE_SELECTION_REQUIRED without creating a run.
+
+DeliveryData states: QUEUED, ATTEMPTED, ACKNOWLEDGED, DELIVERED, READ, FAILED, UNKNOWN, CANCELLED. Action automation channel_delivery now reports DISABLED/PAUSED/ENABLED according to runtime configuration/remaining attempt budget; ENABLED is not proof of physical-phone delivery. Report/raw code/token secrets never enter delivery history. See 05 for final regression/provider gates.

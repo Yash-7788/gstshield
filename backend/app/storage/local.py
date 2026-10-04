@@ -16,10 +16,11 @@ from app.errors import StorageError
 from app.storage.action_schema import ACTION_SCHEMA
 from app.storage.import_schema import IMPORT_SCHEMA
 from app.storage.run_schema import RUN_SCHEMA
+from app.storage.whatsapp_schema import WHATSAPP_SCHEMA
 from app.storage.workflow_schema import WORKFLOW_SCHEMA
 
 APPLICATION_ID = int.from_bytes(b"GSTS", "big")
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 BASE_SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT",
     """CREATE TABLE users (
@@ -53,7 +54,8 @@ BASE_SCHEMA = (
 VERSION2_SCHEMA = BASE_SCHEMA + IMPORT_SCHEMA
 VERSION3_SCHEMA = VERSION2_SCHEMA + RUN_SCHEMA
 VERSION4_SCHEMA = VERSION3_SCHEMA + WORKFLOW_SCHEMA
-SCHEMA = VERSION4_SCHEMA + ACTION_SCHEMA
+VERSION5_SCHEMA = VERSION4_SCHEMA + ACTION_SCHEMA
+SCHEMA = VERSION5_SCHEMA + WHATSAPP_SCHEMA
 
 
 def schema_digest(connection: sqlite3.Connection) -> str:
@@ -76,6 +78,7 @@ LEGACY_DIGEST = expected_digest(BASE_SCHEMA)
 VERSION2_DIGEST = expected_digest(VERSION2_SCHEMA)
 VERSION3_DIGEST = expected_digest(VERSION3_SCHEMA)
 VERSION4_DIGEST = expected_digest(VERSION4_SCHEMA)
+VERSION5_DIGEST = expected_digest(VERSION5_SCHEMA)
 
 
 def check_path(path: Path, root: Path) -> None:
@@ -173,7 +176,8 @@ class LocalStore:
             2: VERSION2_DIGEST,
             3: VERSION3_DIGEST,
             4: VERSION4_DIGEST,
-            5: EXPECTED_DIGEST,
+            5: VERSION5_DIGEST,
+            6: EXPECTED_DIGEST,
         }
         if selected not in fingerprints:
             raise StorageError("Storage schema version is unsupported.")
@@ -260,7 +264,7 @@ class LocalStore:
             ) from None
 
     def upgrade(self) -> str | None:
-        """Explicit offline v1/v2/v3/v4 upgrade: validate and preserve before adding tables."""
+        """Explicit offline v1 through v5 upgrade: validate and preserve before adding tables."""
         if not self.opened:
             raise StorageError("Private storage is not locked.")
         try:
@@ -286,7 +290,8 @@ class LocalStore:
             additions = IMPORT_SCHEMA if version == 1 else ()
             additions += RUN_SCHEMA if version < 3 else ()
             additions += WORKFLOW_SCHEMA if version < 4 else ()
-            for statement in additions + ACTION_SCHEMA:
+            additions += ACTION_SCHEMA if version < 5 else ()
+            for statement in additions + WHATSAPP_SCHEMA:
                 connection.execute(statement)
             connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
             connection.execute("UPDATE metadata SET value=? WHERE key='schema'", (EXPECTED_DIGEST,))

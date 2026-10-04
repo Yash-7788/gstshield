@@ -164,6 +164,7 @@ class Settings(BaseSettings):
     match_policy_version: Literal["match-v1"] = "match-v1"
 
     whatsapp_enabled: bool = False
+    whatsapp_public_url: str = ""
     meta_graph_version: str = ""
     meta_phone_number_id: str = ""
     meta_waba_id: str = ""
@@ -231,6 +232,21 @@ class Settings(BaseSettings):
             raise ValueError("Only local website/API URLs are supported in this phase")
         return value
 
+    @field_validator("whatsapp_public_url")
+    @classmethod
+    def check_channel_origin(cls, value: str) -> str:
+        if not value:
+            return value
+        validate_origin(value)
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or parsed.port not in {None, 443}
+            or parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+        ):
+            raise ValueError("WHATSAPP_PUBLIC_URL must be an exact public HTTPS origin")
+        return value
+
     @field_validator("local_data_dir")
     @classmethod
     def check_local_directory(cls, value: Path) -> Path:
@@ -272,7 +288,9 @@ class Settings(BaseSettings):
         if self.match_amount_tolerance != self.match_amount_tolerance.quantize(Decimal("0.01")):
             raise ValueError("MATCH_AMOUNT_TOLERANCE must use at most two decimal places")
         if self.whatsapp_enabled:
-            # Configuration completeness is not an implemented or verified integration.
+            # Public origin enables only callback/capability paths, never browser API access.
+            if not self.whatsapp_public_url:
+                raise ValueError("WHATSAPP_PUBLIC_URL is required when WhatsApp is enabled")
             if not re.fullmatch(r"v[1-9][0-9]*\.[0-9]+", self.meta_graph_version):
                 raise ValueError("META_GRAPH_VERSION is required and must have version syntax")
             for name in ("meta_phone_number_id", "meta_waba_id"):

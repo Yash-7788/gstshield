@@ -1,6 +1,6 @@
 # GST-Shield — actual technology stack and local setup
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Selected architecture
 
@@ -302,3 +302,10 @@ actions, events or reports. This measurement covers fixed synthetic CSV distribu
 ## Phase 12 website performance verification — 2026-10-04
 
 The installed pinned stack and both lockfiles remain unchanged. The built website was profiled against the actual isolated local API with 100 and 2,000 invoices; all local interaction, processing, download and retained-JS-heap budgets passed. Baseline and final synthetic measurements and repeatable instructions live in frontend/benchmarks. This introduces no additional service, database, package or deployment requirement. Startup/navigation stayed broadly similar; the principal improvements are preserving same-context forms/filters and reducing unnecessary polling/rendering. See 05 for measured values and limits.
+
+
+## Phase 13 current configuration — 2026-10-04
+
+Local WhatsApp integration uses the existing Python standard-library HTTPS/TLS transport, SQLite and one bounded channel thread. No package/lockfile, cloud, external database or tunnel is added. Schema 6 requires explicit offline `python -m app.manage storage-upgrade` with backup validation; no presenter database was modified. The browser still uses only VITE_API_BASE_URL. META_* credentials remain backend-only.
+
+WHATSAPP_ENABLED defaults false; WHATSAPP_PUBLIC_URL is an approved exact HTTPS origin for channel routes only. WHATSAPP_SEND_BUDGET defaults zero and limits cumulative send attempts, including failed/unknown attempts. It is not a monetary cap. Keep disabled/zero until actual account/assets, supported Graph version, token permissions, allowed recipient and callback setup are verified. The user has no Meta setup yet. Real delivery and current price entitlement are pending. See 05 for verification gaps.

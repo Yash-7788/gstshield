@@ -1,3 +1,4 @@
+import SupplierDelivery from "./SupplierDelivery";
 import { useState } from "react";
 
 import type { Schemas } from "./contracts";
@@ -93,6 +94,9 @@ function ActionDetail({
             <Facts values={row.source.review as Record<string, unknown>} />
           )}
           <History rows={row.timeline} />
+          {writable(c) && !detail.loading && (
+            <SupplierDelivery c={c} item={row} changed={done} />
+          )}
           {row.outcome && (
             <>
               <h3>Recorded review / observation</h3>

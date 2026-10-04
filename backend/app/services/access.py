@@ -66,6 +66,14 @@ class Identity:
     csrf_token: str = field(repr=False)
 
 
+@dataclass(frozen=True)
+class LinkedIdentity(Identity):
+    """Constructed only from a verified active phone link, never a browser request body."""
+
+    link_id: str = ""
+    link_version: int = 0
+
+
 class AccessService:
     def __init__(self, store: LocalStore):
         self.store = store
@@ -286,6 +294,19 @@ class AccessService:
         return Identity(row["id"], row["username"], row["expires_at"], hashed, csrf_value(token))
 
     def require_membership(self, connection, identity: Identity, workspace_id: str, *, roles=ROLES):
+        if isinstance(identity, LinkedIdentity):
+            row = connection.execute(
+                "SELECT m.role FROM wa_links l JOIN memberships m ON m.user_id=l.user_id "
+                "AND m.workspace_id=l.workspace_id JOIN users u ON u.id=l.user_id "
+                "WHERE l.id=? AND l.user_id=? AND l.workspace_id=? AND l.active=1 "
+                "AND l.version=? AND u.active=1 AND u.version=l.user_version AND m.active=1",
+                (identity.link_id, identity.user_id, workspace_id, identity.link_version),
+            ).fetchone()
+            if row is None:
+                raise APIError(404, "NOT_FOUND", "Resource was not found.")
+            if row["role"] not in roles:
+                raise APIError(403, "ROLE_FORBIDDEN", "Your role does not permit this operation.")
+            return row["role"]
         row = connection.execute(
             "SELECT m.role FROM memberships m JOIN sessions s ON s.user_id=m.user_id "
             "JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.user_id=? "

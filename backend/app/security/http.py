@@ -31,11 +31,13 @@ class LocalHTTPBoundary:
         testing: bool = False,
         max_body_bytes: int = 65536,
         receive_timeout_seconds: float = 20,
+        channel_origin: str = "",
     ) -> None:
         self.app = app
         self.max_body_bytes = max_body_bytes
         self.receive_timeout_seconds = receive_timeout_seconds
         self.origins = frozenset(origins)
+        self.channel_host = urlsplit(channel_origin).hostname if channel_origin else None
         self.allowed_hosts = {"localhost", "127.0.0.1", "::1"}
         if testing:
             self.allowed_hosts.add("testserver")
@@ -78,7 +80,16 @@ class LocalHTTPBoundary:
             host = urlsplit("http://" + hosts[0]) if len(hosts) == 1 else None
             valid_host = (
                 host is not None
-                and host.hostname in self.allowed_hosts
+                and (
+                    host.hostname in self.allowed_hosts
+                    or (
+                        host.hostname == self.channel_host
+                        and (
+                            scope.get("path") == "/webhooks/whatsapp"
+                            or re.fullmatch(r"/wa/reports/[A-Za-z0-9_-]{43}", scope.get("path", ""))
+                        )
+                    )
+                )
                 and host.username is None
                 and host.password is None
                 and not host.path
@@ -185,9 +196,13 @@ class LocalHTTPBoundary:
                 if content_types
                 else "application/json"
             )
-            if body and (
-                media_type == "application/json"
-                or (media_type.startswith("application/") and media_type.endswith("+json"))
+            if (
+                scope.get("path") != "/webhooks/whatsapp"
+                and body
+                and (
+                    media_type == "application/json"
+                    or (media_type.startswith("application/") and media_type.endswith("+json"))
+                )
             ):
                 try:
                     # FastAPI otherwise silently accepts repeated keys and non-standard constants.

@@ -110,7 +110,7 @@ class AutomationData(StrictModel):
     error_code: str | None
     pending_sources: int
     interval_seconds: int
-    channel_delivery: Literal["NOT_IMPLEMENTED"] = "NOT_IMPLEMENTED"
+    channel_delivery: Literal["DISABLED", "PAUSED", "ENABLED"] = "DISABLED"
 
 
 class ActionListData(StrictModel):

@@ -19,6 +19,7 @@ import Actions from "./Actions";
 import Proposals from "./Proposals";
 
 import Reports from "./Reports";
+import WhatsApp from "./WhatsApp";
 
 function sectionFromHash() {
   try {
@@ -36,6 +37,7 @@ const sections = [
   "Work queue",
   "Payment drafts",
   "Reports",
+  "WhatsApp",
 ];
 
 function Login({
@@ -303,11 +305,13 @@ function Workspace({
               {section === "Work queue" && <Actions c={context} />}{" "}
               {section === "Payment drafts" && <Proposals c={context} />}{" "}
               {section === "Reports" && <Reports c={context} />}
+              {section === "WhatsApp" && <WhatsApp c={context} />}
             </section>
           )}
           <footer>
             Reviews and recorded observations do not verify legal entitlement or
-            perform tax filing, payments or WhatsApp delivery.
+            perform tax filing or payments. WhatsApp delivery is confirmed only
+            by provider delivery status.
           </footer>
         </main>
       </div>

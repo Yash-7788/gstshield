@@ -440,7 +440,7 @@ class ActionService(WorkflowService):
                         self.row(connection, workspace, identifier),
                         "REVIEW_DUE",
                         "Recorded review date reached; no message has been sent.",
-                        {"due_at": row["due_at"], "channel_delivery": "NOT_IMPLEMENTED"},
+                        {"due_at": row["due_at"], "channel_delivery": "PENDING_CHANNEL_CHECK"},
                     )
                 processed += 1
             except Exception as exc:
@@ -448,6 +448,12 @@ class ActionService(WorkflowService):
             if processed >= self.settings.automation_due_batch:
                 break
         return error
+
+    def channel_state(self, connection):
+        if not self.settings.whatsapp_enabled:
+            return "DISABLED"
+        used = connection.execute("SELECT used FROM wa_budget WHERE singleton=1").fetchone()[0]
+        return "ENABLED" if used < self.settings.whatsapp_send_budget else "PAUSED"
 
     def status(self, connection, workspace):
         row = connection.execute(
@@ -458,7 +464,7 @@ class ActionService(WorkflowService):
             "error_code": row["error_code"] if row else None,
             "pending_sources": len(self.pending(connection, workspace)),
             "interval_seconds": self.settings.automation_interval_seconds,
-            "channel_delivery": "NOT_IMPLEMENTED",
+            "channel_delivery": self.channel_state(connection),
         }
 
     def readable_refresh(self, identity, workspace):

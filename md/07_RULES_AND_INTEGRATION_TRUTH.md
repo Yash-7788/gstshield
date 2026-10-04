@@ -1,6 +1,6 @@
 # GST-Shield — rules, evidence and integration truth
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. This document owns factual assumptions and capability labels. It does not provide individualized tax/legal advice. The application presents review findings; professional validation is needed before consequential filing/payment automation.
 
@@ -238,3 +238,10 @@ Due-review reminders use explicitly recorded, reviewed dates until a verified da
 
 
 Current scope/status is reconciled in the [capability ledger in 05](05_BUILD_AND_VERIFICATION_PLAN.md#capability-status-and-remaining-work-ledger). Phase 6 now has local business-action APIs, automatic deduplicated evidence-change and due-review tracking, private follow-up drafts/history, a review worksheet and separately evidenced user-recorded filing/submission observations. Browser presentation/connection remains 8–9 and conditional WhatsApp delivery remains 13. Automatic fetching, government filing and legal decision integrations are deferred; guaranteed recovery is not a software promise.
+
+
+## Phase 13 integration truth — 2026-10-04
+
+Signed callbacks, local phone commands, draft-specific supplier consent/outbox and website controls are implemented locally. The user has no Meta setup yet. No physical message, approved callback, supported account Graph version, token entitlement or billing outcome is verified. Never use earlier example demo wording that says “delivered on WhatsApp” until an actual delivery callback/physical test proves it. Fake transport tests and real local PDFs/imports are distinct evidence.
+
+Recorded reminders do not determine statutory due dates. A supplier message does not establish invoice correction, filing or ITC entitlement. Government fetching/filing, trusted IRN verification, bank execution and guaranteed recovery remain excluded/deferred as already planned. Current local verification gaps and provider gates are recorded in 05.

@@ -1,6 +1,6 @@
 # GST-Shield — backend and data specification
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 Baseline 2026-10-03. Planned implementation. [08_CONTRACTS_AND_ALIGNMENT.md](08_CONTRACTS_AND_ALIGNMENT.md) owns wire names/enums; [06_SECURITY_AND_PRIVACY.md](06_SECURITY_AND_PRIVACY.md) owns access rules; [07_RULES_AND_INTEGRATION_TRUTH.md](07_RULES_AND_INTEGRATION_TRUTH.md) owns legal/provider claims.
 
@@ -367,3 +367,14 @@ comparison/reasons/tax fields alongside the retained timeline. PDF presentation 
 SOURCE_REFRESHED events by count/date range and prints each meaningful/user event once; raw
 snapshots remain private. Stored historical report bytes and source data are untouched. Public
 DTOs/routes and schema 5 are unchanged. 05 records final timings, limits and verification.
+
+
+## Phase 13 local data additions — 2026-10-04
+
+Schema 6 retains business schemas 1–5 and adds wa_links, wa_codes, wa_events, wa_intents, wa_outbox, wa_watches, wa_capabilities, wa_rates, wa_budget, wa_consent_codes, wa_recipients, wa_followups and wa_delivery_events. Tables use existing private SQLite transactions, foreign keys, STRICT validation and capacity limits. Upgrade is explicit/backed up and requires stopping the backend; fresh test installations create v6. Historical v3/v5 paragraphs describe their dated phases, not the current runtime schema.
+
+A signed callback commits a deduplicated inbox event before acknowledging. A single channel worker prepares immutable context/source payloads and reuses existing import/run/report receipts after interruption. Heavy parsing/reconciliation/PDF work stays on the original dispatcher. No independent phone calculation engine is added. RUN refuses multiple READY sources and asks for website selection. Document upload still needs explicit browser confirmation.
+
+Outbox states are QUEUED, ATTEMPTED, ACKNOWLEDGED, DELIVERED, READ, FAILED, UNKNOWN and CANCELLED. Attempt reservation precedes I/O; ambiguous sends are never automatically retried. Recorded states preserve acknowledgement/delivery distinctions. Supplier follow-ups reference the existing action/draft and exact consented recipient; reminders reference deduplicated recorded-date events. Database restoration disables users/advances versions, preventing old link/consent authority from returning.
+
+Inbox/outbox histories are capped at 10,000/5,000 retained rows. Capacity errors are explicit; no silent deletion of unresolved work occurs. Status shows the latest 20 applicable delivery records. Watches/alerts are bounded batches and stop when the PC is off. Link context changes/unlink cancel queued replies and revoke intents/capabilities. In-flight messages cannot be recalled. See 05 for focused proof and pending full/provider verification.

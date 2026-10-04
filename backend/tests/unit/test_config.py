@@ -121,6 +121,7 @@ def test_malformed_cors_is_safe_to_report(monkeypatch):
 def test_complete_provider_config_validates_but_secrets_are_masked():
     settings = Settings(
         whatsapp_enabled=True,
+        whatsapp_public_url="https://callback.example.test",
         meta_graph_version="v25.0",  # Syntax fixture, not a supported-version claim.
         meta_phone_number_id="123456",
         meta_waba_id="654321",

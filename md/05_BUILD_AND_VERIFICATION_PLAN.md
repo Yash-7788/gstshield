@@ -1,6 +1,6 @@
 # GST-Shield — build sequence, verification and hackathon readiness
 
-> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phases 13–14 are not started. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
+> **Active local implementation (2026-10-04):** This is a website with a Python backend running on the PC. Authoritative storage is a private SQLite file under `backend/data/`; accounts are provisioned locally and browser access uses revocable sessions. No external database, hosted identity, cloud storage or application hosting is selected. Phases 1–12 are complete and locally verified. Phase 11 passed the full backend regression (343 passed, 1 Windows privilege-related skip). Phase 12 passed 22 browser checks, built-preview checks and real 100/2,000-row website measurements. See 05 for dated evidence. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. The landing page/design is pending. The user authorized a new internal website in Phases 8–9; real WhatsApp remains Phase 13.
 
 ## Active implementation phase plan
 
@@ -10,7 +10,7 @@ Latest user decisions: local PC execution and local PC storage; proceed one phas
 
 ## Expanded application phase map
 
-The active plan now contains **14 phases**. Phases 1–12 are complete and locally verified, including the Phase 11 backend regression and Phase 12 connected website/performance checks. Phases 13–14 are not started. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
+The active plan now contains **14 phases**. Phases 1–12 are complete and locally verified, including the Phase 11 backend regression and Phase 12 connected website/performance checks. Phase 13 local WhatsApp integration is implemented with focused checks; Meta setup and physical-phone acceptance remain pending. Phase 14 is not started. Full Phase 13 regression was stopped at the user’s request. Frontend work builds the authorized internal application; the landing page/design will be supplied separately later. Every phase has its own deliverables and a correctness/security/edge-case review gate.
 
 | Phase | Work | Area | Status |
 |---|---|---|---|
@@ -26,7 +26,7 @@ The active plan now contains **14 phases**. Phases 1–12 are complete and local
 | 10 | Frontend security and privacy review | Frontend | Complete and locally verified |
 | 11 | Backend performance and resource efficiency | Backend | Complete and locally verified |
 | 12 | Frontend smoothness, speed and usability | Frontend | Complete and locally verified |
-| 13 | WhatsApp connection and channel review | Both | Not started |
+| 13 | WhatsApp connection and channel review | Both | In progress; physical-phone gate pending |
 | 14 | Whole-application regression and hackathon rehearsal | Both | Not started |
 
 The sequence is a dependency order, not a ranking of importance. Security and responsiveness are part of feature implementation from the start; Phases 7, 10, 11 and 12 are focused reviews of working code. Do not postpone essential safeguards or fixable blocking behavior to those later reviews.
@@ -35,7 +35,7 @@ The sequence is a dependency order, not a ranking of importance. Security and re
 
 Continue coding one coherent phase at a time, with targeted review before the next phase. The user requested faster future delivery rather than repeating the full suite for every phase. From now on, run lint/format/syntax plus affected correctness, security, edge-case and previous-phase integration checks after each phase; run one full regression suite after a batch of two or three related phases. Do not skip focused checks until the batch ends.
 
-Run full regression sooner for major shared storage/schema, authentication/session, core monetary/matching changes or a discovered regression whose scope is not contained. Run it once after final edits, rather than repeatedly during feature drafting. A failed full run requires diagnosis and a focused reproduction before another full attempt. Keep evidence explicit: passing targeted checks is not the same as a passing whole-suite gate. Phase 6 completed its full check under the original gate; subsequent phase batching uses this cadence. GitHub full-suite CI continues asynchronously on pushes; its remote results remain separate evidence and failures require diagnosis. The internal application is now authorized independently of the later landing page. Missing provider prerequisites still prevent the dependent channel implementation.
+Run full regression sooner for major shared storage/schema, authentication/session, core monetary/matching changes or a discovered regression whose scope is not contained. Run it once after final edits, rather than repeatedly during feature drafting. A failed full run requires diagnosis and a focused reproduction before another full attempt. Keep evidence explicit: passing targeted checks is not the same as a passing whole-suite gate. Phase 6 completed its full check under the original gate; subsequent phase batching uses this cadence. GitHub full-suite CI continues asynchronously on pushes; its remote results remain separate evidence and failures require diagnosis. The internal application is now authorized independently of the later landing page. Missing provider prerequisites prevent real channel activation and acceptance; the user authorized the local integration first.
 
 
 ## Capability status and remaining-work ledger
@@ -60,10 +60,10 @@ This ledger reconciles the original six business problems with the active eight 
 | Notice case and private evidence pack | IMPLEMENTED: notice facts/checklist, linked action, recorded-date reminder, preparation PDF, accepted review and documented user submission observation | 5 complete for foundation; 6 for remaining workflow |
 | Automatic local due-review reminders and evidence-change alerts | IMPLEMENTED: bounded local monitor, persisted checkpoints/errors, deduplicated date events, startup and authenticated-read catch-up; PC/backend must run | 6: durable deduplicated tasks while backend runs, overdue catch-up after restart; visible in website 9 |
 | Private reports and generic proposal/error exports | IMPLEMENTED: bounded PDF/CSV snapshots/private downloads plus compact action/history coverage, stale action-set checks and JSON worksheet | 5 complete; extend for 6, browser 9 |
-| Internal website screens and real operations | IMPLEMENTED: six internal sections, real API journeys and browser privacy checks; supplied landing page/design remains pending | 8–10 complete; 12 measured usability |
+| Internal website screens and real operations | IMPLEMENTED: six original business sections plus Phase 13 channel controls, real API journeys and browser privacy checks; supplied landing page/design remains pending | 8–10 complete; 12 measured usability |
 | Whole-backend security/failure and measured performance review | IMPLEMENTED: bounded backend security review and measured local workload/efficiency checks | 7 and 11 complete; combined rehearsal 14 |
-| WhatsApp linking, commands, imports, status, private report access and unlink | CONDITIONAL/PLANNED: no physical-phone/backend integration yet | 13: account/assets, permitted reachable callback and budget proof, real-phone gate |
-| Owner/reviewer reminders and supplier follow-up through WhatsApp | CONDITIONAL/PLANNED: local alerts/drafts do not mean messages sent | 13: explicit enablement, linked/consented verified recipient, window/template/account entitlement and bounded outbox; pending if setup is unavailable |
+| WhatsApp linking, commands, imports, status, private report access and unlink | PARTIAL: local signed adapter, durable commands and website controls implemented; physical-phone integration unverified | 13: account/assets, permitted reachable callback and budget proof, real-phone gate |
+| Owner/reviewer reminders and supplier follow-up through WhatsApp | PARTIAL/CONDITIONAL: opted-in linked reminders and draft-specific supplier consent/outbox implemented locally; real delivery unverified | 13: explicit enablement, linked/consented verified recipient, window/template/account entitlement and bounded outbox; pending if setup is unavailable |
 | Government filing/IMS write actions, bank execution/escrow | EXCLUDED from corrected hackathon scope; an observation/proposal/export is not execution | No implementation phase; explicit unsupported state throughout 6/9/13/14 |
 | Guaranteed recovery, guaranteed eligibility/compliance or notice dismissal | EXCLUDED claims; an outcome controlled by external facts/review cannot be guaranteed by adding a task | No implementation phase; actual recorded outcomes may be tracked in 6 |
 | AI explanation/OCR, direct ERP sync, subscriptions and extra official tables | OPTIONAL/DEFERRED in existing pack; no dependency for the six-problem local workflow | Keep disabled/deferred unless scope and evidence are explicitly changed; do not call them completed |
@@ -905,3 +905,61 @@ This is one observation per dataset, including automation overhead, not a statis
 Final 390px screenshots for both workloads were inspected: controls and summaries remain readable, tables scroll inside their named regions, and the page stays within the viewport. Separate automated 320/390px keyboard tests verify no page-wide horizontal overflow and access to offscreen table columns. These are installed-Chrome viewport checks, not physical-phone, Safari or external-network evidence. Screenshots are ignored under frontend/benchmarks/screenshots; synthetic JSON measurements are committed. Benchmark files are denied by development serving. Real WhatsApp/device/provider setup remains Phase 13.
 
 No new dependency, migration, backend endpoint, environment switch, external database, hosted service or landing-page design is introduced. Default backend limits stay unchanged. The isolated measurement server raises its test-only request budgets for rapid synthetic setup; those settings are not application defaults. Phases 13–14 and the supplied landing page/design remain pending.
+
+
+## Phase 13 implementation started — 2026-10-04
+
+Work proceeds locally while Meta account, recipient entitlement, send budget and an approved HTTPS callback method remain pending. No tunnel, cloud host or real provider send is provisioned automatically. The existing default send budget stays zero. The implementation will add durable linking/inbox/outbox/capability tables through a backed-up explicit offline schema 5-to-6 upgrade, preserving all existing business tables; startup will not silently migrate the presenter database. Browser services keep their session/CSRF boundary. Trusted linked identities will use the same live user/membership checks with user-version revocation. Channel commands capture context and replay deterministic operation keys after interruption; external sends have separate recorded acceptance/delivery/uncertainty. Local tests and adapter fixtures do not meet the physical-phone completion gate.
+
+
+## Phase 13 local implementation and verification record — 2026-10-04
+
+The user answered: **“Not set up yet; build local integration first.”** The backend and internal website now have the local integration described below. Phase 13 remains **in progress**, because there is no configured Meta account, permitted recipient proof, approved HTTPS callback or physical-phone result. Phase 14 has not started. No live provider message was sent and no tunnel, hosted server, external database or new dependency was created.
+
+### Delivered connection to previous phases
+
+| Existing workflow | Channel behavior now implemented | Human or external gate |
+|---|---|---|
+| Locally provisioned accounts and roles | One-use browser-generated LINK code; phone identity checks live user version/membership | Account and permitted phone setup |
+| Private purchase and portal imports | UPLOAD PURCHASE/2B reserves a short intent; document bytes enter the existing import/parser/job service | Explicit website mapping/review/confirmation; actual Meta media-format acceptance |
+| Reconciliation and review | RUN reuses saved READY sources and deterministic operation receipts | Multiple confirmed sources require website selection; no silent guess or phone legal approval |
+| Retained business work queue | STATUS reads saved context, source counts, run state/totals and stale-evidence warning | Website remains the rich review interface |
+| Supplier follow-up drafts | Existing draft-specific consent proof, explicit reviewer queueing, durable outbox and action timeline reference | Exact supplier must send CONSENT; actual delivery/window/account entitlement |
+| Recorded review reminders | Opted-in OWNER/REVIEWER links can receive deduplicated due-date alerts | Open permitted reply window and remaining configured attempt budget |
+| Existing report jobs and PDFs | REPORT requests the existing report service; readiness watch creates an expiring capability | Current source, active link/membership and download limits |
+| Previous security/privacy rules | Browser Origin/CSRF/session boundary retained; signed callback boundary separately validated | Physical callback/proxy configuration and provider gate |
+
+Normal phone commands do not automatically confirm imports, accept fuzzy suggestions, approve legal credit, file a return, transfer a payment or guarantee recovery. They execute the same local application services as the website. A received/queued message, Meta acknowledgement, delivered callback and read callback remain distinct facts.
+
+### Durable behavior and boundaries
+
+Schema 6 adds only channel tables to schemas 1–5. Existing installations must stop the backend and run `python -m app.manage storage-upgrade` from backend/. The operation validates the old version and creates a validated backup before transactional additions. Startup refuses an old or incompatible database; it never resets customer data. A synthetic populated v5 test verifies every pre-existing table row unchanged, the v5 backup and repeated upgrade behavior. The presenter database was not upgraded by this coding session.
+
+Callback POSTs validate HMAC over bounded raw bytes before JSON parsing, then verify configured WABA/phone IDs across the batch. Duplicate keys, excessive depth/body/event counts and malformed fields are rejected. Accepted events are committed before acknowledgement. A callback replay creates one durable event. Unknown supported account status strings are ignored without inventing delivery success; non-string malformed status values are rejected.
+
+Phone tasks capture link/context version, source identities and deterministic operation keys. Restart recovers interrupted local work using original shared-service receipts. A reserved document intent cannot be consumed by another event. Media transport checks approved public HTTPS destinations, TLS, MIME, byte size and provider digest before using the existing bounded parser. CSV transport acceptance on a physical Meta account remains unverified; XLSX is the preferred acceptance file until proved.
+
+Replies reserve their attempt budget and ATTEMPTED record before external I/O. Ambiguous responses become UNKNOWN; startup does not automatically resend them. Delivery callbacks can reconcile uncertainty by opaque logical ID/provider ID and recipient. Lower status callbacks cannot turn READ back into acknowledged/failed. An in-flight external send cannot be recalled after revocation; queued work and future authority are rechecked/cancelled.
+
+Link/consent codes are hashed in storage, last ten minutes at most and are used once. Browser controls keep returned codes only in component memory and clear them on expiry or denied access. Report tokens have 256-bit strength, are derived only at send time, and only their hashes are retained in capabilities. They expire within ten minutes and allow at most three downloads. Unlink/context changes revoke them; redemption checks membership, link version, current artifact and bytes again.
+
+The configured send budget defaults to zero and is a persistent cumulative attempt cap, not a billing guarantee. Failed and uncertain attempts still count. Alerts also account for queued work. Free-form sending requires a current 24-hour inbound window; no approved template adapter or out-of-window outreach is implemented. Supplier consent is specific to the draft/contact and gives no access to the buyer’s account or reports. STOP revokes supplier consent and cancels its queued messages; UNLINK separately revokes a buyer link.
+
+### Checks actually completed; regression deliberately pending
+
+- The initial extended channel/provider set passed **29 tests in 86.70 seconds**, including actual local imports, XLSX parsing, confirmed-source reconciliation, generated PDF download limits, crash replay, supplier consent/STOP, due reminders, password revocation, schema preservation and bounded fake transport.
+- Final review added refusal of ambiguous READY sources, rejection of non-string callback statuses and malformed provider ports/hosts. The new real-import ambiguity test passed after using distinct source bytes; repeated identical uploads correctly reuse the existing import. The malformed-status check and adapter changes await the final regression/affected rerun. Earlier fixture/setup/selector failures are not passing evidence.
+- A browser run passed **24 of 25 checks**: all three new channel checks passed (real default-disabled API plus two explicitly simulated channel-control cases). One existing real journey opened a blank page and failed before login. A subsequent journey rerun failed server startup. These failures remain unresolved verification items; there is no complete green browser-suite claim.
+- Full backend regression was stopped when the user said **“dont do a regression run now.”** No Phase 13 whole-suite result is claimed. Do not resume regression without the user authorizing it. The last completed whole-backend result remains the separate Phase 11 evidence.
+- Final lightweight checks passed: Ruff lint/format on 80 files, Python syntax compilation, Git whitespace, frontend formatting, strict TypeScript, generated contract alignment (93 DTOs) and Vite production build. No dependencies/lockfiles changed. No regression was restarted after the user stopped it.
+
+### Remaining Phase 13 acceptance work
+
+1. Resolve the recorded browser startup/blank-page verification failure; rerun affected checks and the final regression only when authorized.
+2. Configure actual Meta app/WABA/sender/test recipients, permissions, token expiry and currently supported Graph version. Fixture version strings do not establish account support.
+3. Choose an approved HTTPS forwarding method. Forward only `/webhooks/whatsapp` and `/wa/reports/*`, preserve the expected Host and disable capability/token query logging. Keep local browser/auth/business routes private.
+4. Complete subscription challenge and signed POST delivery from Meta; verify actual media MIME/size/hash behavior and both account identifiers.
+5. Check current pricing/entitlement in the actual account and explicitly choose an attempt budget. Keep zero until that is done; never promise free usage from old report text.
+6. On a physical permitted phone, prove LINK, STATUS, purchase/2B XLSX attachments, website confirmation, RUN, REPORT, repeated callback, restart, expired capability and UNLINK against the same persisted website records.
+7. If supplier outreach/reminders are enabled, prove correct recipient consent, fresh source/draft, role revocation, STOP, window expiry, real delivery callback and exact attempt accounting. Record provider acceptance independently of supplier invoice correction.
+8. Update the phase status only after real acceptance; Phase 14 combined rehearsal remains a subsequent phase.

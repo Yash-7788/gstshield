@@ -109,7 +109,7 @@ The database/data directory, dotenv credentials and tooling are ignored by Git. 
 | 10 | Frontend security and privacy review | Not started |
 | 11 | Backend performance and resource efficiency | Complete and locally verified |
 | 12 | Frontend smoothness, speed and usability | Not started |
-| 13 | WhatsApp connection and channel review | Not started |
+| 13 | WhatsApp connection and channel review | Local implementation; verification/provider gates pending |
 | 14 | Whole-application regression and hackathon rehearsal | Not started |
 
 The expanded plan has 14 phases covering the whole application. Every phase has correctness, security, edge-case and integration gates in the build plan. Baseline security/resource controls remain part of each feature; Phases 7 and 11 provide focused backend security/failure and measured performance reviews. Frontend phases give the internal website equal attention; the separately supplied landing page/design is later work. The dependency order does not reduce attention to later work.
@@ -387,3 +387,10 @@ records causes, budgets and full verification. The maximum repeated load retaine
 of the 64 MiB DB cap; capacity can be reached before run-count quotas. History is never silently
 removed. One child/five pending jobs, exact money, page/byte/deadline/RSS limits and local-only
 storage remain. Frontend smoothness, conditional WhatsApp and combined rehearsal remain 12–14.
+
+
+## Phase 13 checkpoint — 2026-10-04
+
+Local WhatsApp commands, signed callbacks, durable inbox/outbox, supplier consent and website controls are implemented. **This is a work-in-progress checkpoint, not completed Phase 13 acceptance.** Meta setup/HTTPS callback/physical-phone proof remain pending. Default WHATSAPP_ENABLED=false and send budget zero; no real messages or tunnel were created. Existing storage now needs an explicit offline, validated/backed-up `python -m app.manage storage-upgrade` from backend/ to reach schema 6. Never delete the old database; the presenter store was not changed here.
+
+The initial channel/provider set passed 29 tests; the final added ambiguity check passed separately. Browser run: 24 passed, one blank-page failure before login; follow-up startup also failed. Full regression was stopped at the user's request and must not be claimed as passed. See [the build plan](../md/05_BUILD_AND_VERIFICATION_PLAN.md) for exact scope, remaining checks and physical acceptance (use ../md/ from component folders). Git checkpoint skips CI to respect the request not to run regression now.

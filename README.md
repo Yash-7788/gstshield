@@ -31,7 +31,7 @@ Use branches and pull requests for implementation changes. Update shared contrac
 
 ## Full application phases
 
-The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–12 are complete and locally verified. Phase 11 passed 343 backend tests (1 Windows privilege-related skip), the full local load gate and website checks. Dated evidence is in 05. Phases 13–14 remain ahead.
+The expanded plan has **14 phases** with separate backend, frontend, security, connection and performance work. Phases 1–12 are complete and locally verified. Phase 11 passed 343 backend tests (1 Windows privilege-related skip), the full local load gate and website checks. Dated evidence is in 05. Phase 13 is a local work-in-progress checkpoint; provider/regression verification remains pending. Phase 14 has not started.
 
 1. Local backend foundation.
 2. Local storage and private access.
@@ -98,3 +98,10 @@ The following Phase 12 review is complete; real WhatsApp/design remain later wor
 ## Website smoothness verification
 
 Phase 12 preserves forms and filters during same-context refresh, reduces redundant processing polls, pauses hidden-tab polling and renders history/candidates in batches of 20. It improves keyboard focus and small-screen table scrolling without changing backend contracts or dependencies. Verification: **22 browser checks, 11 client/config checks, two built-preview checks and six backend website-contract checks passed**. Actual 100/2,000-row workflows pass all local performance budgets; startup/navigation stay broadly similar. [Dated evidence and limits](md/05_BUILD_AND_VERIFICATION_PLAN.md#phase-12-completion-and-measured-verification---2026-10-04) and [repeatable measurements](frontend/benchmarks/README.md) are recorded. Phases 13–14 remain pending.
+
+
+## Phase 13 checkpoint — 2026-10-04
+
+Local WhatsApp commands, signed callbacks, durable inbox/outbox, supplier consent and website controls are implemented. **This is a work-in-progress checkpoint, not completed Phase 13 acceptance.** Meta setup/HTTPS callback/physical-phone proof remain pending. Default WHATSAPP_ENABLED=false and send budget zero; no real messages or tunnel were created. Existing storage now needs an explicit offline, validated/backed-up `python -m app.manage storage-upgrade` from backend/ to reach schema 6. Never delete the old database; the presenter store was not changed here.
+
+The initial channel/provider set passed 29 tests; the final added ambiguity check passed separately. Browser run: 24 passed, one blank-page failure before login; follow-up startup also failed. Full regression was stopped at the user's request and must not be claimed as passed. See [the build plan](md/05_BUILD_AND_VERIFICATION_PLAN.md) for exact scope, remaining checks and physical acceptance (use ../md/ from component folders). Git checkpoint skips CI to respect the request not to run regression now.
